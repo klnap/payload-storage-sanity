@@ -6,7 +6,7 @@ This documentation provides a comprehensive technical overview of the architectu
 
 ## 1. Executive Summary & Design Principles
 
-`@klnap/payload-storage-sanity` integrates the **Sanity storage Sanity Asset Pipeline & Global CDN global CDN** into **Payload CMS 3.0** as a high-performance cloud storage adapter.
+`@klnap/payload-storage-sanity` integrates the **Sanity storage and global CDN** into **Payload CMS 3.0** as a high-performance cloud storage adapter.
 
 ### Core Architectural Tenets
 1. **Edge-Optimized Media Delivery**: Media binaries are persisted within Sanity's global edge network (`cdn.sanity.io`), delivering real-time image transformations, hotspot/crop coordinates, automatic AVIF/WebP format negotiation, and Low-Quality Image Placeholders (LQIP/blurhash).
@@ -118,13 +118,11 @@ Image URLs are computed server-side using pure URL parameter builders without ex
 ```typescript
 import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
 
-const cdnUrl = buildSanityImageUrl(mediaDocument, {
+const cdnUrl = buildSanityImageUrl({
+  client: sanityClient,
+  value: mediaDocument,
   width: 1200,
   height: 630,
-  format: 'webp',
-  quality: 85,
-  fit: 'crop',
-  focalPoint: { x: 0.5, y: 0.5 },
 })
 ```
 If the media document has `syncStatus = 'deleted'`, `buildSanityImageUrl` returns `null` safely, preventing broken image links on public storefronts.

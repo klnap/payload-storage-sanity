@@ -1,6 +1,6 @@
 # @klnap/payload-storage-sanity
 
-Enterprise-grade Payload CMS storage adapter and sync engine that offloads all media uploads to Sanity's global CDN, with real-time upstream webhook reconciliation, deduplication, and reference integrity enforcement.
+Payload CMS storage adapter and sync engine that offloads media uploads to Sanity CDN, with real-time upstream webhook reconciliation, deduplication, and reference integrity enforcement.
 
 [![npm version](https://img.shields.io/npm/v/@klnap/payload-storage-sanity)](https://www.npmjs.com/package/@klnap/payload-storage-sanity)
 [![license](https://img.shields.io/npm/l/@klnap/payload-storage-sanity)](./LICENSE)
@@ -18,14 +18,16 @@ Enterprise-grade Payload CMS storage adapter and sync engine that offloads all m
 - **Reference integrity guard** — Blocks media deletion when other documents still reference the row; throws a `400 APIError` listing every referencing document.
 - **`afterRead` safety filter** — Guarantees that broken or deleted asset URLs never leak to frontend APIs or admin views.
 - **`MediaUsageInspector`** — Admin UI panel listing every collection document that references a media asset.
-- **`UnavailableAssetRecovery`** — Admin UI panel for recovering or removing broken asset references in bulk.
+- **`UnavailableAssetRecovery`** — Admin UI banner component for recovering or unlinking unavailable assets.
 
 ---
 
 ## Installation
 
 ```bash
-bun add @klnap/payload-storage-sanity @sanity/client payload
+npm install @klnap/payload-storage-sanity @sanity/client
+# or
+bun add @klnap/payload-storage-sanity @sanity/client
 ```
 
 ### Peer Dependencies
@@ -84,7 +86,6 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `collections` | `Record<string, true \| SanityStorageCollectionOptions>` | — | **Required.** Collection slugs to enable storage on. |
 | `sync` | `SanityStorageSyncConfig` | `undefined` | Webhook and reconciliation configuration. |
 | `dedupeUploads` | `boolean` | `false` | Enable `sha1hash` deduplication; re-uses the existing Sanity asset when a duplicate is uploaded. |
-| `inspectMediaUsage` | `boolean` | `false` | Enables the `MediaUsageInspector` panel in the admin sidebar. |
 | `extraFields` | `Field[]` | `[]` | Extra Payload fields appended to every configured upload collection. |
 
 ### `SanityStorageCollectionOptions`
@@ -101,7 +102,6 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | :--- | :--- | :--- | :--- |
 | `enabled` | `boolean` | `false` | Activate real-time webhook sync. |
 | `webhookSecret` | `string` | `undefined` | Shared secret for HMAC-SHA256 verification of incoming Sanity webhook events. |
-| `path` | `string` | `undefined` | Custom reconcile endpoint path override. |
 | `webhookPath` | `string` | `undefined` | Custom webhook endpoint path override. |
 | `webhookCollection` | `string` | `undefined` | Collection slug to listen for webhook events on. |
 | `onDeleted` | `'mark' \| 'delete'` | `'mark'` | `'mark'` soft-deletes the Payload row; `'delete'` hard-deletes it. |
@@ -122,7 +122,7 @@ Sanity API tokens grant write access to your entire dataset. Storing them in Pay
 
 Instead, this plugin uses a **server-side proxy model**:
 
-- The `token` option lives only in your server-side `payload.config.ts` (typically from a validated `process.env` schema, never committed).
+- The `token` option lives only on the server (read from environment variables via `process.env`, never hardcoded in source control).
 - All Sanity API calls — uploads, metadata fetches, reconciliation — are made **from the Payload server**, never from browser code.
 - The admin UI (`MediaUsageInspector`, `UnavailableAssetRecovery`) communicates with Payload's REST API, which enforces your normal collection access rules. It never receives or forwards the Sanity token.
 - Public CDN URLs (`https://cdn.sanity.io/...`) are read-only and asset-scoped — they cannot be used to enumerate the dataset or write assets.
@@ -160,24 +160,39 @@ The guard runs automatically. To delete a media item that is still referenced yo
 
 ### `MediaUsageInspector`
 
-Shows a sidebar panel in the media document edit view listing every document that references the current asset. Enable via:
+A React Server Component (RSC) that lists every document across all collections that currently references the media asset.
+Because it is a standard Payload `UIFieldServerComponent`, you can place it **anywhere** in your collection fields — in the sidebar, in a dedicated tab, or in the main form column.
+
+In Payload 3.x, components in field configs are registered via an import map path string. You can use the exported `MEDIA_USAGE_INSPECTOR_IMPORT` constant or the direct import string:
 
 ```typescript
-sanityStorage({
-  // ...
-  inspectMediaUsage: true,
-})
+import { MEDIA_USAGE_INSPECTOR_IMPORT } from '@klnap/payload-storage-sanity/admin'
+import type { CollectionConfig } from 'payload'
+
+export const Media: CollectionConfig = {
+  slug: 'media',
+  fields: [
+    {
+      name: 'usage',
+      type: 'ui',
+      admin: {
+        position: 'sidebar', // or omit for main column / tab
+        components: {
+          // Both are equivalent:
+          Field: MEDIA_USAGE_INSPECTOR_IMPORT,
+          // Field: '@klnap/payload-storage-sanity/admin#MediaUsageInspector',
+        },
+      },
+    },
+  ],
+}
 ```
 
-Import map entry (auto-generated by `payload generate:importmap`):
-
-```js
-import { MediaUsageInspector } from '@klnap/payload-storage-sanity/admin'
-```
+> **Why `/admin`?** Admin UI components are isolated in the `@klnap/payload-storage-sanity/admin` subpath to ensure React and `@payloadcms/ui` dependencies never leak into backend-only builds or server runtimes.
 
 ### `UnavailableAssetRecovery`
 
-A bulk-action panel for recovering or removing broken asset references when upstream Sanity assets have been deleted or are otherwise unavailable.
+A client-side banner component for recovering or removing broken asset references when upstream Sanity assets have been deleted or are otherwise unavailable.
 
 ---
 
@@ -200,23 +215,6 @@ and repair any drift — useful after bulk Sanity operations or dataset imports.
 | `'mark'` *(default)* | Sets `sync.status = 'deleted'`, clears `url = null`. Row is preserved; relationship fields in other documents remain intact. |
 | `'delete'` | Hard-deletes the Payload media row. **Note:** this bypasses the reference integrity guard — use with care. |
 
----
-
-## CDN URL Builder
-
-```typescript
-import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
-
-const url = buildSanityImageUrl({
-  projectId: 'abc123',
-  dataset: 'production',
-  asset: mediaDoc, // Payload media document with sanity_id
-  width: 800,
-  height: 600,
-  format: 'webp',
-  quality: 85,
-})
-```
 
 ---
 
@@ -224,9 +222,9 @@ const url = buildSanityImageUrl({
 
 | Entry point | Contents |
 | :--- | :--- |
-| `@klnap/payload-storage-sanity` | `sanityStorage` plugin, `buildSanityImageUrl`, `reconcileSanityMedia`, `verifySanityWebhookSignature`, field helpers, sync utilities, types |
-| `@klnap/payload-storage-sanity/admin` | `MediaUsageInspector`, `UnavailableAssetRecovery`, `MEDIA_USAGE_INSPECTOR_IMPORT` |
-| `@klnap/payload-storage-sanity/client` | Client-side React components |
+| `@klnap/payload-storage-sanity` | `sanityStorage` plugin, `reconcileSanityMedia`, `verifySanityWebhookSignature`, field helpers, sync utilities, types |
+| `@klnap/payload-storage-sanity/admin` | Admin UI components (`MediaUsageInspector`, `UnavailableAssetRecovery`), `MEDIA_USAGE_INSPECTOR_IMPORT` |
+| `@klnap/payload-storage-sanity/client` | Client factory utilities (`createSanityClient`, `SANITY_IMAGE_METADATA_EXTRACT`) |
 
 ---
 

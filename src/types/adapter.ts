@@ -3,7 +3,6 @@ import type { Field } from 'payload'
 export type SanityStorageSyncConfig = {
   enabled?: boolean
   webhookSecret?: string
-  path?: string
   webhookPath?: string
   webhookCollection?: string
   onDeleted?: 'mark' | 'delete'
@@ -29,6 +28,5 @@ export type SanityStoragePluginOptions = {
   collections: Record<string, true | SanityStorageCollectionOptions>
   sync?: SanityStorageSyncConfig
   dedupeUploads?: boolean
-  inspectMediaUsage?: boolean
   extraFields?: Field[]
 }
