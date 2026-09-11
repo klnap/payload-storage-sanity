@@ -57,5 +57,7 @@ export function formatMediaUsageBlockMessage(entries: MediaUsageEntry[]): string
     )
     .join(', ')
 
-  return `Cannot delete media asset because it is currently referenced by ${summary.totalDistinctDocuments} entity${summary.totalDistinctDocuments === 1 ? '' : 'ies'} (${breakdown}).`
+  const countStr = `${summary.totalDistinctDocuments} ${summary.totalDistinctDocuments === 1 ? 'document' : 'documents'}`
+
+  return `Cannot delete media asset because it is currently referenced by ${countStr} (${breakdown}).`
 }

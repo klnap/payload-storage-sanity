@@ -23,12 +23,20 @@ describe('findMediaUsage', () => {
         fields: [{ name: 'avatar', type: 'upload', relationTo: 'media' }],
       },
     ],
+    globals: [
+      {
+        slug: 'header',
+        label: 'Site Header',
+        fields: [{ name: 'logo', type: 'upload', relationTo: 'media', label: 'Site Logo' }],
+      },
+    ],
     routes: { admin: '/admin' },
   } as unknown as SanitizedConfig
 
   test('returns empty array when no collection references the media', async () => {
     const payload = {
       find: async () => ({ docs: [] }),
+      findGlobal: async () => null,
     } as unknown as Payload
 
     const usages = await findMediaUsage({
@@ -40,13 +48,19 @@ describe('findMediaUsage', () => {
     expect(usages).toEqual([])
   })
 
-  test('returns one entry per matching document with correct shape', async () => {
+  test('returns entries for matching documents in collections and globals', async () => {
     const payload = {
       find: async ({ collection }: { collection: string }) => {
         if (collection === 'posts') {
           return { docs: [{ id: 101, title: 'Hello World' }] }
         }
         return { docs: [] }
+      },
+      findGlobal: async ({ slug }: { slug: string }) => {
+        if (slug === 'header') {
+          return { logo: 10 }
+        }
+        return null
       },
     } as unknown as Payload
 
@@ -56,15 +70,25 @@ describe('findMediaUsage', () => {
       mediaId: 10,
       payload,
     })
-    expect(usages).toHaveLength(1)
+    expect(usages).toHaveLength(2)
     expect(usages[0]).toMatchObject({
+      type: 'collection',
       id: 101,
       title: 'Hello World',
+      name: 'Post',
       collectionSlug: 'posts',
-      collectionLabel: 'Post',
       fieldPath: 'cover',
       fieldLabel: 'Cover',
       adminPath: '/admin/collections/posts/101',
+    })
+    expect(usages[1]).toMatchObject({
+      type: 'global',
+      title: 'Site Header',
+      name: 'Site Header',
+      collectionSlug: 'header',
+      fieldPath: 'logo',
+      fieldLabel: 'Site Logo',
+      adminPath: '/admin/globals/header',
     })
   })
 
@@ -79,6 +103,7 @@ describe('findMediaUsage', () => {
         }
         return { docs: [] }
       },
+      findGlobal: async () => null,
     } as unknown as Payload
 
     const usages = await findMediaUsage({
@@ -107,6 +132,7 @@ describe('findMediaUsage', () => {
         }
         return { docs: [] }
       },
+      findGlobal: async () => null,
     } as unknown as Payload
 
     const usages = await findMediaUsage({
@@ -116,7 +142,6 @@ describe('findMediaUsage', () => {
       payload,
     })
     expect(usages).toHaveLength(3)
-    // Author comes before Post alphabetically
     expect(usages[0].collectionLabel).toBe('Author')
     expect(usages[1].collectionLabel).toBe('Post')
     expect(usages[1].title).toBe('Apple')
