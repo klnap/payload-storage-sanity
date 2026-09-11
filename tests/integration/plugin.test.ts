@@ -169,4 +169,54 @@ describe('sanityStorage', () => {
       beforeDeleteHooks[0]!({ id: 1, req } as any)
     ).rejects.toThrow('Cannot delete')
   })
-})
+
+  test('skips reference-integrity hook when preventDeleteWhenReferenced is false', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+      preventDeleteWhenReferenced: false,
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const beforeDeleteHooks = media?.hooks?.beforeDelete ?? []
+
+    expect(beforeDeleteHooks.length).toBe(1)
+  })
+
+  test('skips reference-integrity hook when collection-level preventDeleteWhenReferenced is false', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: { preventDeleteWhenReferenced: false } },
+      preventDeleteWhenReferenced: true,
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const beforeDeleteHooks = media?.hooks?.beforeDelete ?? []
+
+    expect(beforeDeleteHooks.length).toBe(1)
+  })
+});

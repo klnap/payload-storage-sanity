@@ -86,6 +86,7 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `collections` | `Record<string, true \| SanityStorageCollectionOptions>` | — | **Required.** Collection slugs to enable storage on. |
 | `sync` | `SanityStorageSyncConfig` | `undefined` | Webhook and reconciliation configuration. |
 | `dedupeUploads` | `boolean` | `false` | Enable `sha1hash` deduplication; re-uses the existing Sanity asset when a duplicate is uploaded. |
+| `preventDeleteWhenReferenced` | `boolean` | `true` | Blocks deletion of media rows still referenced by other collections. Set to `false` to allow deletion. |
 | `extraFields` | `Field[]` | `[]` | Extra Payload fields appended to every configured upload collection. |
 
 ### `SanityStorageCollectionOptions`
@@ -95,6 +96,7 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `disableLocalStorage` | `boolean` | `true` | Prevents Payload from writing the file to local disk in addition to Sanity. |
 | `prefix` | `string` | `undefined` | Path prefix for assets within the Sanity dataset. |
 | `disablePayloadAccessControl` | `boolean` | `false` | Bypasses Payload's cookie-based access check for direct public CDN reads. |
+| `preventDeleteWhenReferenced` | `boolean` | `true` | Overrides reference integrity blocking for this specific collection. |
 
 ### `SanityStorageSyncConfig`
 
@@ -150,9 +152,23 @@ Cannot delete media asset — it is still referenced by:
 Remove or replace these references before deleting the asset.
 ```
 
-### Bypassing the guard (advanced)
+### Disabling the guard
 
-The guard runs automatically. To delete a media item that is still referenced you must first update or nullify the referencing fields in the other documents, then delete the media row.
+The guard runs automatically by default (`preventDeleteWhenReferenced: true`). If you wish to allow deletions even when assets are still referenced, disable it globally or per collection:
+
+```typescript
+sanityStorage({
+  // Globally disable reference integrity checks:
+  preventDeleteWhenReferenced: false,
+
+  // Or configure per collection:
+  collections: {
+    media: {
+      preventDeleteWhenReferenced: false,
+    },
+  },
+})
+```
 
 ---
 
@@ -161,31 +177,14 @@ The guard runs automatically. To delete a media item that is still referenced yo
 ### `MediaUsageInspector`
 
 A React Server Component (RSC) that lists every document across all collections that currently references the media asset.
-Because it is a standard Payload `UIFieldServerComponent`, you can place it **anywhere** in your collection fields — in the sidebar, in a dedicated tab, or in the main form column.
 
-In Payload 3.x, components in field configs are registered via an import map path string. You can use the exported `MEDIA_USAGE_INSPECTOR_IMPORT` constant or the direct import string:
+> **Zero configuration required!** The plugin **automatically injects** this panel directly under every configured media asset view in the admin panel. You do not need to add any fields to your collection config.
+
+If you ever need to manually place the inspector in a custom location (such as a specific tab):
 
 ```typescript
 import { MEDIA_USAGE_INSPECTOR_IMPORT } from '@klnap/payload-storage-sanity/admin'
-import type { CollectionConfig } from 'payload'
-
-export const Media: CollectionConfig = {
-  slug: 'media',
-  fields: [
-    {
-      name: 'usage',
-      type: 'ui',
-      admin: {
-        position: 'sidebar', // or omit for main column / tab
-        components: {
-          // Both are equivalent:
-          Field: MEDIA_USAGE_INSPECTOR_IMPORT,
-          // Field: '@klnap/payload-storage-sanity/admin#MediaUsageInspector',
-        },
-      },
-    },
-  ],
-}
+// Or direct string: '@klnap/payload-storage-sanity/admin#MediaUsageInspector'
 ```
 
 > **Why `/admin`?** Admin UI components are isolated in the `@klnap/payload-storage-sanity/admin` subpath to ensure React and `@payloadcms/ui` dependencies never leak into backend-only builds or server runtimes.

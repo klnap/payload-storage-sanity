@@ -87,6 +87,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
     enabled = true,
     alwaysInsertFields = false,
     dedupeUploads = true,
+    preventDeleteWhenReferenced = true,
     sync,
   } = options
 
@@ -245,17 +246,25 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         }
 
         if (enabled && configuredMediaSlugs.has(slug) && collection.upload) {
+          const collConfig = collections[slug]
+          const shouldGuardReferenceIntegrity =
+            typeof collConfig === 'object' && collConfig.preventDeleteWhenReferenced !== undefined
+              ? collConfig.preventDeleteWhenReferenced
+              : preventDeleteWhenReferenced
+
           // Reference-integrity guard must run first so that a blocked deletion
           // never reaches the Sanity asset cleanup step.
-          nextCollection = {
-            ...nextCollection,
-            hooks: {
-              ...nextCollection.hooks,
-              beforeDelete: [
-                createMediaReferenceIntegrityBeforeDeleteHook(slug),
-                ...(nextCollection.hooks?.beforeDelete ?? []),
-              ],
-            },
+          if (shouldGuardReferenceIntegrity) {
+            nextCollection = {
+              ...nextCollection,
+              hooks: {
+                ...nextCollection.hooks,
+                beforeDelete: [
+                  createMediaReferenceIntegrityBeforeDeleteHook(slug),
+                  ...(nextCollection.hooks?.beforeDelete ?? []),
+                ],
+              },
+            }
           }
           nextCollection = {
             ...nextCollection,

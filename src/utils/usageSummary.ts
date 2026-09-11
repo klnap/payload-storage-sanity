@@ -12,27 +12,29 @@ export type MediaUsageSummary = {
 }
 
 export function summarizeMediaUsage(entries: MediaUsageEntry[]): MediaUsageSummary {
-  const byCollection = new Map<string, { label: string; documentIds: Set<number | string> }>()
+  const bySource = new Map<string, { label: string; type: string; documentIds: Set<number | string> }>()
 
   for (const entry of entries) {
-    let bucket = byCollection.get(entry.collectionSlug)
+    const key = `${entry.type}:${entry.collectionSlug}`
+    let bucket = bySource.get(key)
     if (!bucket) {
       bucket = {
-        label: entry.collectionLabel || entry.collectionSlug,
+        label: entry.name || entry.collectionLabel || entry.collectionSlug,
+        type: entry.type ?? 'collection',
         documentIds: new Set(),
       }
-      byCollection.set(entry.collectionSlug, bucket)
+      bySource.set(key, bucket)
     }
     bucket.documentIds.add(entry.id)
   }
 
-  const collections: MediaCollectionUsageSummary[] = Array.from(byCollection.entries())
-    .map(([slug, bucket]) => ({
-      collectionSlug: slug,
-      collectionLabel: bucket.label,
+  const collections: MediaCollectionUsageSummary[] = Array.from(bySource.entries())
+    .map(([key, bucket]) => ({
+      collectionSlug: key,
+      collectionLabel: bucket.type === 'global' ? `${bucket.label} (Global)` : bucket.label,
       distinctDocumentsCount: bucket.documentIds.size,
     }))
-    .sort((a, b) => a.collectionSlug.localeCompare(b.collectionSlug))
+    .sort((a, b) => a.collectionLabel.localeCompare(b.collectionLabel))
 
   const totalDistinctDocuments = collections.reduce((sum, c) => sum + c.distinctDocumentsCount, 0)
 
@@ -51,9 +53,9 @@ export function formatMediaUsageBlockMessage(entries: MediaUsageEntry[]): string
   const breakdown = summary.collections
     .map(
       (c) =>
-        `${c.distinctDocumentsCount} ${c.collectionLabel} document${c.distinctDocumentsCount === 1 ? '' : 's'}`
+        `${c.distinctDocumentsCount} ${c.collectionLabel}`
     )
     .join(', ')
 
-  return `Cannot delete media asset because it is currently referenced by ${summary.totalDistinctDocuments} document${summary.totalDistinctDocuments === 1 ? '' : 's'} (${breakdown}).`
+  return `Cannot delete media asset because it is currently referenced by ${summary.totalDistinctDocuments} entity${summary.totalDistinctDocuments === 1 ? '' : 'ies'} (${breakdown}).`
 }

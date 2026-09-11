@@ -15,6 +15,7 @@ export type SanityStorageCollectionOptions = {
   disableLocalStorage?: boolean
   prefix?: string
   disablePayloadAccessControl?: boolean
+  preventDeleteWhenReferenced?: boolean
 }
 
 export type SanityStoragePluginOptions = {
@@ -28,5 +29,6 @@ export type SanityStoragePluginOptions = {
   collections: Record<string, true | SanityStorageCollectionOptions>
   sync?: SanityStorageSyncConfig
   dedupeUploads?: boolean
+  preventDeleteWhenReferenced?: boolean
   extraFields?: Field[]
 }
