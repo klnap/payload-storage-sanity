@@ -1,0 +1,235 @@
+# @klnap/payload-storage-sanity
+
+Enterprise-grade Payload CMS storage adapter and sync engine that offloads all media uploads to Sanity's global CDN, with real-time upstream webhook reconciliation, deduplication, and reference integrity enforcement.
+
+[![npm version](https://img.shields.io/npm/v/@klnap/payload-storage-sanity)](https://www.npmjs.com/package/@klnap/payload-storage-sanity)
+[![license](https://img.shields.io/npm/l/@klnap/payload-storage-sanity)](./LICENSE)
+
+---
+
+## Features
+
+- **Sanity CDN storage** — Every Payload upload is stored in Sanity and served from the global CDN.
+- **Rich metadata extraction** — Automatically extracts `dimensions`, `lqip`, `blurHash`, `thumbHash`, `hasAlpha`, `isOpaque`, `location`, EXIF, and colour `palette` on upload.
+- **Upload deduplication** — Prevents duplicate assets via `sha1hash` comparison before writing to Sanity.
+- **Real-time webhook reconciliation** — HMAC-SHA256 verified `POST /api/sanity/webhook` endpoint keeps Payload records in sync when assets are modified or deleted upstream.
+- **Batch reconciliation** — `POST /api/sanity/reconcile` scans all media rows against Sanity's API and heals any drift.
+- **Soft-delete safety** — `onDeleted: 'mark'` marks deleted assets as unavailable and clears the URL without dropping Payload rows or breaking relationship fields.
+- **Reference integrity guard** — Blocks media deletion when other documents still reference the row; throws a `400 APIError` listing every referencing document.
+- **`afterRead` safety filter** — Guarantees that broken or deleted asset URLs never leak to frontend APIs or admin views.
+- **`MediaUsageInspector`** — Admin UI panel listing every collection document that references a media asset.
+- **`UnavailableAssetRecovery`** — Admin UI panel for recovering or removing broken asset references in bulk.
+
+---
+
+## Installation
+
+```bash
+bun add @klnap/payload-storage-sanity @sanity/client payload
+```
+
+### Peer Dependencies
+
+| Package | Required version |
+| :--- | :--- |
+| `payload` | `>=3.0.0` |
+| `@payloadcms/ui` | `>=3.0.0` |
+| `@sanity/client` | `>=6.0.0` |
+| `next` | `>=15.0.0` |
+| `react` | `>=19.0.0` |
+| `react-dom` | `>=19.0.0` |
+
+---
+
+## Quick Start
+
+```typescript
+// payload.config.ts
+import { buildConfig } from 'payload'
+import { sanityStorage } from '@klnap/payload-storage-sanity'
+
+export default buildConfig({
+  plugins: [
+    sanityStorage({
+      projectId: process.env.SANITY_PROJECT_ID!,
+      dataset: process.env.SANITY_DATASET!,
+      token: process.env.SANITY_API_TOKEN,
+      collections: {
+        media: true,
+      },
+    }),
+  ],
+})
+```
+
+---
+
+## Full Config Options
+
+```typescript
+import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
+```
+
+### `SanityStorageOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `projectId` | `string` | — | **Required.** Sanity project identifier. |
+| `dataset` | `string` | — | **Required.** Target dataset (e.g. `'production'`). |
+| `token` | `string` | `undefined` | Write-authorised Sanity API token for uploads and sync operations. |
+| `apiVersion` | `string` | `'2024-01-01'` | Sanity API version date tag for deterministic request payloads. |
+| `cdnBaseUrl` | `string` | `'https://cdn.sanity.io'` | Custom CDN base URL override. |
+| `enabled` | `boolean` | `true` | Set to `false` to disable the plugin entirely (useful for local dev without Sanity credentials). |
+| `alwaysInsertFields` | `boolean` | `false` | Insert Sanity storage fields even on collections not listed in `collections`. |
+| `collections` | `Record<string, true \| SanityStorageCollectionOptions>` | — | **Required.** Collection slugs to enable storage on. |
+| `sync` | `SanityStorageSyncConfig` | `undefined` | Webhook and reconciliation configuration. |
+| `dedupeUploads` | `boolean` | `false` | Enable `sha1hash` deduplication; re-uses the existing Sanity asset when a duplicate is uploaded. |
+| `inspectMediaUsage` | `boolean` | `false` | Enables the `MediaUsageInspector` panel in the admin sidebar. |
+| `extraFields` | `Field[]` | `[]` | Extra Payload fields appended to every configured upload collection. |
+
+### `SanityStorageCollectionOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `disableLocalStorage` | `boolean` | `true` | Prevents Payload from writing the file to local disk in addition to Sanity. |
+| `prefix` | `string` | `undefined` | Path prefix for assets within the Sanity dataset. |
+| `disablePayloadAccessControl` | `boolean` | `false` | Bypasses Payload's cookie-based access check for direct public CDN reads. |
+
+### `SanityStorageSyncConfig`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | `false` | Activate real-time webhook sync. |
+| `webhookSecret` | `string` | `undefined` | Shared secret for HMAC-SHA256 verification of incoming Sanity webhook events. |
+| `path` | `string` | `undefined` | Custom reconcile endpoint path override. |
+| `webhookPath` | `string` | `undefined` | Custom webhook endpoint path override. |
+| `webhookCollection` | `string` | `undefined` | Collection slug to listen for webhook events on. |
+| `onDeleted` | `'mark' \| 'delete'` | `'mark'` | `'mark'` soft-deletes the Payload row; `'delete'` hard-deletes it. |
+| `reconcile` | `boolean` | `true` | Expose the batch reconcile endpoint. |
+| `reconcilePath` | `string` | `undefined` | Custom reconcile path override. |
+| `reconcileCollection` | `string` | `undefined` | Scope reconciliation to a specific collection. |
+
+---
+
+## Security Model
+
+### Why the frontend proxy — and why no Sanity credentials in the Payload schema
+
+Sanity API tokens grant write access to your entire dataset. Storing them in Payload collection fields or exposing them via REST responses would:
+
+1. **Leak write credentials** to any client that can read the collection (public APIs, logged-out users with misconfigured access control, GraphQL introspection).
+2. **Bypass Payload's access control** — a raw Sanity token is usable directly against the Sanity API without Payload knowing.
+
+Instead, this plugin uses a **server-side proxy model**:
+
+- The `token` option lives only in your server-side `payload.config.ts` (typically from a validated `process.env` schema, never committed).
+- All Sanity API calls — uploads, metadata fetches, reconciliation — are made **from the Payload server**, never from browser code.
+- The admin UI (`MediaUsageInspector`, `UnavailableAssetRecovery`) communicates with Payload's REST API, which enforces your normal collection access rules. It never receives or forwards the Sanity token.
+- Public CDN URLs (`https://cdn.sanity.io/...`) are read-only and asset-scoped — they cannot be used to enumerate the dataset or write assets.
+
+**Summary:** Sanity credentials stay server-side. The browser only ever sees CDN URLs and Payload API responses.
+
+---
+
+## Reference Integrity Guard
+
+The plugin registers a `beforeDelete` hook on every configured upload collection. Before any media row is deleted, the hook:
+
+1. Queries all collections that have `upload` relationship fields pointing at the media collection.
+2. If **any** document still references the row, the hook throws a `400 APIError` listing every referencing document by collection and ID.
+3. The delete is aborted — Payload rolls back.
+
+This prevents orphaned `upload` relationship fields across your content graph.
+
+### What the error looks like
+
+```
+Cannot delete media asset — it is still referenced by:
+  • posts › "My Blog Post" (id: 64a1f...)
+  • pages › "Home" (id: 7bc3e...)
+Remove or replace these references before deleting the asset.
+```
+
+### Bypassing the guard (advanced)
+
+The guard runs automatically. To delete a media item that is still referenced you must first update or nullify the referencing fields in the other documents, then delete the media row.
+
+---
+
+## Admin UI Components
+
+### `MediaUsageInspector`
+
+Shows a sidebar panel in the media document edit view listing every document that references the current asset. Enable via:
+
+```typescript
+sanityStorage({
+  // ...
+  inspectMediaUsage: true,
+})
+```
+
+Import map entry (auto-generated by `payload generate:importmap`):
+
+```js
+import { MediaUsageInspector } from '@klnap/payload-storage-sanity/admin'
+```
+
+### `UnavailableAssetRecovery`
+
+A bulk-action panel for recovering or removing broken asset references when upstream Sanity assets have been deleted or are otherwise unavailable.
+
+---
+
+## Upstream Synchronisation
+
+### Webhooks
+
+Configure a Sanity webhook pointing at `POST https://your-cms.example.com/api/sanity/webhook`.
+Every event is verified via HMAC-SHA256 against `sync.webhookSecret` before processing.
+
+### Batch Reconciliation
+
+Call `POST /api/sanity/reconcile` (authenticated) to scan all media rows against Sanity's API
+and repair any drift — useful after bulk Sanity operations or dataset imports.
+
+### Deletion Behaviour
+
+| `onDeleted` | Behaviour |
+| :--- | :--- |
+| `'mark'` *(default)* | Sets `sync.status = 'deleted'`, clears `url = null`. Row is preserved; relationship fields in other documents remain intact. |
+| `'delete'` | Hard-deletes the Payload media row. **Note:** this bypasses the reference integrity guard — use with care. |
+
+---
+
+## CDN URL Builder
+
+```typescript
+import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
+
+const url = buildSanityImageUrl({
+  projectId: 'abc123',
+  dataset: 'production',
+  asset: mediaDoc, // Payload media document with sanity_id
+  width: 800,
+  height: 600,
+  format: 'webp',
+  quality: 85,
+})
+```
+
+---
+
+## Exports
+
+| Entry point | Contents |
+| :--- | :--- |
+| `@klnap/payload-storage-sanity` | `sanityStorage` plugin, `buildSanityImageUrl`, `reconcileSanityMedia`, `verifySanityWebhookSignature`, field helpers, sync utilities, types |
+| `@klnap/payload-storage-sanity/admin` | `MediaUsageInspector`, `UnavailableAssetRecovery`, `MEDIA_USAGE_INSPECTOR_IMPORT` |
+| `@klnap/payload-storage-sanity/client` | Client-side React components |
+
+---
+
+## License
+
+MIT © [klnap](https://github.com/klnap)

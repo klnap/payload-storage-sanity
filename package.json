@@ -1,0 +1,74 @@
+{
+  "name": "@klnap/payload-storage-sanity",
+  "version": "1.0.0",
+  "description": "Sanity storage adapter for Payload CMS",
+  "license": "MIT",
+  "author": "klnap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klnap/payload-storage-sanity"
+  },
+  "homepage": "https://github.com/klnap/payload-storage-sanity#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test tests",
+    "lint": "biome check .",
+    "lint:code": "biome check .",
+    "lint:oxlint": "oxlint --deny-warnings src tests"
+  },
+  "dependencies": {
+    "@payloadcms/plugin-cloud-storage": "3.88.0",
+    "@sanity/client": "^7.12.0",
+    "@sanity/image-url": "^1.2.0",
+    "slugify": "^1.6.9",
+    "valibot": "^1.4.2"
+  },
+  "peerDependencies": {
+    "@payloadcms/ui": ">=3.0.0",
+    "@sanity/client": ">=6.0.0",
+    "next": ">=15.0.0",
+    "payload": ">=3.0.0",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "bun-types": "^1.4.2",
+    "payload": "3.88.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "typescript": "5.7.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
