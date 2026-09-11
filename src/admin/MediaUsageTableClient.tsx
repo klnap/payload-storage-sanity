@@ -130,10 +130,7 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
           </div>
         ),
         renderedCells: filtered.map((usage) => (
-          <span
-            key={`name-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}
-            style={{ fontWeight: 500 }}
-          >
+          <span key={`name-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}>
             {usage.name || usage.collectionLabel}
           </span>
         )),
@@ -174,12 +171,11 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
             rel='noreferrer'
             target='_blank'
           >
-            <code className='code-cell' style={{ whiteSpace: 'nowrap' }}>
-              <span>{usage.type === 'global' ? 'Global' : `ID: ${usage.id}`}</span>
-            </code>
-            {usage.type !== 'global' && usage.title && usage.title !== String(usage.id) ? (
-              <span style={{ marginLeft: 6, opacity: 0.75 }}>({usage.title})</span>
-            ) : null}
+            {usage.type === 'global'
+              ? 'Global'
+              : usage.title && usage.title !== String(usage.id)
+                ? `${usage.title} (${usage.id})`
+                : usage.id}
           </a>
         )),
       },
