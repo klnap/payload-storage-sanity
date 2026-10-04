@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] — 2026-10-05
+## [2.0.2] — 2026-10-05
+
+npm releases **2.0.0** and **2.0.1** were unpublished (those version numbers cannot be reused on the registry). Use **`@klnap/payload-storage-sanity@2.0.2`** as the current 2.x line.
 
 ### Breaking
 
@@ -19,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Populate presets **`full`** and **`default`** with **`DefaultPopulateAsset`** on REST populated relations; admin and direct `GET /api/media` stay full. Custom presets via **`defineSanityMediaPopulatePreset`** and **`shouldApplyDefaultPopulate`**.
 - Localized **`alt`** group opt-in on upload collections (`collections.media.alt`). **`resolveLocalizedAlt`** uses `alt[locale]` only (no cross-locale fallback).
-- **`@klnap/payload-storage-sanity/next`** — `SanityImage` (full `next/image` props), `toSanityImageProps`, `sanityImageLoader`, and default `./next/loader`.
+- **`@klnap/payload-storage-sanity/next`** — `SanityImage` (RSC + `fallback` JSX prop), `SanityImageInteractive` (`renderFallback`), `toSanityImageProps`, `sanityImageLoader`, and default `./next/loader`.
+- README: full Payload plugin behaviour, prevention guards, tree-shaking, and `/next` usage.
 - **`resolvePublicUrl`**, **`classifySanityAssetType`**, **`defaultPopulateMediaDoc`**, **`resolveAdminLabel`**.
 - Root **`url`** / **`thumbnailURL`** hydrated on read (not persisted from hooks).
 
