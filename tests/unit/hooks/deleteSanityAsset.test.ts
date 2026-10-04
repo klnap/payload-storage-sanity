@@ -19,7 +19,7 @@ describe('createMediaDeleteSanityAssetBeforeDeleteHook', () => {
 
     const findByID = mock(async () => ({
       id: 5,
-      sanity_id: 'image-orphan-jpg',
+      sanity: { id: 'image-orphan-jpg' },
     }))
 
     const hook = createMediaDeleteSanityAssetBeforeDeleteHook(client, 'media')
@@ -48,7 +48,7 @@ describe('createMediaDeleteSanityAssetBeforeDeleteHook', () => {
 
     const findByID = mock(async () => ({
       id: 5,
-      sanity_id: 'image-shared-jpg',
+      sanity: { id: 'image-shared-jpg' },
     }))
 
     const hook = createMediaDeleteSanityAssetBeforeDeleteHook(client, 'media')
@@ -62,7 +62,7 @@ describe('createMediaDeleteSanityAssetBeforeDeleteHook', () => {
     expect(deleted).toEqual([])
   })
 
-  test('no-ops when media row has no sanity_id', async () => {
+  test('no-ops when media row has no sanity.id', async () => {
     const deleted: string[] = []
     const client = {
       delete: async (id: string) => {
@@ -88,7 +88,7 @@ describe('createMediaDeleteSanityAssetBeforeDeleteHook', () => {
       delete: mock(async () => {}),
     } as unknown as SanityClient
 
-    const findByID = mock(async () => ({ id: 5, sanity_id: 'image-orphan-jpg' }))
+    const findByID = mock(async () => ({ id: 5, sanity: { id: 'image-orphan-jpg' } }))
 
     const hook = createMediaDeleteSanityAssetBeforeDeleteHook(client, 'media')
     await hook({

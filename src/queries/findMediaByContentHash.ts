@@ -2,7 +2,6 @@ import type { PayloadRequest } from 'payload'
 
 export type MediaRowWithHash = {
   id: number
-  sha1hash?: string | null
 }
 
 export async function findMediaByContentHash(
@@ -18,7 +17,7 @@ export async function findMediaByContentHash(
     pagination: false,
     req,
     where: {
-      sha1hash: {
+      'sanity.sha1hash': {
         equals: contentHash,
       },
     },
@@ -26,6 +25,5 @@ export async function findMediaByContentHash(
 
   const doc = result.docs[0]
   if (doc == null || !('id' in doc) || doc.id == null) return null
-  // SAFETY: doc returned from media find matches MediaRowWithHash
   return doc as MediaRowWithHash
 }

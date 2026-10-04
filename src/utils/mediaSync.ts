@@ -4,8 +4,7 @@ import type { SanityMediaSyncFields } from '../types/sync'
 export type { SanityMediaSyncFields }
 
 export type WithMediaSync = {
-  sanity_id?: string | null
-  sanityAssetId?: string | null
+  sanity?: { id?: string | null } | null
   sync?: SanityMediaSyncFields | null
 }
 

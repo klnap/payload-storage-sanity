@@ -1,11 +1,7 @@
 import type { Field } from 'payload'
 
-const hidden = { hidden: true } as const
+const sanityAdmin = { hidden: true, readOnly: true } as const
 const readOnly = { readOnly: true } as const
-
-/* -------------------------------------------------------------------------- */
-/*                               Palette Swatches                             */
-/* -------------------------------------------------------------------------- */
 
 const PALETTE_SWATCH_NAMES = [
   'darkMuted',
@@ -32,14 +28,10 @@ export const sanityPaletteFields = (): Field[] =>
     fields: paletteSwatchFields(),
   }))
 
-/* -------------------------------------------------------------------------- */
-/*                               Metadata Group                               */
-/* -------------------------------------------------------------------------- */
-
 export const sanityMetadataStorageGroup = (): Field => ({
   name: 'metadata',
   type: 'group',
-  admin: hidden,
+  admin: sanityAdmin,
   fields: [
     {
       name: 'dimensions',
@@ -63,7 +55,7 @@ export const sanityMetadataStorageGroup = (): Field => ({
           name: '_type',
           type: 'text',
           defaultValue: 'geopoint',
-          admin: hidden,
+          admin: { hidden: true },
         },
         { name: 'lat', type: 'number' },
         { name: 'lng', type: 'number' },
@@ -78,32 +70,32 @@ export const sanityMetadataStorageGroup = (): Field => ({
     {
       name: 'exif',
       type: 'json',
-      admin: hidden,
+      admin: { hidden: true },
     },
   ],
 })
 
-/* -------------------------------------------------------------------------- */
-/*                               Hidden Scalars                               */
-/* -------------------------------------------------------------------------- */
-
-export const sanityAssetHiddenStorageFields = (): Field[] => [
-  { name: 'sanity_id', type: 'text', admin: hidden },
-  { name: '_type', type: 'text', defaultValue: 'sanity.imageAsset', admin: hidden },
-  { name: '_rev', type: 'text', admin: hidden },
-  { name: 'sanity_createdAt', type: 'text', admin: hidden },
-  { name: 'sanity_updatedAt', type: 'text', admin: hidden },
-  { name: 'assetId', type: 'text', admin: hidden },
-  { name: 'path', type: 'text', admin: hidden },
-  { name: 'extension', type: 'text', admin: hidden },
-  { name: 'sha1hash', type: 'text', admin: hidden },
-  { name: 'size', type: 'number', admin: hidden },
-  sanityMetadataStorageGroup(),
-]
-
-/* -------------------------------------------------------------------------- */
-/*                                Sidebar UI                                  */
-/* -------------------------------------------------------------------------- */
+export const sanityUpstreamGroup = (): Field => ({
+  name: 'sanity',
+  type: 'group',
+  admin: sanityAdmin,
+  fields: [
+    { name: 'id', type: 'text', index: true },
+    { name: 'type', type: 'text' },
+    { name: 'rev', type: 'text' },
+    { name: 'assetId', type: 'text' },
+    { name: 'path', type: 'text' },
+    { name: 'url', type: 'text' },
+    { name: 'extension', type: 'text' },
+    { name: 'sha1hash', type: 'text', index: true },
+    { name: 'size', type: 'number' },
+    { name: 'mimeType', type: 'text' },
+    { name: 'originalFilename', type: 'text' },
+    sanityMetadataStorageGroup(),
+    { name: 'source', type: 'text', defaultValue: 'dataset' },
+    { name: 'media', type: 'text' },
+  ],
+})
 
 export const sanityMediaNameField = (): Field => ({
   name: 'name',
@@ -162,7 +154,7 @@ export const sanitySyncFields = (): Field[] => [
 export const sanityMediaSyncFields = (): Field => ({
   name: 'sync',
   type: 'group',
-  label: 'Sync',
+  label: false,
   admin: {
     readOnly: true,
     position: 'sidebar',
@@ -170,21 +162,12 @@ export const sanityMediaSyncFields = (): Field => ({
   fields: sanitySyncFields(),
 })
 
-/* -------------------------------------------------------------------------- */
-/*                               Complete Media Layout                        */
-/* -------------------------------------------------------------------------- */
-
-/** Complete fields schema injected into the Payload Media collection by the Sanity adapter. */
 export const sanityMediaAdminFields = (): Field[] => [
   sanityMediaNameField(),
   sanityOriginalFilenameField(),
   sanityMediaSyncFields(),
-  ...sanityAssetHiddenStorageFields(),
+  sanityUpstreamGroup(),
 ]
-
-/* -------------------------------------------------------------------------- */
-/*                               Field Name Collector                         */
-/* -------------------------------------------------------------------------- */
 
 export function collectTopLevelFieldNames(fields: Field[]): string[] {
   const names: string[] = []

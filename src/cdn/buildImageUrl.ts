@@ -11,7 +11,7 @@ export type SanityImageSource =
   | string
   | SanityMediaAsset
   | SanityAssetReference
-  | { url?: string | null; sanity_id?: string | null }
+  | { url?: string | null; sanity?: { id?: string | null } | null }
   | null
   | undefined
 

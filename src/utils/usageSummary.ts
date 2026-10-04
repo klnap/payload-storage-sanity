@@ -50,14 +50,8 @@ export function formatMediaUsageBlockMessage(entries: MediaUsageEntry[]): string
     return 'Cannot delete media asset because it is currently referenced by other documents.'
   }
 
-  const breakdown = summary.collections
-    .map(
-      (c) =>
-        `${c.distinctDocumentsCount} ${c.collectionLabel}`
-    )
-    .join(', ')
+  const count = summary.totalDistinctDocuments
+  const noun = count === 1 ? 'document' : 'documents'
 
-  const countStr = `${summary.totalDistinctDocuments} ${summary.totalDistinctDocuments === 1 ? 'document' : 'documents'}`
-
-  return `Cannot delete media asset because it is currently referenced by ${countStr} (${breakdown}).`
+  return `Cannot delete media asset because it is currently referenced by ${count} ${noun}.`
 }

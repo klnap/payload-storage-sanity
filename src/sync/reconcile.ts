@@ -49,7 +49,7 @@ async function processReconcileDoc(
 ): Promise<void> {
   const { payload, client, collectionSlug, dryRun = false, req } = options
   const mediaId = mediaDoc.id
-  const rawAssetId = mediaDoc.sanity_id ?? mediaDoc.sanityAssetId
+  const rawAssetId = mediaDoc.sanity?.id ?? mediaDoc.sanityAssetId
   const sanityAssetId = rawAssetId && rawAssetId.trim().length > 0 ? rawAssetId : null
   const previousStatus = readMediaSync(mediaDoc).status
 
@@ -159,6 +159,7 @@ export async function reconcileSanityMedia(options: ReconcileOptions): Promise<R
       limit,
       page,
       pagination: true,
+      overrideAccess: true,
       req,
     })
 

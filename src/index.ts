@@ -9,8 +9,16 @@ export { fetchSanityImageAsset } from './client/fetchSanityImageAsset'
 export { createSanityReconcileEndpoint } from './endpoints/reconcile'
 export { createSanityWebhookEndpoint } from './endpoints/webhook'
 export {
+  collectionHasAltField,
+  getLocalizationLocales,
+  localizedAltGroupField,
+  type LocaleLike,
+  type LocalizedAltGroupFieldOptions,
+  resolveCollectionAltOptions,
+  type ResolvedCollectionAltOptions,
+} from './fields/localizedAltGroup'
+export {
   collectTopLevelFieldNames,
-  sanityAssetHiddenStorageFields,
   sanityMediaAdminFields,
   sanityMediaNameField,
   sanityMediaSyncFields,
@@ -18,12 +26,24 @@ export {
   sanityOriginalFilenameField,
   sanityPaletteFields,
   sanitySyncFields,
+  sanityUpstreamGroup,
 } from './fields/mediaFields'
 export {
   createSanityMediaAfterReadHook,
   createSanityMediaBeforeChangeHook,
   sanitizeMediaDocument,
+  type SanityMediaDocument,
 } from './hooks/media'
+export { applyPopulatePreset } from './populate/applyPopulatePreset'
+export { defaultPopulateMediaDoc } from './populate/defaultPopulateMediaDoc'
+export {
+  defineSanityMediaPopulatePreset,
+  isBuiltinPopulatePreset,
+  presetUsesDefaultPopulate,
+  type SanityMediaPopulatePreset,
+  type SanityMediaPopulatePresetRegistry,
+} from './populate/presets'
+export { shouldApplyDefaultPopulate } from './populate/shouldApplyDefaultPopulate'
 export type { SanityStorageOptions } from './plugin'
 export { sanityStorage } from './plugin'
 export { isSanitySyncEnabled } from './sync/enabled'
@@ -38,6 +58,7 @@ export {
   SANITY_SYNC_STATUSES,
 } from './sync/status'
 export type {
+  DefaultPopulateAsset,
   SanityAsset,
   SanityAssetMetadata,
   SanityAssetReference,
@@ -51,8 +72,13 @@ export type {
   SanityMediaAsset,
   SanityPaletteSwatch,
   SanityStoragePluginOptions,
+  SanityUpstreamFields,
 } from './types/index'
+export { SANITY_ASSET_DEFAULT_POPULATE_FIELDS } from './types/index'
 export type { JsonValue } from './utils/json'
+export { assetFocalObjectPosition } from './utils/assetFocalObjectPosition'
+export { classifySanityAssetType } from './utils/classifySanityAssetType'
+export { isSanityCompatibleHost } from './utils/isSanityCompatibleHost'
 export {
   mapSanityUploadToMedia,
   persistSanityAssetDocument,
@@ -70,6 +96,10 @@ export {
   readMediaSync,
 } from './utils/mediaSync'
 export type { PayloadMediaDraft, PayloadMediaPatch } from './utils/payloadMedia'
+export { resolveAdminLabel } from './utils/resolveAdminLabel'
 export { resolveImageFileRef, resolveMediaId } from './utils/resolveAssetRef'
+export { resolveLocalizedAlt } from './utils/resolveLocalizedAlt'
+export { resolvePublicUrl } from './utils/resolvePublicUrl'
+export { sanityAdminThumbnail } from './utils/sanityAdminThumbnail'
 export { handleSanityWebhookEvent } from './webhook/handleEvent'
 export { verifySanityWebhookSignature } from './webhook/verify'

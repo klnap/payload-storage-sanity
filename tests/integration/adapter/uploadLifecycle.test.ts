@@ -18,10 +18,10 @@ const hydratedAsset = {
   assetId: 'abc123',
   extension: 'jpg',
   mimeType: 'image/jpeg',
-  path: 'images/demo/production/abc.jpg',
+  path: 'images/demo/production/abc123-800x600.jpg',
   sha1hash: 'abc123',
   size: 1000,
-  url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
+  url: 'https://cdn.sanity.io/images/demo/production/abc123-800x600.jpg',
   metadata: {
     dimensions: { width: 800, height: 600, aspectRatio: 1.33 },
   },
@@ -47,7 +47,12 @@ describe('upload lifecycle integration', () => {
       fetch: fetchMock,
     } as unknown as SanityClient
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({
+      client,
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+    })({ collection })
     const result = await adapter.handleUpload({
       data: { title: 'Disk upload' },
       file: {
@@ -63,11 +68,12 @@ describe('upload lifecycle integration', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     expect(result).toMatchObject({
       title: 'Disk upload',
-      sanity_id: hydratedAsset._id,
-      url: hydratedAsset.url,
-      width: 800,
-      height: 600,
-      size: 1000,
+      sanity: {
+        id: hydratedAsset._id,
+        url: hydratedAsset.url,
+        metadata: { dimensions: { width: 800, height: 600, aspectRatio: 1.33 } },
+        size: 1000,
+      },
       sync: { status: 'available' },
     })
   })
@@ -80,7 +86,12 @@ describe('upload lifecycle integration', () => {
       fetch: fetchMock,
     } as unknown as SanityClient
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({
+      client,
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+    })({ collection })
     await adapter.handleUpload({
       data: {},
       file: {
@@ -111,7 +122,12 @@ describe('upload lifecycle integration', () => {
       fetch: fetchMock,
     } as unknown as SanityClient
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({
+      client,
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+    })({ collection })
     const result = await adapter.handleUpload({
       data: {},
       file: {
@@ -123,16 +139,27 @@ describe('upload lifecycle integration', () => {
     } as never)
 
     expect(fetchMock).toHaveBeenCalled()
-    expect(result?.width).toBe(800)
+    expect(
+      (result as { sanity?: { metadata?: { dimensions?: { width?: number } } } }).sanity?.metadata
+        ?.dimensions?.width
+    ).toBe(800)
   })
 
   test('generateURL returns empty string for unavailable sync status', () => {
     const client = { projectId: 'demo', dataset: 'production' } as unknown as SanityClient
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({
+      client,
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+    })({ collection })
 
     const url = adapter.generateURL?.({
       collection,
-      data: { sanity_id: 'image-a-jpg', sync: { status: 'deleted' } },
+      data: {
+        sanity: { id: 'image-a-jpg', path: 'images/demo/a.jpg' },
+        sync: { status: 'deleted' },
+      },
       filename: 'a.jpg',
     } as never)
 

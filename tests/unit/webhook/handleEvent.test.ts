@@ -5,7 +5,7 @@ import { handleSanityWebhookEvent } from '../../../src/webhook/handleEvent.js'
 describe('handleSanityWebhookEvent', () => {
   test('marks deleted image assets as deleted', async () => {
     const update = mock(async () => ({}))
-    const findByID = mock(async () => ({ id: 7, sanity_id: 'image-a-jpg', sync: {} }))
+    const findByID = mock(async () => ({ id: 7, sanity: { id: 'image-a-jpg' }, sync: {} }))
     const find = mock(async () => ({
       docs: [{ id: 7 }],
       hasNextPage: false,
@@ -88,7 +88,7 @@ describe('handleSanityWebhookEvent', () => {
     }))
     const findByID = mock(async () => ({
       id: 12,
-      sanity_id: 'image-updated-jpg',
+      sanity: { id: 'image-updated-jpg' },
       sync: { status: 'available' },
     }))
 

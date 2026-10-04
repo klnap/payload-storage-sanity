@@ -6,6 +6,7 @@ import type {
   SanityImagePalette,
   SanityPaletteSwatch,
 } from '../types/asset'
+import type { SanityUpstreamFields } from '../types/sanityStorageDocument'
 import type {
   PayloadMediaDraft,
   PayloadMediaMetadataPatch,
@@ -69,7 +70,6 @@ function mapLocation(location?: SanityAssetMetadata['location']): SanityGeopoint
   return geopoint
 }
 
-/** Maps sanity.imageAsset `metadata` to the Payload `metadata` group. */
 export function mapSanityMetadataFields(
   metadata?: SanityAssetMetadata | null
 ): PayloadMediaMetadataPatch | undefined {
@@ -83,7 +83,10 @@ export function mapSanityMetadataFields(
       }
     : undefined
 
-  const mapped = {
+  const palette = mapPalette(metadata.palette) as PayloadMediaMetadataPatch['palette']
+  const exif = mapExif(metadata.exif) as PayloadMediaMetadataPatch['exif']
+
+  const mapped: PayloadMediaMetadataPatch = {
     dimensions,
     lqip: metadata.lqip,
     blurHash: metadata.blurHash,
@@ -91,14 +94,13 @@ export function mapSanityMetadataFields(
     hasAlpha: metadata.hasAlpha,
     isOpaque: metadata.isOpaque,
     location: mapLocation(metadata.location),
-    palette: mapPalette(metadata.palette),
-    exif: mapExif(metadata.exif),
-  } satisfies PayloadMediaMetadataPatch
+    ...(palette ? { palette } : {}),
+    ...(exif ? { exif } : {}),
+  }
 
   const filtered = Object.fromEntries(
     Object.entries(mapped).filter(([, value]) => value !== undefined && value !== null)
   )
-  // SAFETY: filtered entries originate from mapped conforming to PayloadMediaMetadataPatch
   const patch = filtered as PayloadMediaMetadataPatch
 
   return Object.keys(patch).length > 0 ? patch : undefined
@@ -109,37 +111,43 @@ export type UploadFileMeta = {
   mimeType: string
 }
 
+function mapAssetToSanityGroup(asset: SanityAsset): SanityUpstreamFields {
+  const metadata =
+    'metadata' in asset && asset.metadata ? mapSanityMetadataFields(asset.metadata) : undefined
+
+  return {
+    id: asset._id,
+    type: asset._type,
+    rev: asset._rev,
+    assetId: asset.assetId,
+    path: asset.path,
+    url: asset.url,
+    extension: asset.extension,
+    sha1hash: asset.sha1hash,
+    size: asset.size,
+    mimeType: asset.mimeType,
+    originalFilename: asset.originalFilename
+      ? slugifyFilename(asset.originalFilename)
+      : asset.originalFilename,
+    metadata,
+    source: 'dataset',
+  }
+}
+
 export function mapSanityUploadToMedia(
   asset: SanityAsset,
   _file: UploadFileMeta,
   data: PayloadMediaDraft = {}
 ): PayloadMediaPatch {
-  const metadata =
-    'metadata' in asset && asset.metadata ? mapSanityMetadataFields(asset.metadata) : undefined
-  const dimensions = 'metadata' in asset ? asset.metadata?.dimensions : undefined
+  const originalFilename = asset.originalFilename
+    ? slugifyFilename(asset.originalFilename)
+    : asset.originalFilename
 
   return {
     ...data,
-    sanity_id: asset._id,
-    _type: asset._type,
-    _rev: asset._rev,
-    sanity_createdAt: asset._createdAt,
-    sanity_updatedAt: asset._updatedAt,
-    assetId: asset.assetId,
-    originalFilename: asset.originalFilename
-      ? slugifyFilename(asset.originalFilename)
-      : asset.originalFilename,
-    path: asset.path,
-    extension: asset.extension,
-    sha1hash: asset.sha1hash,
-    size: asset.size,
-    metadata,
-    url: asset.url,
+    sanity: mapAssetToSanityGroup(asset),
+    originalFilename,
     filename: asset._id,
-    mimeType: asset.mimeType,
-    filesize: asset.size,
-    width: dimensions?.width,
-    height: dimensions?.height,
   } satisfies PayloadMediaPatch
 }
 
@@ -166,7 +174,6 @@ export type PersistedSanityAssetDocument = {
   metadata?: PayloadMediaMetadataPatch
 }
 
-/** Store the full Sanity `imageAsset` document returned from upload. */
 export function persistSanityAssetDocument(asset: SanityImageAsset): PersistedSanityAssetDocument {
   const stored: PersistedSanityAssetDocument = {
     _id: asset._id,

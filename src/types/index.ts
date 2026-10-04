@@ -1,4 +1,8 @@
-export type { SanityStoragePluginOptions } from './adapter'
+export type {
+  SanityStorageAltOptions,
+  SanityStoragePluginOptions,
+  SanityStoragePopulateConfig,
+} from './adapter'
 export type {
   SanityAsset,
   SanityAssetMetadata,
@@ -9,10 +13,12 @@ export type {
   SanityGeopoint,
   SanityImageAsset,
   SanityImageDimensions,
-  SanityImageMetadataExtract,
   SanityImagePalette,
   SanityPaletteSwatch,
 } from './asset'
-export { SANITY_IMAGE_METADATA_EXTRACT } from './asset'
 export type { SanityMediaAsset } from './image'
+export { SANITY_IMAGE_METADATA_EXTRACT } from './asset'
+export type { DefaultPopulateAsset } from './defaultPopulate'
+export { SANITY_ASSET_DEFAULT_POPULATE_FIELDS } from './defaultPopulate'
 export type { SanityMediaSyncFields } from './sync'
+export type { SanityMediaDocument, SanityUpstreamFields } from './sanityStorageDocument'

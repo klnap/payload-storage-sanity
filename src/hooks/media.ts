@@ -1,47 +1,44 @@
 import type { CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
 
+import { applyPopulatePreset } from '../populate/applyPopulatePreset'
+import { presetUsesDefaultPopulate } from '../populate/presets'
+import type { SanityMediaPopulatePresetRegistry } from '../populate/presets'
+import { shouldApplyDefaultPopulate } from '../populate/shouldApplyDefaultPopulate'
 import { isUnavailableSyncStatus, normalizeSyncStatus } from '../sync/status'
-import type { SanityMediaAsset } from '../types/image'
+import type { SanityMediaDocument } from '../types/sanityStorageDocument'
+import { resolvePublicUrl } from '../utils/resolvePublicUrl'
 import { mediaSyncStatus, readMediaSync, type WithMediaSync } from '../utils/mediaSync'
 import { slugifyFilename } from '../utils/slugify'
 
-export type SanityMediaDocument = SanityMediaAsset & {
-  createdAt?: string | null
-  filename?: string | null
-  mimeType?: string | null
-  filesize?: number | null
-  name?: string | null
-}
+export type { SanityMediaDocument }
 
-function hasResolvableUrl(doc: SanityMediaDocument): boolean {
-  return Boolean(doc.url && doc.url.trim().length > 0)
-}
-
-function hasSanityAssetId(doc: SanityMediaDocument): boolean {
-  return Boolean(doc.sanity_id && doc.sanity_id.trim().length > 0)
+function hasUpstreamLocators(doc: SanityMediaDocument): boolean {
+  const path = doc.sanity?.path?.trim()
+  const url = doc.sanity?.url?.trim()
+  return Boolean(path || url)
 }
 
 /** Ensures media documents never expose broken upstream URLs to the Admin UI or APIs. */
 export function sanitizeMediaDocument<T extends SanityMediaDocument>(doc: T): T {
-  const hasUrl = hasResolvableUrl(doc)
-  const hasAssetId = hasSanityAssetId(doc)
+  const hasUpstream = hasUpstreamLocators(doc)
+  const hasId = Boolean(doc.sanity?.id?.trim())
 
-  if (!hasAssetId && !hasUrl) {
+  if (!hasId && !hasUpstream) {
     return doc
   }
 
   let status = normalizeSyncStatus(mediaSyncStatus(doc))
 
-  if (!status && hasAssetId) {
-    status = hasUrl ? 'available' : 'missing'
-  } else if (!isUnavailableSyncStatus(status) && !hasUrl && hasAssetId) {
+  if (!status && hasId) {
+    status = hasUpstream ? 'available' : 'missing'
+  } else if (!isUnavailableSyncStatus(status) && !hasUpstream && hasId) {
     status = 'missing'
   }
 
   const existingSync = readMediaSync(doc)
   const checkedAt = existingSync.checkedAt ?? doc.createdAt ?? new Date().toISOString()
 
-  if (isUnavailableSyncStatus(status) || (!hasUrl && hasAssetId)) {
+  if (isUnavailableSyncStatus(status) || (!hasUpstream && hasId)) {
     return {
       ...doc,
       sync: {
@@ -50,6 +47,7 @@ export function sanitizeMediaDocument<T extends SanityMediaDocument>(doc: T): T 
         checkedAt,
       },
       url: null,
+      thumbnailURL: null,
     }
   }
 
@@ -63,11 +61,54 @@ export function sanitizeMediaDocument<T extends SanityMediaDocument>(doc: T): T 
   }
 }
 
-export function createSanityMediaAfterReadHook(): CollectionAfterReadHook {
-  return ({ doc }) => {
+function hydrateMediaOnRead(doc: SanityMediaDocument, cdnBaseUrl?: string): SanityMediaDocument {
+  const url = resolvePublicUrl(doc, { cdnBaseUrl })
+  const thumbnailURL = resolvePublicUrl(doc, {
+    cdnBaseUrl,
+    transform: { width: 300, fit: 'max', autoFormat: true },
+  })
+
+  return {
+    ...doc,
+    url,
+    thumbnailURL,
+  }
+}
+
+export type CreateSanityMediaAfterReadHookArgs = {
+  collectionSlug: string
+  cdnBaseUrl?: string
+  resolvedPreset: string
+  registry: SanityMediaPopulatePresetRegistry
+}
+
+export function createSanityMediaAfterReadHook(
+  args: CreateSanityMediaAfterReadHookArgs
+): CollectionAfterReadHook {
+  return ({ doc, req, context, findMany }) => {
     if (!doc) return doc
-    // SAFETY: afterRead runs only on media collection upload documents conforming to SanityMediaDocument
-    return sanitizeMediaDocument(doc as SanityMediaDocument)
+
+    let mediaDoc = sanitizeMediaDocument(doc as SanityMediaDocument)
+    mediaDoc = hydrateMediaOnRead(mediaDoc, args.cdnBaseUrl)
+
+    const locale = req?.locale
+
+    if (
+      shouldApplyDefaultPopulate({
+        req,
+        context,
+        collectionSlug: args.collectionSlug,
+        findMany,
+      }) &&
+      presetUsesDefaultPopulate(args.resolvedPreset, args.registry)
+    ) {
+      return applyPopulatePreset(mediaDoc, args.resolvedPreset, args.registry, {
+        cdnBaseUrl: args.cdnBaseUrl,
+        locale,
+      }) as typeof doc
+    }
+
+    return mediaDoc as typeof doc
   }
 }
 
@@ -75,25 +116,21 @@ export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook 
   return ({ data }) => {
     if (!data) return data
 
-    // SAFETY: data incoming from media collection create/update operations
-    // SAFETY: Payload beforeChange data contains incoming media fields
     const mediaData = data as SanityMediaDocument
     const hasMedia =
-      hasSanityAssetId(mediaData) ||
-      hasResolvableUrl(mediaData) ||
+      Boolean(mediaData.sanity?.id?.trim()) ||
+      hasUpstreamLocators(mediaData) ||
       Boolean(mediaData.filename && mediaData.filename.trim().length > 0)
 
     if (!hasMedia) {
       return data
     }
 
-    // SAFETY: mediaData contains optional sync fields
     const sync = readMediaSync(mediaData as WithMediaSync)
     const rawStatus = mediaData.sync?.status
     const status = rawStatus ? normalizeSyncStatus(rawStatus) : 'available'
     const checkedAt = sync.checkedAt ?? new Date().toISOString()
 
-    // Slugify originalFilename if present; never auto-copy it into name
     const slugifiedOriginalFilename =
       mediaData.originalFilename && mediaData.originalFilename.trim().length > 0
         ? slugifyFilename(mediaData.originalFilename)
@@ -109,7 +146,6 @@ export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook 
       },
     }
 
-    // SAFETY: result matches the expected Payload document shape with resolved sync & originalFilename fields
     return result as typeof data
   }
 }

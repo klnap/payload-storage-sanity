@@ -1,15 +1,15 @@
 import * as v from 'valibot'
 
 import type { SanityAssetReference } from '../types/asset'
-import type { SanityMediaAsset } from '../types/image'
+import type { SanityMediaDocument } from '../types/sanityStorageDocument'
 
 export type SanityUploadReference =
   | string
   | number
   | SanityAssetReference
-  | SanityMediaAsset
+  | SanityMediaDocument
   | {
-      sanity_id?: string | null
+      sanity?: { id?: string | null } | null
       sanityAssetId?: string | null
       _ref?: string | null
       id?: number | null
@@ -31,8 +31,8 @@ export function resolveImageFileRef(upload: SanityUploadReference): string | nul
   if ('_ref' in upload && upload._ref && upload._ref.trim().length > 0) {
     return upload._ref
   }
-  if ('sanity_id' in upload && upload.sanity_id && upload.sanity_id.trim().length > 0) {
-    return upload.sanity_id
+  if ('sanity' in upload && upload.sanity?.id && upload.sanity.id.trim().length > 0) {
+    return upload.sanity.id
   }
   if ('sanityAssetId' in upload && upload.sanityAssetId && upload.sanityAssetId.trim().length > 0) {
     return upload.sanityAssetId
@@ -52,8 +52,13 @@ export function resolveMediaId(upload: SanityUploadReference): number | null {
     return /^\d+$/.test(upload) ? Number(upload) : null
   }
 
-  if ('id' in upload && upload.id != null && Number.isFinite(upload.id)) {
-    return upload.id
+  if ('id' in upload && upload.id != null) {
+    if (typeof upload.id === 'number') {
+      return Number.isFinite(upload.id) ? upload.id : null
+    }
+    if (typeof upload.id === 'string' && /^\d+$/.test(upload.id)) {
+      return Number(upload.id)
+    }
   }
 
   return null

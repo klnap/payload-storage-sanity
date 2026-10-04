@@ -20,13 +20,17 @@ export async function findAllMediaBySanityAssetId({
 
   while (hasNextPage) {
     const result = await payload.find({
-      // SAFETY: collectionSlug is configured by the Sanity storage plugin
       collection: collectionSlug as CollectionSlug,
       depth: 0,
       limit: PAGE_SIZE,
       page,
       pagination: true,
-      where: { sanity_id: { equals: sanityAssetId } },
+      overrideAccess: true,
+      where: {
+        'sanity.id': {
+          equals: sanityAssetId,
+        },
+      },
       draft: true,
       req,
     })

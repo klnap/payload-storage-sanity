@@ -67,10 +67,6 @@ export async function markMediaBySanityAssetId({
       ),
     }
 
-    if (unavailable) {
-      data.url = null
-    }
-
     await payload.update({
       collection: collectionSlug,
       id,

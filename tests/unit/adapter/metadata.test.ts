@@ -1,31 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  filenameFromAssetId,
-  mapSanityUploadResult,
-  sanityAssetIdFromDocument,
-} from '../../../src/adapter/metadata.js'
+import { mapSanityUploadResult, sanityAssetIdFromDocument } from '../../../src/adapter/metadata.js'
 
 describe('sanityAssetIdFromDocument', () => {
-  test('returns sanity_id when present', () => {
-    expect(sanityAssetIdFromDocument({ sanity_id: 'image-123-jpg' })).toBe('image-123-jpg')
+  test('returns sanity.id when present', () => {
+    expect(sanityAssetIdFromDocument({ sanity: { id: 'image-123-jpg' } })).toBe('image-123-jpg')
     expect(sanityAssetIdFromDocument({ sanityAssetId: 'image-123-jpg' })).toBe('image-123-jpg')
   })
 
-  test('returns null for empty or missing sanity_id', () => {
+  test('returns null for empty or missing id', () => {
     expect(sanityAssetIdFromDocument({})).toBeNull()
-    expect(sanityAssetIdFromDocument({ sanity_id: '' })).toBeNull()
-    expect(sanityAssetIdFromDocument({ sanity_id: '   ' })).toBeNull()
-  })
-})
-
-describe('filenameFromAssetId', () => {
-  test('strips image prefix segments', () => {
-    expect(filenameFromAssetId('image-abc123-800x600-png')).toBe('800x600-png')
-  })
-
-  test('returns original when too few segments', () => {
-    expect(filenameFromAssetId('short')).toBe('short')
+    expect(sanityAssetIdFromDocument({ sanity: { id: '' } })).toBeNull()
+    expect(sanityAssetIdFromDocument({ sanity: { id: '   ' } })).toBeNull()
   })
 })
 

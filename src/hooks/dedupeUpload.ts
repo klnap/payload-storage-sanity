@@ -57,9 +57,17 @@ export function createMediaDedupeBeforeChangeHook(
       req.context.skipCloudStorage = true
     }
 
+    const existingSanity =
+      data != null && typeof data === 'object' && 'sanity' in data && data.sanity != null
+        ? (data.sanity as Record<string, unknown>)
+        : {}
+
     return {
       ...data,
-      sha1hash: contentHash,
+      sanity: {
+        ...existingSanity,
+        sha1hash: contentHash,
+      },
     }
   }
 }

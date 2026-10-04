@@ -16,7 +16,9 @@ Payload CMS storage adapter and sync engine that offloads media uploads to Sanit
 - **Batch reconciliation** — `POST /api/sanity/reconcile` scans all media rows against Sanity's API and heals any drift.
 - **Soft-delete safety** — `onDeleted: 'mark'` marks deleted assets as unavailable and clears the URL without dropping Payload rows or breaking relationship fields.
 - **Reference integrity guard** — Blocks media deletion when other documents still reference the row; throws a `400 APIError` listing every referencing document.
-- **`afterRead` safety filter** — Guarantees that broken or deleted asset URLs never leak to frontend APIs or admin views.
+- **`afterRead` safety filter** — Sanitizes sync state and hydrates root `url` / `thumbnailURL` via `resolvePublicUrl` (dataset path-first; no legacy `_id` CDN URLs).
+- **Populate presets** — `full` (unchanged document) and `default` (flat `DefaultPopulateAsset` on **REST** populated relations only; admin uses `payloadAPI: 'local'` and always gets full docs). Plugin sets `defaultPopulate: undefined` and `forceSelect` for the hidden `sanity` group.
+- **Next.js helpers** — Optional `@klnap/payload-storage-sanity/next` with `SanityImage` and CDN loader utilities.
 - **`MediaUsageInspector`** — Admin UI panel listing every collection document that references a media asset.
 - **`UnavailableAssetRecovery`** — Admin UI banner component for recovering or unlinking unavailable assets.
 
@@ -88,11 +90,13 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `dedupeUploads` | `boolean` | `false` | Enable `sha1hash` deduplication; re-uses the existing Sanity asset when a duplicate is uploaded. |
 | `preventDeleteWhenReferenced` | `boolean` | `true` | Blocks deletion of media rows still referenced by other collections. Set to `false` to allow deletion. |
 | `extraFields` | `Field[]` | `[]` | Extra Payload fields appended to every configured upload collection. |
+| `populate` | `{ preset?: 'full' \| 'default', presets?: … }` | `{ preset: 'full' }` | **`default`** returns `DefaultPopulateAsset` on REST relation reads; admin + direct `GET /api/{media}` stay full. |
 
 ### `SanityStorageCollectionOptions`
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `alt` | `{ enabled?: boolean; required?: boolean }` | `enabled: true`, `required: false` | Injects an `alt` **group** with one text field per `config.localization` locale. Set `enabled: false` to disable. Set `required: true` to require every locale subfield. Skipped if the collection already has a field named `alt`. Applies to `collections: { media: true }` shorthand too. |
 | `disableLocalStorage` | `boolean` | `true` | Prevents Payload from writing the file to local disk in addition to Sanity. |
 | `prefix` | `string` | `undefined` | Path prefix for assets within the Sanity dataset. |
 | `disablePayloadAccessControl` | `boolean` | `false` | Bypasses Payload's cookie-based access check for direct public CDN reads. |
@@ -110,6 +114,38 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `reconcile` | `boolean` | `true` | Expose the batch reconcile endpoint. |
 | `reconcilePath` | `string` | `undefined` | Custom reconcile path override. |
 | `reconcileCollection` | `string` | `undefined` | Scope reconciliation to a specific collection. |
+
+### Localized alt group
+
+Enabled by default on every configured upload collection (including `media: true`). Disable or tighten validation:
+
+```typescript
+sanityStorage({
+  collections: {
+    media: {
+      alt: { enabled: true, required: false }, // default
+    },
+    // media: { alt: { enabled: false } },
+    // media: { alt: { required: true } },
+  },
+})
+```
+
+Requires `localization.locales` in your Payload config. API shape:
+
+```json
+"alt": { "pl": "Opis", "en": "Caption" }
+```
+
+To define your own `alt` field instead, set `alt: { enabled: false }` or use the exported helper in the collection:
+
+```typescript
+import { getLocalizationLocales, localizedAltGroupField } from '@klnap/payload-storage-sanity'
+
+localizedAltGroupField(getLocalizationLocales(payload.config), { required: true })
+```
+
+Custom populate presets receive `locale` on the `shape` context. Built-in `default` uses `doc.url` (after hydrate) and `resolveLocalizedAlt` for `alt[locale]` only — no cross-locale fallback. Use `resolvePublicUrl(doc, { cdnBaseUrl })` when you need transforms or stricter URL rules.
 
 ---
 

@@ -4,7 +4,7 @@ import type { SanityClient } from '@sanity/client'
 import { createMediaReplaceSanityAssetAfterChangeHook } from '../../../src/hooks/replaceSanityAsset.js'
 
 describe('replaceSanityAsset afterChange', () => {
-  test('deletes previous Sanity asset when sanity_id changes on update', async () => {
+  test('deletes previous Sanity asset when sanity.id changes on update', async () => {
     const deleted: string[] = []
     const client = {
       delete: async (id: string) => {
@@ -17,14 +17,14 @@ describe('replaceSanityAsset afterChange', () => {
       collection: { slug: 'media' } as never,
       context: {},
       data: {},
-      doc: { id: 1, sanity_id: 'image-new' },
+      doc: { id: 1, sanity: { id: 'image-new' } },
       operation: 'update',
-      previousDoc: { id: 1, sanity_id: 'image-old' },
+      previousDoc: { id: 1, sanity: { id: 'image-old' } },
       req: { context: {} } as never,
     })
 
     expect(deleted).toEqual(['image-old'])
-    expect(doc).toEqual({ id: 1, sanity_id: 'image-new' })
+    expect(doc).toEqual({ id: 1, sanity: { id: 'image-new' } })
   })
 
   test('skips delete when asset id is unchanged or missing', async () => {
@@ -41,9 +41,9 @@ describe('replaceSanityAsset afterChange', () => {
       collection: { slug: 'media' } as never,
       context: {},
       data: {},
-      doc: { id: 1, sanity_id: 'image-same' },
+      doc: { id: 1, sanity: { id: 'image-same' } },
       operation: 'update',
-      previousDoc: { id: 1, sanity_id: 'image-same' },
+      previousDoc: { id: 1, sanity: { id: 'image-same' } },
       req: { context: {} } as never,
     })
 

@@ -1,12 +1,13 @@
 'use client'
 
-import { ChevronIcon, FieldLabel, Pill, SearchIcon, Table } from '@payloadcms/ui'
+import { ChevronIcon, FieldLabel, Pill, Table } from '@payloadcms/ui'
+import { SearchBar } from '@payloadcms/ui/elements/SearchBar'
 import type { Column } from 'payload'
 import { useCallback, useMemo, useState } from 'react'
 
 import type { MediaUsageEntry } from '../queries/findMediaUsage'
 
-type SortColumn = 'type' | 'name' | 'id' | 'field'
+type SortColumn = 'type' | 'document' | 'field'
 type SortOrder = 'asc' | 'desc'
 
 export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] }) {
@@ -22,7 +23,6 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
       result = result.filter(
         (u) =>
           u.type.toLowerCase().includes(q) ||
-          (u.name && u.name.toLowerCase().includes(q)) ||
           u.collectionLabel.toLowerCase().includes(q) ||
           String(u.id).toLowerCase().includes(q) ||
           u.fieldLabel.toLowerCase().includes(q) ||
@@ -35,16 +35,8 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
       let cmp = 0
       if (sortCol === 'type') {
         cmp = a.type.localeCompare(b.type)
-      } else if (sortCol === 'name') {
-        cmp = (a.name || a.collectionLabel).localeCompare(b.name || b.collectionLabel)
-      } else if (sortCol === 'id') {
-        const aNum = Number(a.id)
-        const bNum = Number(b.id)
-        if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
-          cmp = aNum - bNum
-        } else {
-          cmp = String(a.id).localeCompare(String(b.id))
-        }
+      } else if (sortCol === 'document') {
+        cmp = a.title.localeCompare(b.title)
       } else if (sortCol === 'field') {
         cmp = a.fieldLabel.localeCompare(b.fieldLabel)
       }
@@ -101,62 +93,27 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
         )),
       },
       {
-        accessor: 'name',
+        accessor: 'document',
         active: true,
-        field: { name: 'name', type: 'text' } as Column['field'],
+        field: { name: 'document', type: 'text' } as Column['field'],
         Heading: (
           <div className='sort-column'>
             <span className='sort-column__label'>
-              <FieldLabel label='Name' unstyled />
+              <FieldLabel label='Document' unstyled />
             </span>
             <div className='sort-column__buttons'>
               <button
-                aria-label='Sort by Name Ascending'
-                className={`sort-column__asc sort-column__button${sortCol === 'name' && sortDir === 'asc' ? ' sort-column--active' : ''}`}
-                onClick={() => toggleSort('name', 'asc')}
+                aria-label='Sort by Document Ascending'
+                className={`sort-column__asc sort-column__button${sortCol === 'document' && sortDir === 'asc' ? ' sort-column--active' : ''}`}
+                onClick={() => toggleSort('document', 'asc')}
                 type='button'
               >
                 <ChevronIcon direction='up' />
               </button>
               <button
-                aria-label='Sort by Name Descending'
-                className={`sort-column__desc sort-column__button${sortCol === 'name' && sortDir === 'desc' ? ' sort-column--active' : ''}`}
-                onClick={() => toggleSort('name', 'desc')}
-                type='button'
-              >
-                <ChevronIcon direction='down' />
-              </button>
-            </div>
-          </div>
-        ),
-        renderedCells: filtered.map((usage) => (
-          <span key={`name-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}>
-            {usage.name || usage.collectionLabel}
-          </span>
-        )),
-      },
-      {
-        accessor: 'id',
-        active: true,
-        field: { name: 'id', type: 'text' } as Column['field'],
-        Heading: (
-          <div className='sort-column'>
-            <span className='sort-column__label'>
-              <FieldLabel label='Document / ID' unstyled />
-            </span>
-            <div className='sort-column__buttons'>
-              <button
-                aria-label='Sort by ID Ascending'
-                className={`sort-column__asc sort-column__button${sortCol === 'id' && sortDir === 'asc' ? ' sort-column--active' : ''}`}
-                onClick={() => toggleSort('id', 'asc')}
-                type='button'
-              >
-                <ChevronIcon direction='up' />
-              </button>
-              <button
-                aria-label='Sort by ID Descending'
-                className={`sort-column__desc sort-column__button${sortCol === 'id' && sortDir === 'desc' ? ' sort-column--active' : ''}`}
-                onClick={() => toggleSort('id', 'desc')}
+                aria-label='Sort by Document Descending'
+                className={`sort-column__desc sort-column__button${sortCol === 'document' && sortDir === 'desc' ? ' sort-column--active' : ''}`}
+                onClick={() => toggleSort('document', 'desc')}
                 type='button'
               >
                 <ChevronIcon direction='down' />
@@ -167,15 +124,13 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
         renderedCells: filtered.map((usage) => (
           <a
             href={usage.adminPath}
-            key={`id-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}
+            key={`doc-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}
             rel='noreferrer'
             target='_blank'
           >
-            {usage.type === 'global'
-              ? 'Global'
-              : usage.title && usage.title !== String(usage.id)
-                ? `${usage.title} (${usage.id})`
-                : usage.id}
+            {usage.type === 'collection' && usage.title !== String(usage.id)
+              ? `${usage.title} · #${usage.id}`
+              : usage.title}
           </a>
         )),
       },
@@ -209,7 +164,7 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
           </div>
         ),
         renderedCells: filtered.map((usage) => (
-          <span key={`fld-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}>
+          <span key={`field-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}>
             {usage.fieldLabel}
           </span>
         )),
@@ -220,25 +175,18 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
 
   return (
     <div className='group-field group-field--top-level'>
-      <div className='list-controls'>
-        <div className='search-bar'>
-          <SearchIcon />
-          <div className='search-filter'>
-            <input
-              aria-label='Search'
-              className='search-filter__input'
-              id='search-filter-input'
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='Search'
-              type='text'
-              value={search}
-            />
+      <div className='collection-list__wrap'>
+        <div className='list-controls'>
+          <SearchBar
+            label='Search by Type, Document, or Field'
+            onSearchChange={setSearch}
+          />
+        </div>
+        <div className='collection-list__tables'>
+          <div className='table-wrap'>
+            <Table columns={columns} data={filtered} />
           </div>
         </div>
-      </div>
-
-      <div className='collection-list__tables'>
-        <Table columns={columns} data={filtered} />
       </div>
     </div>
   )

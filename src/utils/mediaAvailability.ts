@@ -1,16 +1,16 @@
 import { isUnavailableSyncStatus, normalizeSyncStatus } from '../sync/status'
 import type { SanityImageDimensions } from '../types/asset'
-import type { SanityMediaAsset } from '../types/image'
+import type { SanityMediaDocument } from '../types/sanityStorageDocument'
 
 export function hasResolvableMediaUrl(
-  media: Partial<SanityMediaAsset> | null | undefined
+  media: Partial<SanityMediaDocument> | null | undefined
 ): boolean {
   if (media == null) return false
   return Boolean(media.url && media.url.trim().length > 0)
 }
 
 export function isMediaAssetAvailable(
-  media: Partial<SanityMediaAsset> | null | undefined
+  media: Partial<SanityMediaDocument> | null | undefined
 ): boolean {
   if (media == null) return false
 
@@ -19,15 +19,19 @@ export function isMediaAssetAvailable(
     return false
   }
 
-  return Boolean(media.url && media.url.trim().length > 0)
+  const hasUpstream = Boolean(
+    media.sanity?.path?.trim() || media.sanity?.url?.trim() || media.url?.trim()
+  )
+
+  return hasUpstream
 }
 
 export function imageDimensionsFromMedia(
-  media: Partial<SanityMediaAsset> | null | undefined
+  media: Partial<SanityMediaDocument> | null | undefined
 ): SanityImageDimensions | null {
   if (media == null) return null
 
-  const meta = media.metadata?.dimensions
+  const meta = media.sanity?.metadata?.dimensions
   if (meta && Number.isFinite(meta.width) && Number.isFinite(meta.height)) {
     return meta
   }

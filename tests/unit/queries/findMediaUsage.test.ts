@@ -116,7 +116,7 @@ describe('findMediaUsage', () => {
     expect(usages).toHaveLength(1)
   })
 
-  test('returns results sorted by collection label then title', async () => {
+  test('returns results sorted by document title', async () => {
     const payload = {
       find: async ({ collection }: { collection: string }) => {
         if (collection === 'posts') {
@@ -142,9 +142,6 @@ describe('findMediaUsage', () => {
       payload,
     })
     expect(usages).toHaveLength(3)
-    expect(usages[0].collectionLabel).toBe('Author')
-    expect(usages[1].collectionLabel).toBe('Post')
-    expect(usages[1].title).toBe('Apple')
-    expect(usages[2].title).toBe('Zebra')
+    expect(usages.map((u) => u.title)).toEqual(['Apple', 'Bob', 'Zebra'])
   })
 })

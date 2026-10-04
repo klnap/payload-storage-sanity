@@ -1,6 +1,5 @@
 export {
   collectTopLevelFieldNames,
-  sanityAssetHiddenStorageFields,
   sanityMediaAdminFields,
   sanityMediaNameField,
   sanityMediaSyncFields,

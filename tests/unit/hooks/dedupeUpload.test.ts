@@ -30,7 +30,7 @@ describe('media dedupe hooks', () => {
       req,
     })
 
-    expect(data?.sha1hash).toBeString()
+    expect(data?.sanity?.sha1hash).toBeString()
     expect(req.context[SANITY_STORAGE_DEDUPE_CONTEXT_KEY]).toEqual({ existingId: 42 })
     expect(req.context.skipCloudStorage).toBe(true)
   })

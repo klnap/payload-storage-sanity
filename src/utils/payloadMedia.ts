@@ -1,33 +1,17 @@
-import type { SanityAssetMetadata } from '../types/asset'
+import type { SanityUpstreamFields } from '../types/sanityStorageDocument'
 import type { SanityMediaSyncFields } from '../types/sync'
 
 export type SanityAssetIdCarrier = {
-  sanity_id?: string | null
+  sanity?: SanityUpstreamFields | null
   sanityAssetId?: string | null
 }
 
-export type PayloadMediaMetadataPatch = NonNullable<SanityAssetMetadata>
+export type PayloadMediaMetadataPatch = NonNullable<SanityUpstreamFields['metadata']>
 
-/** Partial Payload media document produced by Sanity upload/sync helpers. */
 export type PayloadMediaPatch = {
-  sanity_id?: string | null
-  _type?: string
-  _rev?: string
-  sanity_createdAt?: string
-  sanity_updatedAt?: string
-  assetId?: string
+  sanity?: SanityUpstreamFields | null
   originalFilename?: string
-  path?: string
-  extension?: string
-  sha1hash?: string
-  size?: number
-  metadata?: PayloadMediaMetadataPatch
-  url?: string | null
   filename?: string
-  mimeType?: string
-  filesize?: number
-  width?: number
-  height?: number
   sync?: SanityMediaSyncFields
 }
 

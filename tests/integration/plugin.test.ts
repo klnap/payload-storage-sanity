@@ -25,6 +25,33 @@ function applyPlugin(collections: Config['collections']): Config {
 }
 
 describe('sanityStorage', () => {
+  test('clears defaultPopulate and sets forceSelect on media collections', () => {
+    const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
+    const media = config.collections?.find((c) => c.slug === 'media')
+
+    expect(media?.defaultPopulate).toBeUndefined()
+    expect(media?.forceSelect).toMatchObject({
+      sanity: true,
+      alt: true,
+      sync: true,
+      mimeType: true,
+      url: true,
+      width: true,
+    })
+  })
+
+  test('defaults list columns and admin thumbnail for upload collections', () => {
+    const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
+    const media = config.collections?.find((c) => c.slug === 'media')
+
+    expect(media?.admin?.defaultColumns).toEqual(['filename', 'name', 'id', 'updatedAt'])
+    expect(typeof media?.upload).toBe('object')
+    expect(typeof (media?.upload as { adminThumbnail?: unknown }).adminThumbnail).toBe(
+      'function'
+    )
+    expect((media?.upload as { displayPreview?: boolean }).displayPreview).toBe(true)
+  })
+
   test('sets disableLocalStorage on configured upload collections', () => {
     const config = applyPlugin([
       { slug: 'media', upload: true, fields: [] },
@@ -42,6 +69,144 @@ describe('sanityStorage', () => {
 
     const pages = config.collections?.find((c) => c.slug === 'pages')
     expect(pages?.upload).toBeUndefined()
+  })
+
+  test('does not inject alt group without localization locales', () => {
+    const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const altField = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
+    )
+    expect(altField).toBeUndefined()
+  })
+
+  test('injects alt group when collections.media is true shorthand and localization is set', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      localization: {
+        locales: [
+          { code: 'pl', label: 'Polish' },
+          { code: 'en', label: 'English' },
+        ],
+        defaultLocale: 'pl',
+      },
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const altField = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
+    ) as { fields?: { name: string }[] } | undefined
+
+    expect(altField).toBeDefined()
+    expect(altField?.fields?.map((f) => f.name)).toEqual(['pl', 'en'])
+    const plField = altField?.fields?.find((f) => f.name === 'pl')
+    expect(plField).toMatchObject({ required: false })
+  })
+
+  test('skips alt injection when alt.enabled is false', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: { alt: { enabled: false } } },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      localization: {
+        locales: [{ code: 'pl' }],
+        defaultLocale: 'pl',
+      },
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const altField = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
+    )
+    expect(altField).toBeUndefined()
+  })
+
+  test('sets required on locale subfields when alt.required is true', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: { alt: { required: true } } },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      localization: {
+        locales: [{ code: 'pl' }, { code: 'en' }],
+        defaultLocale: 'pl',
+      },
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const altField = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
+    ) as { fields?: { required?: boolean }[] } | undefined
+
+    expect(altField?.fields?.every((f) => f.required === true)).toBe(true)
+  })
+
+  test('skips alt injection when collection already defines alt', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      localization: {
+        locales: [{ code: 'pl' }],
+        defaultLocale: 'pl',
+      },
+      collections: [
+        {
+          slug: 'media',
+          upload: true,
+          fields: [{ name: 'alt', type: 'text', localized: true }],
+        },
+      ],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const altFields = media?.fields?.filter((f) => 'name' in f && f.name === 'alt') ?? []
+    expect(altFields).toHaveLength(1)
+    expect(altFields[0]?.type).toBe('text')
   })
 
   test('respects crop and focalPoint from collection upload config', () => {

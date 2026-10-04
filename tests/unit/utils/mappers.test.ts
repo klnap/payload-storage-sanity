@@ -56,10 +56,10 @@ describe('mapSanityUploadToMedia', () => {
       extension: 'jpg',
       mimeType: 'image/jpeg',
       originalFilename: 'photo.jpg',
-      path: 'images/photo.jpg',
+      path: 'images/demo/production/abc123-800x600.jpg',
       sha1hash: 'abc',
       size: 12345,
-      url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
+      url: 'https://cdn.sanity.io/images/demo/production/abc123-800x600.jpg',
       metadata: { dimensions: { width: 800, height: 600, aspectRatio: 1.33 } },
     }
 
@@ -69,19 +69,19 @@ describe('mapSanityUploadToMedia', () => {
     })
 
     expect(result).toMatchObject({
-      sanity_id: 'image-abc-800x600-jpg',
-      _type: 'sanity.imageAsset',
-      _rev: 'rev1',
-      sanity_createdAt: '2025-01-01T00:00:00Z',
-      sanity_updatedAt: '2025-01-01T00:00:00Z',
-      assetId: 'abc',
+      sanity: {
+        id: 'image-abc-800x600-jpg',
+        type: 'sanity.imageAsset',
+        rev: 'rev1',
+        assetId: 'abc',
+        path: 'images/demo/production/abc123-800x600.jpg',
+        url: 'https://cdn.sanity.io/images/demo/production/abc123-800x600.jpg',
+        size: 12345,
+        source: 'dataset',
+        metadata: { dimensions: { width: 800, height: 600, aspectRatio: 1.33 } },
+      },
       originalFilename: 'photo.jpg',
-      url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
       filename: 'image-abc-800x600-jpg',
-      width: 800,
-      height: 600,
-      size: 12345,
-      filesize: 12345,
     })
   })
 })

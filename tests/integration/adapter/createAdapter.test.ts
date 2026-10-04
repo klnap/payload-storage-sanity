@@ -7,6 +7,12 @@ import { collectTopLevelFieldNames } from '../../../src/fields/mediaFields.js'
 
 const collection = { slug: 'media', fields: [] } as CollectionConfig
 
+const sanityCreds = {
+  projectId: 'demo',
+  dataset: 'production',
+  token: 'token',
+}
+
 const sampleUpload = {
   _id: 'image-abc123-800x600-jpg',
   _type: 'sanity.imageAsset',
@@ -16,10 +22,10 @@ const sampleUpload = {
   assetId: 'abc123',
   extension: 'jpg',
   mimeType: 'image/jpeg',
-  path: 'images/demo/production/abc.jpg',
+  path: 'images/demo/production/abc123-800x600.jpg',
   sha1hash: 'abc123',
   size: 1000,
-  url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
+  url: 'https://cdn.sanity.io/images/demo/production/abc123-800x600.jpg',
   metadata: {
     dimensions: { width: 800, height: 600, aspectRatio: 1.33 },
   },
@@ -34,27 +40,12 @@ function mockClient(overrides: Record<string, unknown> = {}): SanityClient {
 }
 
 describe('createSanityAdapter', () => {
-  test('injects Sanity media fields (sync sidebar + hidden storage)', () => {
-    const adapter = createSanityAdapter({ client: mockClient() })({ collection })
+  test('injects Sanity media fields (sync sidebar + sanity group)', () => {
+    const adapter = createSanityAdapter({ client: mockClient(), ...sanityCreds })({ collection })
 
     expect(adapter.name).toBe('sanity')
     const names = collectTopLevelFieldNames(adapter.fields ?? [])
-    expect(names).toEqual([
-      'name',
-      'originalFilename',
-      'sync',
-      'sanity_id',
-      '_type',
-      '_rev',
-      'sanity_createdAt',
-      'sanity_updatedAt',
-      'assetId',
-      'path',
-      'extension',
-      'sha1hash',
-      'size',
-      'metadata',
-    ])
+    expect(names).toEqual(['name', 'originalFilename', 'sync', 'sanity'])
   })
 
   test('handleUpload maps Sanity asset to media document', async () => {
@@ -65,7 +56,7 @@ describe('createSanityAdapter', () => {
       fetch: fetchMock,
     })
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({ client, ...sanityCreds })({ collection })
     const result = await adapter.handleUpload({
       data: { title: 'keep' },
       file: {
@@ -79,16 +70,17 @@ describe('createSanityAdapter', () => {
     expect(upload).toHaveBeenCalled()
     expect(result).toMatchObject({
       title: 'keep',
-      sanity_id: sampleUpload._id,
-      _type: 'sanity.imageAsset',
-      _rev: 'rev-1',
-      sanity_createdAt: '2020-01-01T00:00:00Z',
-      sanity_updatedAt: '2020-01-02T00:00:00Z',
-      assetId: 'abc123',
-      url: sampleUpload.url,
-      width: 800,
-      height: 600,
-      size: 1000,
+      sanity: {
+        id: sampleUpload._id,
+        type: 'sanity.imageAsset',
+        rev: 'rev-1',
+        assetId: 'abc123',
+        path: sampleUpload.path,
+        url: sampleUpload.url,
+        size: 1000,
+        source: 'dataset',
+      },
+      filename: sampleUpload._id,
       sync: {
         status: 'available',
       },
@@ -121,7 +113,7 @@ describe('createSanityAdapter', () => {
       fetch: mock(async () => sampleFileAsset),
     })
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({ client, ...sanityCreds })({ collection })
     const result = await adapter.handleUpload({
       data: { name: 'annual-report' },
       file: {
@@ -134,12 +126,14 @@ describe('createSanityAdapter', () => {
 
     expect(upload).toHaveBeenCalled()
     expect(result).toMatchObject({
-      sanity_id: 'file-pdf123-pdf',
-      _type: 'sanity.fileAsset',
-      extension: 'pdf',
-      mimeType: 'application/pdf',
-      size: 5000,
-      url: sampleFileAsset.url,
+      sanity: {
+        id: 'file-pdf123-pdf',
+        type: 'sanity.fileAsset',
+        extension: 'pdf',
+        mimeType: 'application/pdf',
+        size: 5000,
+        url: sampleFileAsset.url,
+      },
       sync: {
         status: 'available',
       },
@@ -154,28 +148,35 @@ describe('createSanityAdapter', () => {
       },
     })
 
-    const adapter = createSanityAdapter({ client })({ collection })
+    const adapter = createSanityAdapter({ client, ...sanityCreds })({ collection })
     await adapter.handleDelete({
-      doc: { sanity_id: 'image-abc123-800x600-jpg' } as never,
+      doc: { sanity: { id: 'image-abc123-800x600-jpg' } } as never,
     } as never)
 
     expect(deleted).toEqual([])
   })
 
-  test('generateURL uses sanity_id', () => {
+  test('generateURL uses sanity.path and cdnBaseUrl', () => {
     const adapter = createSanityAdapter({
       client: mockClient(),
-      cdnBaseUrl: 'https://cdn.sanity.io/images/demo/production',
+      cdnBaseUrl: 'https://cdn.example.com',
+      ...sanityCreds,
     })({ collection })
 
     const url = adapter.generateURL?.({
       collection,
-      data: { sanity_id: 'image-abc123-800x600-jpg' },
-      filename: 'abc.jpg',
+      data: {
+        sync: { status: 'available' },
+        sanity: {
+          id: 'image-abc123-800x600-jpg',
+          path: 'images/demo/production/abc123-800x600.jpg',
+          source: 'dataset',
+        },
+      },
+      filename: 'abc123-800x600.jpg',
     } as never)
 
-    expect(url).toContain('cdn.sanity.io')
-    expect(url).toContain('image-abc123-800x600-jpg')
+    expect(url).toBe('https://cdn.example.com/images/demo/production/abc123-800x600.jpg')
   })
 
   test('staticHandler returns 404 when upstream CDN asset is missing', async () => {
@@ -183,12 +184,20 @@ describe('createSanityAdapter', () => {
     globalThis.fetch = (async () => new Response(null, { status: 404 })) as never
 
     try {
-      const adapter = createSanityAdapter({ client: mockClient() })({ collection })
+      const adapter = createSanityAdapter({ client: mockClient(), ...sanityCreds })({ collection })
       const response = await adapter.staticHandler?.(
-        {} as never,
+        {
+          doc: {
+            sync: { status: 'available' },
+            sanity: {
+              path: 'images/demo/production/abc123-800x600.jpg',
+              url: 'https://cdn.sanity.io/images/demo/production/abc123-800x600.jpg',
+            },
+          },
+        } as never,
         {
           headers: new Headers(),
-          params: { filename: 'image-abc123-800x600-jpg', collection: 'media' },
+          params: { filename: 'abc123-800x600.jpg', collection: 'media' },
         } as never
       )
 
@@ -207,13 +216,21 @@ describe('createSanityAdapter', () => {
     try {
       const adapter = createSanityAdapter({
         client: mockClient(),
-        cdnBaseUrl: 'https://cdn.sanity.io/images/demo/production',
+        cdnBaseUrl: 'https://cdn.example.com',
+        ...sanityCreds,
       })({ collection })
       const response = await adapter.staticHandler?.(
-        { doc: { sanity_id: 'image-abc123-800x600-jpg' } } as never,
+        {
+          doc: {
+            sync: { status: 'available' },
+            sanity: {
+              path: 'images/demo/production/abc123-800x600.jpg',
+            },
+          },
+        } as never,
         {
           headers: new Headers(),
-          params: { filename: 'image-abc123-800x600-jpg', collection: 'media' },
+          params: { filename: 'abc123-800x600.jpg', collection: 'media' },
         } as never
       )
 

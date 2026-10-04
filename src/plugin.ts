@@ -5,6 +5,12 @@ import type { CollectionConfig, Config, Endpoint, Field, Plugin, UploadConfig } 
 import { createSanityAdapter } from './adapter/createAdapter'
 import { MEDIA_USAGE_INSPECTOR_IMPORT } from './admin/constants'
 import { createSanityClient } from './client/createSanityClient'
+import {
+  collectionHasAltField,
+  getLocalizationLocales,
+  localizedAltGroupField,
+  resolveCollectionAltOptions,
+} from './fields/localizedAltGroup'
 import { createMediaUsageEndpoint } from './endpoints/mediaUsage'
 import { createSanityReconcileEndpoint } from './endpoints/reconcile'
 import { createSanityWebhookEndpoint } from './endpoints/webhook'
@@ -14,9 +20,14 @@ import {
 } from './hooks/dedupeUpload'
 import { createMediaDeleteSanityAssetBeforeDeleteHook } from './hooks/deleteSanityAsset'
 import { createSanityMediaAfterReadHook, createSanityMediaBeforeChangeHook } from './hooks/media'
+import { sanityMediaForceSelect } from './populate/forceSelect'
+import { resolvePopulateOptionsForCollection } from './populate/resolvePopulateOptions'
 import { createMediaReferenceIntegrityBeforeDeleteHook } from './hooks/mediaReferenceIntegrity'
 import { createMediaReplaceSanityAssetAfterChangeHook } from './hooks/replaceSanityAsset'
+import { warnSanityStorageConfig } from './utils/sanityConfig'
+import { sanityAdminThumbnail } from './utils/sanityAdminThumbnail'
 import { isSanitySyncEnabled } from './sync/enabled'
+import type { SanityMediaDocument } from './types/sanityStorageDocument'
 import type { SanityStoragePluginOptions } from './types/index'
 
 export type SanityStorageOptions = SanityStoragePluginOptions
@@ -93,7 +104,10 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
   const client = createSanityClient({ projectId, dataset, token, apiVersion })
   const syncEnabled = isSanitySyncEnabled(sync)
-  const mediaAfterRead = createSanityMediaAfterReadHook()
+
+  if (enabled) {
+    warnSanityStorageConfig({ projectId, dataset, token })
+  }
 
   const collectionsWithAdapter = Object.fromEntries(
     Object.entries(collections).map(([slug, collOptions]) => {
@@ -114,7 +128,9 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         slug,
         {
           ...base,
-          adapter: enabled ? createSanityAdapter({ client, cdnBaseUrl }) : null,
+          adapter: enabled
+            ? createSanityAdapter({ client, cdnBaseUrl, projectId, dataset, token })
+            : null,
         },
       ]
     })
@@ -163,21 +179,20 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
   return (incomingConfig: Config): Config => {
     const config = storagePlugin(incomingConfig)
+    const localizationLocales = getLocalizationLocales(config)
 
     return {
       ...config,
       endpoints: [...(config.endpoints ?? []), ...endpoints],
       collections: (config.collections ?? []).map((collection) => {
         const slug = collection.slug
-        const afterReadHooks = []
-
-        if (mediaAfterRead && configuredMediaSlugs.has(slug) && collection.upload) {
-          afterReadHooks.push(mediaAfterRead)
-        }
         let nextCollection: CollectionConfig = collection
 
         if (configuredMediaSlugs.has(slug) && collection.upload) {
+          const collOptions = collections[slug]
+          const altOptions = resolveCollectionAltOptions(collOptions)
           const uploadConfig = collectionUploadConfig(collection)
+          const populateResolved = resolvePopulateOptionsForCollection(options, slug)
 
           const collectionEndpoints = Array.isArray(nextCollection.endpoints)
             ? nextCollection.endpoints
@@ -190,6 +205,11 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             crop: uploadConfig.crop ?? false,
             focalPoint: uploadConfig.focalPoint ?? false,
             hideRemoveFile: uploadConfig.hideRemoveFile ?? true,
+            displayPreview: uploadConfig.displayPreview ?? true,
+            adminThumbnail:
+              uploadConfig.adminThumbnail ??
+              (({ doc }) =>
+                sanityAdminThumbnail(doc as SanityMediaDocument, { cdnBaseUrl })),
           }
 
           const mediaUsageField: Field = {
@@ -202,8 +222,45 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             },
           }
 
+          const existingFields = nextCollection.fields ?? []
+          const altFields: Field[] = []
+
+          if (altOptions.enabled) {
+            if (collectionHasAltField(existingFields)) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(
+                  `[@klnap/payload-storage-sanity] collections.${slug}.alt.enabled but the collection already has an "alt" field; skipping alt injection.`
+                )
+              }
+            } else if (localizationLocales.length === 0) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(
+                  `[@klnap/payload-storage-sanity] collections.${slug}.alt.enabled but config.localization has no locales; skipping alt injection.`
+                )
+              }
+            } else {
+              altFields.push(
+                localizedAltGroupField(localizationLocales, {
+                  required: altOptions.required,
+                })
+              )
+            }
+          }
+
+          const mediaAfterRead = createSanityMediaAfterReadHook({
+            collectionSlug: slug,
+            cdnBaseUrl,
+            resolvedPreset: populateResolved.preset,
+            registry: populateResolved.registry,
+          })
+
           nextCollection = {
             ...nextCollection,
+            defaultPopulate: undefined,
+            forceSelect: sanityMediaForceSelect(
+              populateResolved.preset,
+              populateResolved.registry
+            ),
             endpoints: [
               ...collectionEndpoints,
               createMediaUsageEndpoint({ mediaCollectionSlug: slug }),
@@ -211,14 +268,16 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             admin: {
               ...nextCollection.admin,
               useAsTitle: nextCollection.admin?.useAsTitle ?? 'name',
-              defaultColumns: nextCollection.admin?.defaultColumns ?? ['name', 'id', 'updatedAt'],
+              // Payload renders list thumbnails on the `filename` column (FileCell).
+              defaultColumns:
+                nextCollection.admin?.defaultColumns ??
+                ['filename', 'name', 'id', 'updatedAt'],
             },
-            fields: [...(nextCollection.fields ?? []), mediaUsageField],
+            fields: [...existingFields, ...altFields, mediaUsageField],
             upload,
+            hooks: mergeAfterReadHooks(nextCollection, [mediaAfterRead]),
           }
-        }
 
-        if (configuredMediaSlugs.has(slug) && collection.upload) {
           nextCollection = {
             ...nextCollection,
             hooks: {
@@ -228,13 +287,6 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                 ...(nextCollection.hooks?.beforeChange ?? []),
               ],
             },
-          }
-        }
-
-        if (afterReadHooks.length > 0) {
-          nextCollection = {
-            ...nextCollection,
-            hooks: mergeAfterReadHooks(nextCollection, afterReadHooks),
           }
         }
 

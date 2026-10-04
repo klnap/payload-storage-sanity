@@ -5,12 +5,12 @@ import { reconcileSanityMedia } from '../../../src/sync/reconcile.js'
 describe('reconcileSanityMedia', () => {
   test('marks media unavailable when Sanity asset is missing', async () => {
     const find = mock(async () => ({
-      docs: [{ id: 3, sanity_id: 'image-missing-jpg', sync: { status: 'available' } }],
+      docs: [{ id: 3, sanity: { id: 'image-missing-jpg' }, sync: { status: 'available' } }],
       hasNextPage: false,
     }))
     const findByID = mock(async () => ({
       id: 3,
-      sanity_id: 'image-missing-jpg',
+      sanity: { id: 'image-missing-jpg' },
       sync: { status: 'available' },
     }))
     const update = mock(async () => ({}))
@@ -32,7 +32,7 @@ describe('reconcileSanityMedia', () => {
 
   test('supports dry run without writes', async () => {
     const find = mock(async () => ({
-      docs: [{ id: 3, sanity_id: 'image-missing-jpg', sync: { status: 'available' } }],
+      docs: [{ id: 3, sanity: { id: 'image-missing-jpg' }, sync: { status: 'available' } }],
       hasNextPage: false,
     }))
     const update = mock(async () => ({}))
@@ -56,8 +56,8 @@ describe('reconcileSanityMedia', () => {
   test('records row errors without aborting the batch', async () => {
     const find = mock(async () => ({
       docs: [
-        { id: 3, sanity_id: 'image-broken-jpg', sync: { status: 'available' } },
-        { id: 4, sanity_id: 'image-ok-jpg', sync: { status: 'available' } },
+        { id: 3, sanity: { id: 'image-broken-jpg' }, sync: { status: 'available' } },
+        { id: 4, sanity: { id: 'image-ok-jpg' }, sync: { status: 'available' } },
       ],
       hasNextPage: false,
     }))
@@ -95,12 +95,12 @@ describe('reconcileSanityMedia', () => {
       page += 1
       if (page === 1) {
         return {
-          docs: [{ id: 1, sanity_id: 'image-a-jpg', sync: { status: 'available' } }],
+          docs: [{ id: 1, sanity: { id: 'image-a-jpg' }, sync: { status: 'available' } }],
           hasNextPage: true,
         }
       }
       return {
-        docs: [{ id: 2, sanity_id: 'image-b-jpg', sync: { status: 'available' } }],
+        docs: [{ id: 2, sanity: { id: 'image-b-jpg' }, sync: { status: 'available' } }],
         hasNextPage: false,
       }
     })
@@ -130,7 +130,7 @@ describe('reconcileSanityMedia', () => {
 
   test('syncs modified upstream assets into Payload media rows', async () => {
     const find = mock(async () => ({
-      docs: [{ id: 8, sanity_id: 'image-modified-jpg', sync: { status: 'available' } }],
+      docs: [{ id: 8, sanity: { id: 'image-modified-jpg' }, sync: { status: 'available' } }],
       hasNextPage: false,
     }))
     const update = mock(async () => ({}))
@@ -140,6 +140,7 @@ describe('reconcileSanityMedia', () => {
         _id: 'image-modified-jpg',
         _type: 'sanity.imageAsset',
         assetId: 'modified',
+        path: 'images/demo/production/modified-v2.jpg',
         url: 'https://cdn.sanity.io/images/demo/production/modified-v2.jpg',
         mimeType: 'image/jpeg',
         metadata: { dimensions: { width: 1024, height: 768, aspectRatio: 1.33 } },
@@ -157,9 +158,12 @@ describe('reconcileSanityMedia', () => {
       expect.objectContaining({
         id: 8,
         data: expect.objectContaining({
-          url: 'https://cdn.sanity.io/images/demo/production/modified-v2.jpg',
-          width: 1024,
-          height: 768,
+          sanity: expect.objectContaining({
+            url: 'https://cdn.sanity.io/images/demo/production/modified-v2.jpg',
+            metadata: expect.objectContaining({
+              dimensions: { width: 1024, height: 768, aspectRatio: 1.33 },
+            }),
+          }),
         }),
       })
     )

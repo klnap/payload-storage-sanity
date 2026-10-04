@@ -9,11 +9,11 @@ describe('resolveImageFileRef', () => {
     )
   })
 
-  test('extracts sanity_id from populated media', () => {
+  test('extracts sanity.id from populated media', () => {
     expect(
       resolveImageFileRef({
         id: 1,
-        sanity_id: 'image-abc-800x600-jpg',
+        sanity: { id: 'image-abc-800x600-jpg' },
       })
     ).toBe('image-abc-800x600-jpg')
   })

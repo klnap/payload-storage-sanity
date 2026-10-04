@@ -82,11 +82,12 @@ describe('mediaPatchFromSanityAsset', () => {
   test('maps asset fields into Payload media patch shape', () => {
     const patch = mediaPatchFromSanityAsset(validAsset as never)
 
-    expect(patch).toMatchObject({
-      sanity_id: 'image-abc-jpg',
-      url: validAsset.url,
+    expect(patch.sanity?.id).toBe('image-abc-jpg')
+    expect(patch.sanity?.url).toBe(validAsset.url)
+    expect(patch.sanity?.metadata?.dimensions).toEqual({
       width: 400,
       height: 300,
+      aspectRatio: 1.33,
     })
   })
 })

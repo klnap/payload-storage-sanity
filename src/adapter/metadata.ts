@@ -12,12 +12,6 @@ export function mapSanityUploadResult(document: JsonValue): SanityAsset {
 }
 
 export function sanityAssetIdFromDocument(doc: SanityAssetIdCarrier): string | null {
-  const id = doc.sanity_id ?? doc.sanityAssetId
+  const id = doc.sanity?.id ?? doc.sanityAssetId
   return id != null && id.trim().length > 0 ? id : null
-}
-
-export function filenameFromAssetId(assetId: string): string {
-  const parts = assetId.split('-')
-  if (parts.length < 2) return assetId
-  return parts.slice(2).join('-') || assetId
 }

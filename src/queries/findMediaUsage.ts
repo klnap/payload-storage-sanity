@@ -1,6 +1,7 @@
 import type { CollectionSlug, GlobalSlug, Payload, SanitizedConfig, TypeWithID, Where } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 
+import { resolveAdminLabel } from '../utils/resolveAdminLabel'
 import { collectMediaUploadTargets } from './collectMediaUploadTargets'
 
 export type MediaUsageType = 'collection' | 'global'
@@ -23,9 +24,7 @@ export type FindMediaUsageArgs = {
   mediaId: number | string
   payload: Payload
   req?: Parameters<Payload['find']>[0]['req']
-  /** Max matches per indexed field query. Defaults to 50. */
   limitPerField?: number
-  /** Stop after the first inbound reference is found (for delete guards). */
   stopOnFirstMatch?: boolean
 }
 
@@ -39,16 +38,33 @@ function collectionLabel(config: SanitizedConfig, slug: string): string {
   return slug
 }
 
-function documentTitle(doc: TypeWithID, useAsTitle: string): string {
-  const record = doc as TypeWithID & { [key: string]: string | number | boolean | null | undefined }
-
-  if (record['name'] != null && record['name'] !== '') return String(record['name'])
-  if (record['originalFilename'] != null && record['originalFilename'] !== '')
-    return String(record['originalFilename'])
-  if (useAsTitle !== 'name' && useAsTitle !== 'originalFilename') {
-    const byTitle = record[useAsTitle]
-    if (byTitle != null && byTitle !== '') return String(byTitle)
+function defaultLocale(config: SanitizedConfig): string | undefined {
+  const loc = config.localization
+  if (loc && typeof loc === 'object' && 'defaultLocale' in loc) {
+    return loc.defaultLocale as string | undefined
   }
+  return undefined
+}
+
+function documentTitle(
+  doc: TypeWithID,
+  useAsTitle: string,
+  locale?: string | null,
+  fallbackLocale?: string | null
+): string {
+  const record = doc as TypeWithID & Record<string, unknown>
+
+  const name = resolveAdminLabel(record.name, locale, fallbackLocale)
+  if (name) return name
+
+  const originalFilename = resolveAdminLabel(record.originalFilename, locale, fallbackLocale)
+  if (originalFilename) return originalFilename
+
+  if (useAsTitle !== 'name' && useAsTitle !== 'originalFilename') {
+    const byTitle = resolveAdminLabel(record[useAsTitle], locale, fallbackLocale)
+    if (byTitle) return byTitle
+  }
+
   if (doc.id != null) return String(doc.id)
   return 'Document'
 }
@@ -72,10 +88,10 @@ function whereForTarget(fieldPath: string, mediaId: number | string, hasMany: bo
 function getFieldValueByPath(obj: unknown, path: string): unknown {
   if (obj == null || typeof obj !== 'object') return undefined
   const parts = path.split('.')
-  let current: any = obj
+  let current: unknown = obj
   for (const part of parts) {
-    if (current == null) return undefined
-    current = current[part]
+    if (current == null || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[part]
   }
   return current
 }
@@ -111,6 +127,8 @@ export async function findMediaUsage(args: FindMediaUsageArgs): Promise<MediaUsa
   const targets = collectMediaUploadTargets(config, mediaCollectionSlug)
   const adminRoute = config.routes.admin
   const serverURL = config.serverURL
+  const locale = req?.locale
+  const fallbackLocale = defaultLocale(config)
   const matches: MediaUsageEntry[] = []
 
   for (const target of targets) {
@@ -139,7 +157,7 @@ export async function findMediaUsage(args: FindMediaUsageArgs): Promise<MediaUsa
           matches.push({
             type: 'collection',
             id,
-            title: documentTitle(doc, useAsTitle),
+            title: documentTitle(doc, useAsTitle, locale, fallbackLocale),
             name: target.label,
             collectionSlug: target.collectionSlug,
             collectionLabel: collectionLabel(config, target.collectionSlug),
@@ -161,6 +179,7 @@ export async function findMediaUsage(args: FindMediaUsageArgs): Promise<MediaUsa
       }
     } else if (target.type === 'global') {
       try {
+        const globalDef = config.globals?.find((entry) => entry.slug === target.collectionSlug)
         const globalDoc = await payload.findGlobal({
           slug: target.collectionSlug as GlobalSlug,
           depth: 0,
@@ -171,13 +190,17 @@ export async function findMediaUsage(args: FindMediaUsageArgs): Promise<MediaUsa
         if (globalDoc) {
           const val = getFieldValueByPath(globalDoc, target.fieldPath)
           if (valueMatchesMediaId(val, mediaId)) {
+            const globalTitle =
+              resolveAdminLabel(globalDef?.label, locale, fallbackLocale) ||
+              target.collectionSlug
+
             matches.push({
               type: 'global',
-              id: 'global',
-              title: target.label,
-              name: target.label,
+              id: target.collectionSlug,
+              title: globalTitle,
+              name: globalTitle,
               collectionSlug: target.collectionSlug,
-              collectionLabel: target.label,
+              collectionLabel: globalTitle,
               fieldPath: target.fieldPath,
               fieldLabel: target.fieldLabel,
               adminPath: formatAdminURL({
@@ -199,12 +222,11 @@ export async function findMediaUsage(args: FindMediaUsageArgs): Promise<MediaUsa
   }
 
   return matches.sort((a, b) => {
-    // Sort Collections before Globals, or by name then title
     if (a.type !== b.type) {
       return a.type === 'collection' ? -1 : 1
     }
-    const byName = a.name.localeCompare(b.name)
+    const byName = a.title.localeCompare(b.title)
     if (byName !== 0) return byName
-    return a.title.localeCompare(b.title)
+    return a.fieldLabel.localeCompare(b.fieldLabel)
   })
 }

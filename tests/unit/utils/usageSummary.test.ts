@@ -67,8 +67,9 @@ describe('formatMediaUsageBlockMessage', () => {
     ]
 
     const msg = formatMediaUsageBlockMessage(entries)
-    expect(msg).toContain('Post')
-    expect(msg).toContain('1 document')
+    expect(msg).toBe(
+      'Cannot delete media asset because it is currently referenced by 1 document.'
+    )
   })
 
   test('formats plural message summarizing collections and globals', () => {
@@ -98,7 +99,8 @@ describe('formatMediaUsageBlockMessage', () => {
     ]
 
     const msg = formatMediaUsageBlockMessage(entries)
-    expect(msg).toContain('2 documents')
-    expect(msg).toContain('Site Header (Global)')
+    expect(msg).toBe(
+      'Cannot delete media asset because it is currently referenced by 2 documents.'
+    )
   })
 })
