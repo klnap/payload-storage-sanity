@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] — 2026-10-05
+
+### Fixed
+
+- **Media delete guard** and **Usage Inspector** use current published + draft document reads (`locale: 'all'` when localized), not stale version-history rows—so publishing without the asset no longer leaves a false “Published” reference.
+- Draft-only reference removal no longer allows delete while **live published** still references the media.
+
+### Changed
+
+- Usage table: **Status** column (Published/Draft), one row per document+field, links go to the document editor (not version URLs).
+
 ## [2.0.0] — 2026-10-05
 
 ### Breaking

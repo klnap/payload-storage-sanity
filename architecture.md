@@ -12,7 +12,7 @@ This documentation provides a comprehensive technical overview of the architectu
 1. **Edge-Optimized Media Delivery**: Media binaries are persisted within Sanity's global edge network (`cdn.sanity.io`), delivering real-time image transformations, hotspot/crop coordinates, automatic AVIF/WebP format negotiation, and Low-Quality Image Placeholders (LQIP/blurhash).
 2. **Zero HTTP Waterfall Architecture**: Eliminates client-side data fetching waterfalls in the Admin panel. Components such as `MediaUsageInspector` operate strictly as React Server Components (RSC) executing direct Payload Local API queries on the server.
 3. **Content-Addressable Binary Deduplication**: Inspects file buffers and computes a SHA1 checksum before performing network uploads. Existing assets with matching hashes are reused immediately ($O(1)$ bandwidth).
-4. **Draft-Safe Reference Retention**: The reference detection engine (`findMediaUsage`) executes with `draft: true`. Any media referenced by published records or unpublished draft versions is strictly protected from upstream CDN deletion.
+4. **Draft-Safe Reference Retention**: `findMediaUsage` scans **published** (`draft: false`) and **draft** (`draft: true`) layers so media cannot be deleted while a published version still references it—even if a newer draft cleared the field.
 5. **Server-Only Client Isolation**: The Sanity client SDK and mutation tokens remain strictly confined to the server environment, never leaking secrets or API clients into client-side browser bundles.
 
 ---
@@ -34,7 +34,7 @@ flowchart TD
 
     subgraph Server-Side Deletion & Retention
         I[User Deletes Media Document] --> J[beforeDelete Hook]
-        J --> K[findMediaUsage with draft: true across ALL Collections]
+        J --> K[findMediaUsage published + draft across ALL Collections]
         K --> L{Inbound References Detected?}
         L -->|Yes: References Exist| M[Abort Deletion & Throw ValidationError]
         L -->|No: Unreferenced| N{Configured Retention Policy?}
@@ -50,7 +50,7 @@ flowchart TD
 
     subgraph Server Component Media Inspection
         U[Next.js RSC Media Edit View] --> V[MediaUsageInspector Server Component]
-        V -->|Payload Local API| W[findMediaUsage: draft: true]
+        V -->|Payload Local API| W[findMediaUsage: published + draft]
         W --> X[Pass Serializable usages to MediaUsageTableClient]
     end
 ```
@@ -139,7 +139,7 @@ The Sanity client (`@sanity/client`) is instantiated strictly within server-side
 ### 5.2. Atomic Deletion & Retention Lifecycle (`retention.ts`)
 When a media document deletion is initiated:
 1. The `beforeDelete` hook intercepts the operation.
-2. Executes `findMediaUsage` across all configured collections with `draft: true`.
+2. Executes `findMediaUsage` across all configured collections for published and draft layers.
 3. If references exist in any collection (published or draft), deletion is aborted and a `ValidationError` is thrown to the user.
 4. If unreferenced:
    - If `retention: 'delete'`, dispatches an authenticated deletion request to Sanity Asset API.
@@ -157,7 +157,7 @@ When a media document deletion is initiated:
 ### 6.1. Draft-Safe Reference Retention
 Traditional reference checks only query published documents, creating vulnerabilities where media used in drafts is purged:
 - `@klnap/payload-storage-sanity` queries every collection that contains an `upload` field targeting the media collection.
-- Enforces `draft: true` on all queries.
+- Scans both `draft: false` (published) and `draft: true` (draft) on all queries.
 - Ensures media linked in draft blog posts, unpublished pages, or draft product variants remains protected.
 
 ### 6.2. Upstream Deleted Asset Recovery (`UnavailableAssetRecovery.tsx`)

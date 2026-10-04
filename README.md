@@ -173,8 +173,8 @@ Instead, this plugin uses a **server-side proxy model**:
 
 The plugin registers a `beforeDelete` hook on every configured upload collection. Before any media row is deleted, the hook:
 
-1. Queries all collections that have `upload` relationship fields pointing at the media collection.
-2. If **any** document still references the row, the hook throws a `400 APIError` listing every referencing document by collection and ID.
+1. Scans **current** published and draft document state (`draft: false` / `draft: true`, `locale: 'all'` when localized)—not stale rows in version history—so outdated published versions do not block deletion. The **Usage Inspector** shows **one row per document+field** (published wins over draft when both reference the asset).
+2. If **any** matching document still references the row, the hook throws a `400 APIError` listing every referencing document by collection and ID.
 3. The delete is aborted — Payload rolls back.
 
 This prevents orphaned `upload` relationship fields across your content graph.

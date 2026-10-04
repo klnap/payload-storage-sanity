@@ -7,7 +7,11 @@ import { useCallback, useMemo, useState } from 'react'
 
 import type { MediaUsageEntry } from '../queries/findMediaUsage'
 
-type SortColumn = 'type' | 'document' | 'field'
+type SortColumn = 'type' | 'status' | 'document' | 'field'
+
+function layerLabel(layer: MediaUsageEntry['referenceLayer']): string {
+  return layer === 'published' ? 'Published' : 'Draft'
+}
 type SortOrder = 'asc' | 'desc'
 
 export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] }) {
@@ -27,7 +31,8 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
           String(u.id).toLowerCase().includes(q) ||
           u.fieldLabel.toLowerCase().includes(q) ||
           u.fieldPath.toLowerCase().includes(q) ||
-          u.title.toLowerCase().includes(q)
+          u.title.toLowerCase().includes(q) ||
+          layerLabel(u.referenceLayer).toLowerCase().includes(q)
       )
     }
 
@@ -35,6 +40,8 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
       let cmp = 0
       if (sortCol === 'type') {
         cmp = a.type.localeCompare(b.type)
+      } else if (sortCol === 'status') {
+        cmp = a.referenceLayer.localeCompare(b.referenceLayer)
       } else if (sortCol === 'document') {
         cmp = a.title.localeCompare(b.title)
       } else if (sortCol === 'field') {
@@ -84,11 +91,50 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
         ),
         renderedCells: filtered.map((usage) => (
           <Pill
-            key={`type-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}
+            key={`type-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}-${usage.referenceLayer}`}
             pillStyle={usage.type === 'global' ? 'warning' : 'light'}
             size='small'
           >
             {usage.type === 'global' ? 'Global' : 'Collection'}
+          </Pill>
+        )),
+      },
+      {
+        accessor: 'status',
+        active: true,
+        field: { name: 'status', type: 'text' } as Column['field'],
+        Heading: (
+          <div className='sort-column'>
+            <span className='sort-column__label'>
+              <FieldLabel label='Status' unstyled />
+            </span>
+            <div className='sort-column__buttons'>
+              <button
+                aria-label='Sort by Status Ascending'
+                className={`sort-column__asc sort-column__button${sortCol === 'status' && sortDir === 'asc' ? ' sort-column--active' : ''}`}
+                onClick={() => toggleSort('status', 'asc')}
+                type='button'
+              >
+                <ChevronIcon direction='up' />
+              </button>
+              <button
+                aria-label='Sort by Status Descending'
+                className={`sort-column__desc sort-column__button${sortCol === 'status' && sortDir === 'desc' ? ' sort-column--active' : ''}`}
+                onClick={() => toggleSort('status', 'desc')}
+                type='button'
+              >
+                <ChevronIcon direction='down' />
+              </button>
+            </div>
+          </div>
+        ),
+        renderedCells: filtered.map((usage) => (
+          <Pill
+            key={`snap-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}-${usage.referenceLayer}`}
+            pillStyle={usage.referenceLayer === 'published' ? 'success' : 'light'}
+            size='small'
+          >
+            {layerLabel(usage.referenceLayer)}
           </Pill>
         )),
       },
@@ -124,7 +170,7 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
         renderedCells: filtered.map((usage) => (
           <a
             href={usage.adminPath}
-            key={`doc-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}
+            key={`doc-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}-${usage.referenceLayer}`}
             rel='noreferrer'
             target='_blank'
           >
@@ -164,7 +210,7 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
           </div>
         ),
         renderedCells: filtered.map((usage) => (
-          <span key={`field-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}`}>
+          <span key={`field-${usage.collectionSlug}-${usage.id}-${usage.fieldPath}-${usage.referenceLayer}`}>
             {usage.fieldLabel}
           </span>
         )),
@@ -178,7 +224,7 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
       <div className='collection-list__wrap'>
         <div className='list-controls'>
           <SearchBar
-            label='Search by Type, Document, or Field'
+            label='Search by Type, Status, Document, or Field'
             onSearchChange={setSearch}
           />
         </div>

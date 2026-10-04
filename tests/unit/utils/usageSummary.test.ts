@@ -18,6 +18,7 @@ describe('summarizeMediaUsage', () => {
         collectionLabel: 'Post',
         fieldPath: 'featuredImage',
         fieldLabel: 'Featured Image',
+        referenceLayer: 'draft',
         adminPath: '/admin/collections/posts/1',
       },
       {
@@ -29,6 +30,7 @@ describe('summarizeMediaUsage', () => {
         collectionLabel: 'Post',
         fieldPath: 'gallery',
         fieldLabel: 'Gallery',
+        referenceLayer: 'draft',
         adminPath: '/admin/collections/posts/1',
       },
       {
@@ -40,6 +42,7 @@ describe('summarizeMediaUsage', () => {
         collectionLabel: 'Site Header',
         fieldPath: 'logo',
         fieldLabel: 'Logo',
+        referenceLayer: 'published',
         adminPath: '/admin/globals/header',
       },
     ]
@@ -62,6 +65,7 @@ describe('formatMediaUsageBlockMessage', () => {
         collectionLabel: 'Post',
         fieldPath: 'featuredImage',
         fieldLabel: 'Featured Image',
+        referenceLayer: 'draft',
         adminPath: '/admin/collections/posts/1',
       },
     ]
@@ -83,6 +87,7 @@ describe('formatMediaUsageBlockMessage', () => {
         collectionLabel: 'Post',
         fieldPath: 'featuredImage',
         fieldLabel: 'Featured Image',
+        referenceLayer: 'published',
         adminPath: '/admin/collections/posts/1',
       },
       {
@@ -94,6 +99,7 @@ describe('formatMediaUsageBlockMessage', () => {
         collectionLabel: 'Site Header',
         fieldPath: 'logo',
         fieldLabel: 'Logo',
+        referenceLayer: 'published',
         adminPath: '/admin/globals/header',
       },
     ]
