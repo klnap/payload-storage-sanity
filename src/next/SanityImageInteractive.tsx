@@ -1,14 +1,15 @@
+'use client'
+
 import type { ComponentProps, ReactNode } from 'react'
 import type Image from 'next/image'
 
 import type { DefaultPopulateAsset } from '../types/defaultPopulate'
-import { resolveSanityImageFallback } from './resolveSanityImageFallback'
+import { resolveSanityImageFallback, type SanityImageFallbackProps } from './resolveSanityImageFallback'
 import { SanityImageClient } from './SanityImageClient'
 import { toSanityImageProps, type ToSanityImagePropsOptions } from './toSanityImageProps'
 
 type NextImageProps = ComponentProps<typeof Image>
 
-/** Set on `<Image />` from `toSanityImageProps(asset)` — not accepted as raw overrides */
 type AssetDerivedImageProp =
   | 'src'
   | 'alt'
@@ -19,18 +20,19 @@ type AssetDerivedImageProp =
   | 'placeholder'
   | 'blurDataURL'
 
-export type SanityImageProps = {
+/** Client-only `SanityImage` with optional `renderFallback` (e.g. different UI per reason). */
+export type SanityImageInteractiveProps = {
   asset: DefaultPopulateAsset | null | undefined
-  /** Shown when asset/url is missing or when the image fails to load. `null` disables fallback. */
   fallback?: ReactNode | null
-  /** Alias for Next.js `priority` */
+  renderFallback?: (props: SanityImageFallbackProps) => ReactNode
   preload?: boolean
 } & ToSanityImagePropsOptions &
   Omit<NextImageProps, AssetDerivedImageProp | keyof ToSanityImagePropsOptions | 'fallback'>
 
-export function SanityImage({
+export function SanityImageInteractive({
   asset,
   fallback,
+  renderFallback,
   locale,
   alt,
   fallbackAlt,
@@ -40,7 +42,7 @@ export function SanityImage({
   preload,
   priority,
   ...imageProps
-}: SanityImageProps) {
+}: SanityImageInteractiveProps) {
   const derived = toSanityImageProps(asset, {
     locale,
     alt,
@@ -51,7 +53,7 @@ export function SanityImage({
   })
 
   if (!derived) {
-    return resolveSanityImageFallback('missing', { fallback, asset }) ?? null
+    return resolveSanityImageFallback('missing', { fallback, renderFallback, asset }) ?? null
   }
 
   return (
@@ -59,6 +61,7 @@ export function SanityImage({
       derived={derived}
       asset={asset}
       fallback={fallback}
+      renderFallback={renderFallback}
       preload={preload}
       priority={priority}
       {...imageProps}

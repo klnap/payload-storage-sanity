@@ -7,17 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.1] — 2026-10-05
-
-### Fixed
-
-- **Media delete guard** and **Usage Inspector** use current published + draft document reads (`locale: 'all'` when localized), not stale version-history rows—so publishing without the asset no longer leaves a false “Published” reference.
-- Draft-only reference removal no longer allows delete while **live published** still references the media.
-
-### Changed
-
-- Usage table: **Status** column (Published/Draft), one row per document+field, links go to the document editor (not version URLs).
-
 ## [2.0.0] — 2026-10-05
 
 ### Breaking
@@ -33,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`@klnap/payload-storage-sanity/next`** — `SanityImage` (full `next/image` props), `toSanityImageProps`, `sanityImageLoader`, and default `./next/loader`.
 - **`resolvePublicUrl`**, **`classifySanityAssetType`**, **`defaultPopulateMediaDoc`**, **`resolveAdminLabel`**.
 - Root **`url`** / **`thumbnailURL`** hydrated on read (not persisted from hooks).
+
+### Fixed
+
+- **Media delete guard** and **Usage Inspector** use current published + draft document reads (`locale: 'all'` when localized), not stale version-history rows—so publishing without the asset no longer leaves a false “Published” reference.
+- Draft-only reference removal no longer allows delete while **live published** still references the media.
+- **Metadata-only media saves** (alt, name, focal, etc.) preserve hidden `sanity` upstream fields and file metadata; prevents cloud-storage from re-uploading on stale request context so assets no longer “disappear” in admin after save.
+- **`sync` status** is not reset to `available` on partial admin updates when the asset was marked deleted or unavailable.
+
+### Changed
+
+- Usage table: **Status** column (Published/Draft), one row per document+field, links go to the document editor (not version URLs).
 
 ## [1.0.0] — 2026-09-08
 

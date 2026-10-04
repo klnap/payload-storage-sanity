@@ -1,6 +1,18 @@
 export type { DefaultPopulateAsset } from '../types/defaultPopulate'
 export { assetFocalObjectPosition } from '../utils/assetFocalObjectPosition'
 export { SanityImage, type SanityImageProps } from './SanityImage'
+export { SanityImageClient, type SanityImageClientProps } from './SanityImageClient'
+export {
+  SanityImageInteractive,
+  type SanityImageInteractiveProps,
+} from './SanityImageInteractive'
+export {
+  resolveSanityImageFallback,
+  shouldUseSanityImageFallback,
+  type ResolveSanityImageFallbackArgs,
+  type SanityImageFallbackProps,
+  type SanityImageFallbackReason,
+} from './resolveSanityImageFallback'
 export {
   appendSanityCdnParams,
   createSanityImageLoader,

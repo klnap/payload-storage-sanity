@@ -51,6 +51,8 @@ export type SanityMediaDocument = {
   height?: number | null
   focalX?: number | null
   focalY?: number | null
+  prefix?: string | null
+  sizes?: Record<string, Record<string, unknown> | null> | null
   sanity?: SanityUpstreamFields | null
   sync?: SanityMediaSyncFields | null
   createdAt?: string | null

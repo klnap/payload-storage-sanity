@@ -1,6 +1,6 @@
 {
   "name": "@klnap/payload-storage-sanity",
-  "version": "2.0.1",
+  "version": "2.0.0",
   "description": "Sanity storage adapter for Payload CMS",
   "license": "MIT",
   "author": "klnap",

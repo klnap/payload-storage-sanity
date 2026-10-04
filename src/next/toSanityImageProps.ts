@@ -8,6 +8,8 @@ export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
   disablePlaceholder?: boolean
 }
 
+export type ToSanityImagePropsResult = NonNullable<ReturnType<typeof toSanityImageProps>>
+
 export function toSanityImageProps(
   asset: DefaultPopulateAsset | null | undefined,
   opts: ToSanityImagePropsOptions = {}

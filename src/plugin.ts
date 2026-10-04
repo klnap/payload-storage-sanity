@@ -19,7 +19,11 @@ import {
   createMediaDedupeBeforeChangeHook,
 } from './hooks/dedupeUpload'
 import { createMediaDeleteSanityAssetBeforeDeleteHook } from './hooks/deleteSanityAsset'
-import { createSanityMediaAfterReadHook, createSanityMediaBeforeChangeHook } from './hooks/media'
+import {
+  createSanityMediaAfterReadHook,
+  createSanityMediaBeforeChangeHook,
+  createSanityMediaPersistUpstreamBeforeChangeHook,
+} from './hooks/media'
 import { sanityMediaForceSelect } from './populate/forceSelect'
 import { resolvePopulateOptionsForCollection } from './populate/resolvePopulateOptions'
 import { createMediaReferenceIntegrityBeforeDeleteHook } from './hooks/mediaReferenceIntegrity'
@@ -285,6 +289,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
               beforeChange: [
                 createSanityMediaBeforeChangeHook(),
                 ...(nextCollection.hooks?.beforeChange ?? []),
+                createSanityMediaPersistUpstreamBeforeChangeHook(),
               ],
             },
           }

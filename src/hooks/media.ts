@@ -1,11 +1,11 @@
-import type { CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
+import type { CollectionAfterReadHook, CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 
 import { applyPopulatePreset } from '../populate/applyPopulatePreset'
 import { presetUsesDefaultPopulate } from '../populate/presets'
 import type { SanityMediaPopulatePresetRegistry } from '../populate/presets'
 import { shouldApplyDefaultPopulate } from '../populate/shouldApplyDefaultPopulate'
 import { isUnavailableSyncStatus, normalizeSyncStatus } from '../sync/status'
-import type { SanityMediaDocument } from '../types/sanityStorageDocument'
+import type { SanityMediaDocument, SanityUpstreamFields } from '../types/sanityStorageDocument'
 import { resolvePublicUrl } from '../utils/resolvePublicUrl'
 import { mediaSyncStatus, readMediaSync, type WithMediaSync } from '../utils/mediaSync'
 import { slugifyFilename } from '../utils/slugify'
@@ -112,23 +112,167 @@ export function createSanityMediaAfterReadHook(
   }
 }
 
+const UPSTREAM_PRESERVE_KEYS = [
+  'id',
+  'type',
+  'rev',
+  'assetId',
+  'path',
+  'url',
+  'extension',
+  'sha1hash',
+  'size',
+  'mimeType',
+  'originalFilename',
+  'source',
+  'media',
+] as const satisfies readonly (keyof SanityUpstreamFields)[]
+
+function mergeSanityUpstreamOnUpdate(
+  incoming: SanityUpstreamFields | null | undefined,
+  previous: SanityUpstreamFields | null | undefined
+): SanityUpstreamFields | undefined {
+  if (!previous) {
+    return incoming ?? undefined
+  }
+
+  const merged: SanityUpstreamFields = { ...previous, ...(incoming ?? {}) }
+
+  for (const key of UPSTREAM_PRESERVE_KEYS) {
+    const nextVal = incoming?.[key]
+    const prevVal = previous[key]
+    if ((nextVal == null || nextVal === '') && prevVal != null && prevVal !== '') {
+      ;(merged as Record<typeof key, SanityUpstreamFields[typeof key]>)[key] = prevVal
+    }
+  }
+
+  if (previous.metadata) {
+    merged.metadata = {
+      ...previous.metadata,
+      ...(incoming?.metadata ?? {}),
+    }
+  }
+
+  return merged
+}
+
+function hasIncomingUploadSizes(req: PayloadRequest): boolean {
+  const sizes = req.payloadUploadSizes
+  if (!sizes) return false
+  return Object.values(sizes).some((buffer) => buffer != null && buffer.length > 0)
+}
+
+function clearStaleCloudStorageUploadContext(req: PayloadRequest): void {
+  req.file = undefined
+  req.payloadUploadSizes = undefined
+
+  const context = req.context as Record<string, unknown> | undefined
+  if (context?._payloadCloudStorage) {
+    delete context._payloadCloudStorage
+  }
+}
+
+/**
+ * Runs last in `beforeChange`: keeps upstream Sanity fields on metadata-only saves and
+ * prevents cloud-storage from re-uploading when no new file bytes are present.
+ */
+export function createSanityMediaPersistUpstreamBeforeChangeHook(): CollectionBeforeChangeHook {
+  return ({ data, operation, originalDoc, req }) => {
+    if (!data || operation !== 'update') {
+      return data
+    }
+
+    const hasNewBytes = Boolean(req.file?.data?.length)
+    const hasSizes = hasIncomingUploadSizes(req)
+
+    if (!hasNewBytes && !hasSizes) {
+      clearStaleCloudStorageUploadContext(req)
+    }
+
+    const previous = originalDoc as SanityMediaDocument | undefined
+    if (!previous) {
+      return data
+    }
+
+    const mergedSanity = mergeSanityUpstreamOnUpdate(
+      data.sanity as SanityUpstreamFields | undefined,
+      previous.sanity
+    )
+
+    let next = data as SanityMediaDocument
+
+    if (mergedSanity) {
+      next = { ...next, sanity: mergedSanity }
+    }
+
+    const scalarFileFields = [
+      'filename',
+      'mimeType',
+      'filesize',
+      'width',
+      'height',
+      'focalX',
+      'focalY',
+      'prefix',
+    ] as const
+    for (const key of scalarFileFields) {
+      const nextVal = next[key]
+      const prevVal = previous[key]
+      if ((nextVal == null || nextVal === '') && prevVal != null && prevVal !== '') {
+        next = { ...next, [key]: prevVal }
+      }
+    }
+
+    if (next.sizes == null && previous.sizes != null) {
+      next = { ...next, sizes: previous.sizes }
+    }
+
+    if (data.sync?.status == null && previous.sync?.status != null) {
+      next = {
+        ...next,
+        sync: {
+          ...readMediaSync(previous),
+          ...readMediaSync(next),
+        },
+      }
+    }
+
+    return next as typeof data
+  }
+}
+
+function documentHasMediaFields(doc: SanityMediaDocument): boolean {
+  return (
+    Boolean(doc.sanity?.id?.trim()) ||
+    hasUpstreamLocators(doc) ||
+    Boolean(doc.filename && doc.filename.trim().length > 0)
+  )
+}
+
 export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook {
-  return ({ data }) => {
+  return ({ data, operation, originalDoc }) => {
     if (!data) return data
 
     const mediaData = data as SanityMediaDocument
+    const previous = originalDoc as SanityMediaDocument | undefined
     const hasMedia =
-      Boolean(mediaData.sanity?.id?.trim()) ||
-      hasUpstreamLocators(mediaData) ||
-      Boolean(mediaData.filename && mediaData.filename.trim().length > 0)
+      documentHasMediaFields(mediaData) ||
+      (operation === 'update' && previous != null && documentHasMediaFields(previous))
 
     if (!hasMedia) {
       return data
     }
 
-    const sync = readMediaSync(mediaData as WithMediaSync)
-    const rawStatus = mediaData.sync?.status
-    const status = rawStatus ? normalizeSyncStatus(rawStatus) : 'available'
+    const priorSync = operation === 'update' && previous ? readMediaSync(previous) : {}
+    const sync = { ...priorSync, ...readMediaSync(mediaData as WithMediaSync) }
+    const rawStatus = sync.status
+    const status = rawStatus
+      ? normalizeSyncStatus(rawStatus)
+      : operation === 'create'
+        ? 'available'
+        : priorSync.status
+          ? normalizeSyncStatus(priorSync.status)
+          : 'available'
     const checkedAt = sync.checkedAt ?? new Date().toISOString()
 
     const slugifiedOriginalFilename =

@@ -22,7 +22,8 @@ type PayloadCloudStorageContext = {
   _payloadCloudStorage?: CloudStorageContext
 }
 
-function uploadBuffer(req: PayloadRequest): Buffer | null {
+/** Bytes Payload / cloud-storage attached to this request (main file only). */
+export function readUploadBufferFromRequest(req: PayloadRequest): Buffer | null {
   const fromReq = req.file?.data
   if (fromReq?.length) return fromReq
 
@@ -40,7 +41,7 @@ export function createMediaDedupeBeforeChangeHook(
   return async ({ data, operation, req }) => {
     if (operation !== 'create') return data
 
-    const buffer = uploadBuffer(req)
+    const buffer = readUploadBufferFromRequest(req)
     if (!buffer) return data
 
     const contentHash = hashFileContent(buffer)
