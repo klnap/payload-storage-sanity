@@ -24,6 +24,8 @@ import {
   createMediaDedupeBeforeChangeHook,
 } from './hooks/dedupeUpload'
 import { createMediaDeleteSanityAssetBeforeDeleteHook } from './hooks/deleteSanityAsset'
+import { createSanityMediaBulkDeleteBeforeOperationHook } from './hooks/mediaBulkDelete'
+import { createSanityMediaDeleteAfterOperationHook } from './hooks/mediaDeleteAfterOperation'
 import {
   createSanityMediaAfterReadHook,
   createSanityMediaBeforeChangeHook,
@@ -370,6 +372,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             hooks: {
               ...nextCollection.hooks,
               beforeOperation: [
+                createSanityMediaBulkDeleteBeforeOperationHook(),
                 createSanityMediaEnsureCropSourceUrlBeforeOperationHook({ cdnBaseUrl }),
                 ...(nextCollection.hooks?.beforeOperation ?? []),
               ],
@@ -415,6 +418,10 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                 beforeDelete: [
                   createMediaReferenceIntegrityBeforeDeleteHook(slug),
                   ...(nextCollection.hooks?.beforeDelete ?? []),
+                ],
+                afterOperation: [
+                  ...(nextCollection.hooks?.afterOperation ?? []),
+                  createSanityMediaDeleteAfterOperationHook(),
                 ],
               },
             }

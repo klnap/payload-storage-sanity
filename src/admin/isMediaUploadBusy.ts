@@ -1,15 +1,19 @@
 import type { UploadEdits } from 'payload'
 
+import { uploadEditsRequireBytesReupload } from '../utils/uploadEdits'
+
 export const MEDIA_UPLOAD_TOAST_ID = 'payload-sanity-media-upload'
 
 export const MEDIA_UPLOAD_TOAST_MESSAGE = 'Uploading…'
 
 export type MediaUploadBusyUploadStatus = 'failed' | 'idle' | 'uploading' | undefined
 
-/** True when this save will send bytes to storage (new/replaced file or crop/focal reprocess). */
+/** True when this save will send bytes to storage (new/replaced file or crop/resize reprocess). */
 export function hasMediaBytesUpload(args: {
   fileValue: unknown
   uploadEdits?: UploadEdits
+  docWidth?: number | null
+  docHeight?: number | null
 }): boolean {
   if (args.fileValue instanceof File) {
     return true
@@ -20,12 +24,10 @@ export function hasMediaBytesUpload(args: {
     return false
   }
 
-  return Boolean(
-    edits.crop ||
-      edits.focalPoint ||
-      edits.heightInPixels != null ||
-      edits.widthInPixels != null
-  )
+  return uploadEditsRequireBytesReupload(edits, {
+    docWidth: args.docWidth,
+    docHeight: args.docHeight,
+  })
 }
 
 export function isMediaUploadBusy(args: {

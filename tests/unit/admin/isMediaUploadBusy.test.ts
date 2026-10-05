@@ -28,6 +28,22 @@ describe('hasMediaBytesUpload', () => {
       false
     )
   })
+
+  test('false for focal-only edit-upload save (default 100% crop)', () => {
+    expect(
+      hasMediaBytesUpload({
+        fileValue: undefined,
+        uploadEdits: {
+          crop: { unit: '%', x: 0, y: 0, width: 100, height: 100 },
+          focalPoint: { x: 20, y: 30 },
+          widthInPixels: 1200,
+          heightInPixels: 800,
+        },
+        docWidth: 1200,
+        docHeight: 800,
+      })
+    ).toBe(false)
+  })
 })
 
 describe('isMediaUploadBusy', () => {

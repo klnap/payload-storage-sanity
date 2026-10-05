@@ -3,6 +3,8 @@ import { describe, expect, test } from 'bun:test'
 import type { MediaUsageEntry } from '../../../src/queries/findMediaUsage.js'
 import {
   formatMediaUsageBlockMessage,
+  formatMediaUsageCompactDeleteMessage,
+  resolveMediaDeleteLabel,
   summarizeMediaUsage,
 } from '../../../src/utils/usageSummary.js'
 
@@ -50,6 +52,36 @@ describe('summarizeMediaUsage', () => {
     const summary = summarizeMediaUsage(entries)
     expect(summary.totalDistinctDocuments).toBe(2)
     expect(summary.collections).toHaveLength(2)
+  })
+})
+
+describe('resolveMediaDeleteLabel', () => {
+  test('prefers filename then name then id', () => {
+    expect(resolveMediaDeleteLabel({ filename: 'a.jpg', name: 'A' }, 1)).toBe('a.jpg')
+    expect(resolveMediaDeleteLabel({ name: 'Hero' }, 1)).toBe('Hero')
+    expect(resolveMediaDeleteLabel(null, 'short')).toBe('short')
+  })
+})
+
+describe('formatMediaUsageCompactDeleteMessage', () => {
+  test('formats compact bulk line', () => {
+    const entries: MediaUsageEntry[] = [
+      {
+        type: 'collection',
+        id: 1,
+        title: 'Post',
+        name: 'Post',
+        collectionSlug: 'posts',
+        collectionLabel: 'Post',
+        fieldPath: 'image',
+        fieldLabel: 'Image',
+        referenceLayer: 'published',
+        adminPath: '/admin/collections/posts/1',
+      },
+    ]
+    expect(formatMediaUsageCompactDeleteMessage('hero.jpg', entries)).toBe(
+      'hero.jpg: in use (1 document)'
+    )
   })
 })
 

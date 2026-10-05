@@ -44,6 +44,37 @@ export function summarizeMediaUsage(entries: MediaUsageEntry[]): MediaUsageSumma
   }
 }
 
+export function resolveMediaDeleteLabel(
+  doc: { filename?: string | null; name?: string | null } | null | undefined,
+  id: number | string
+): string {
+  const filename = typeof doc?.filename === 'string' ? doc.filename.trim() : ''
+  if (filename.length > 0) {
+    return filename
+  }
+
+  const name = typeof doc?.name === 'string' ? doc.name.trim() : ''
+  if (name.length > 0) {
+    return name
+  }
+
+  const idStr = String(id)
+  if (idStr.length > 12) {
+    return `${idStr.slice(0, 8)}…`
+  }
+  return idStr
+}
+
+export function formatMediaUsageCompactDeleteMessage(
+  mediaLabel: string,
+  entries: MediaUsageEntry[]
+): string {
+  const summary = summarizeMediaUsage(entries)
+  const count = summary.totalDistinctDocuments
+  const noun = count === 1 ? 'document' : 'documents'
+  return `${mediaLabel}: in use (${count} ${noun})`
+}
+
 export function formatMediaUsageBlockMessage(entries: MediaUsageEntry[]): string {
   const summary = summarizeMediaUsage(entries)
   if (summary.totalDistinctDocuments === 0) {

@@ -194,7 +194,7 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `uploadBusyShield` | `boolean` | `true` | While a media Save/upload request is in flight: neutral **“Uploading…”** toast, field area non-interactive (preview stays visible). Success uses Payload’s normal admin toast only — no extra success toast from the plugin. |
+| `uploadBusyShield` | `boolean` | `true` | While a media Save/upload request is in flight (including media opened from a **drawer** on a global or collection upload field): neutral **“Uploading…”** toast, field area non-interactive (preview stays visible). Toast dismisses when the upload finishes or the media document UI unmounts. Success uses Payload’s normal admin toast only — no extra success toast from the plugin. |
 | `usageInspector` | `boolean` | `true` | Inject the Usage Inspector UI field on media edit views. |
 
 ### `SanityStorageCollectionOptions`
@@ -321,8 +321,9 @@ localizedAltGroupField(getLocalizationLocales(config), { required: true })
 Before a media row is deleted:
 
 1. **`findMediaUsage`** scans **current** documents — published (`draft: false`) and draft (`draft: true`), with `locale: 'all'` when localized — **not** old rows in version history.
-2. If anything still references the asset, Payload throws **`400 APIError`** with a human-readable list (collection, title, id).
+2. If anything still references the asset, Payload throws **`400 APIError`** (single delete: full sentence; **bulk delete** in the admin list: one short line per blocked file, e.g. `hero.jpg: in use (1 document)`).
 3. **Published vs draft:** you cannot delete while **live published** content still references the file, even if the draft cleared the field.
+4. **Bulk delete (admin):** Payload’s native toasts still apply — **`deletedCountSuccessfully`** when some rows were removed, plus **`unableToDeleteCount`** when others failed (partial success shows both). Delete API responses always include **`docs`** and **`errors`** arrays so the list UI does not fall back to “unknown error”.
 
 Disable globally or per collection with `preventDeleteWhenReferenced: false`.
 
@@ -340,7 +341,12 @@ Editing **alt**, **name**, focal point, etc. without re-uploading no longer stri
 
 ### Crop / focal (admin)
 
-Enable Payload’s native **`upload.crop`** and **`upload.focalPoint`** on your media collection (see harness `Media.ts`). Crop and focal saves send **`uploadEdits`** and re-process the image (fetch → Sharp → new bytes). The plugin treats that as a real re-upload: it does **not** set `skipCloudStorage`, does **not** merge stale `sanity.*` / `width` / `height` from `originalDoc`, and passes through the cloud-storage metadata patch after Sanity `assets.upload`. Top-level **`url`** and dimensions are persisted on upload so Payload can fetch the correct CDN file for the next crop (no thumbnail transforms). An **`afterChange`** hook re-hydrates **`url`** / **`thumbnailURL`** on the PATCH response (Payload runs `afterRead` before cloud-storage finishes, which would otherwise leave a stale admin preview until refresh).
+Enable Payload’s native **`upload.crop`** and **`upload.focalPoint`** on your media collection (see harness `Media.ts`). The admin **Edit Upload** modal always sends **`uploadEdits`** (including a default **100%** crop and full **`widthInPixels`** / **`heightInPixels`**).
+
+- **Focal-only** (default crop, dimensions unchanged): only **`focalX`** / **`focalY`** are persisted in Payload. The plugin sets **`skipCloudStorage`** — **no** Sanity `assets.upload`, **no** “Uploading…” shield toast.
+- **Crop or resize** (non-default crop or pixel dimensions that differ from the stored width/height): Payload re-processes the image (fetch → Sharp → new bytes). The plugin treats that as a real re-upload: it does **not** set `skipCloudStorage`, does **not** merge stale `sanity.*` / `width` / `height` from `originalDoc`, and passes through the cloud-storage metadata patch after Sanity `assets.upload`. Top-level **`url`** and dimensions are persisted on upload so Payload can fetch the correct CDN file for the next crop (no thumbnail transforms). An **`afterChange`** hook re-hydrates **`url`** / **`thumbnailURL`** on the PATCH response (Payload runs `afterRead` before cloud-storage finishes, which would otherwise leave a stale admin preview until refresh).
+
+Payload may still fetch the CDN file internally on focal save; the plugin only skips the **Sanity** upload.
 
 ### Shared media row vs new upload
 

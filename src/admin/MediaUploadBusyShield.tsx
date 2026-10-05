@@ -15,19 +15,28 @@ import {
   MEDIA_UPLOAD_TOAST_ID,
   MEDIA_UPLOAD_TOAST_MESSAGE,
 } from './isMediaUploadBusy'
+import { resolveUploadToastAction } from './uploadToastSync'
 
 const BUSY_ROOT_CLASS = 'sanity-media-upload-busy'
 
 export function MediaUploadBusyShield() {
   const processing = useFormProcessing()
-  const { uploadStatus } = useDocumentInfo()
+  const { collectionSlug, uploadStatus } = useDocumentInfo()
   const { uploadEdits } = useUploadEdits()
 
-  const fileValue = useFormFields(([fields]) => fields?.file?.value)
+  const toastEnabled = Boolean(collectionSlug)
+
+  const { fileValue, docWidth, docHeight } = useFormFields(([fields]) => ({
+    fileValue: fields?.file?.value,
+    docWidth: fields?.width?.value as number | undefined,
+    docHeight: fields?.height?.value as number | undefined,
+  }))
 
   const hasBytesUpload = hasMediaBytesUpload({
     fileValue,
     uploadEdits,
+    docWidth,
+    docHeight,
   })
 
   const busy = isMediaUploadBusy({
@@ -36,37 +45,34 @@ export function MediaUploadBusyShield() {
     hasBytesUpload,
   })
 
-  const prevProcessing = useRef(processing)
-  const prevUploadStatus = useRef(uploadStatus)
+  const prevBusy = useRef(false)
 
   useEffect(() => {
-    const processingStarted = processing && !prevProcessing.current
-    const processingEnded = !processing && prevProcessing.current
-    const pasteUploadStarted =
-      uploadStatus === 'uploading' && prevUploadStatus.current !== 'uploading'
-    const pasteUploadEnded =
-      uploadStatus !== 'uploading' && prevUploadStatus.current === 'uploading'
+    const action = resolveUploadToastAction({
+      busy,
+      prevBusy: prevBusy.current,
+      enabled: toastEnabled,
+    })
 
-    if (
-      (processingStarted && hasBytesUpload) ||
-      (pasteUploadStarted && !processing)
-    ) {
+    if (action === 'show') {
       toast.loading(MEDIA_UPLOAD_TOAST_MESSAGE, {
         id: MEDIA_UPLOAD_TOAST_ID,
-        // Neutral upload styling (same as info); loading type uses a spinner instead of the info “i” glyph.
         classNames: {
           toast: 'payload-toast-item toast-info',
         },
       })
-    }
-
-    if (processingEnded || (pasteUploadEnded && !processing)) {
+    } else if (action === 'dismiss') {
       toast.dismiss(MEDIA_UPLOAD_TOAST_ID)
     }
 
-    prevProcessing.current = processing
-    prevUploadStatus.current = uploadStatus
-  }, [processing, uploadStatus, hasBytesUpload])
+    prevBusy.current = busy
+  }, [busy, toastEnabled])
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(MEDIA_UPLOAD_TOAST_ID)
+    }
+  }, [])
 
   useEffect(() => {
     const root = document.querySelector('.document-fields')

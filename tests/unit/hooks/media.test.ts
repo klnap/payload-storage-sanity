@@ -267,11 +267,49 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
     })
   })
 
+  test('sets skipCloudStorage on focal-only uploadEdits even with stale req.file', async () => {
+    const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
+    const req = {
+      context: {} as Record<string, unknown>,
+      query: {
+        uploadEdits: {
+          crop: { unit: '%', x: 0, y: 0, width: 100, height: 100 },
+          focalPoint: { x: 22, y: 44 },
+          widthInPixels: 1200,
+          heightInPixels: 800,
+        },
+      },
+      file: { data: Buffer.from('refetched-from-cdn') },
+    }
+
+    await hook({
+      data: { focalX: 22, focalY: 44 },
+      originalDoc: {
+        id: 1,
+        filename: 'image-old',
+        width: 1200,
+        height: 800,
+        focalX: 10,
+        focalY: 20,
+        sanity: { id: 'image-old', path: 'images/a.jpg' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: req as never,
+    })
+
+    expect(req.context.skipCloudStorage).toBe(true)
+    expect(req.file).toBeUndefined()
+  })
+
   test('does not set skipCloudStorage when uploadEdits crop is present', async () => {
     const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
     const req = {
       context: {} as Record<string, unknown>,
-      query: { uploadEdits: { crop: { x: 0, y: 0, width: 100, height: 100 } } },
+      query: {
+        uploadEdits: { crop: { unit: '%', x: 0, y: 0, width: 50, height: 100 } },
+      },
       file: { data: Buffer.from('cropped') },
     }
 

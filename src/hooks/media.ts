@@ -19,8 +19,11 @@ import { mediaSyncStatus, readMediaSync, type WithMediaSync } from '../utils/med
 import { normalizeLocalizedAltGroup } from '../utils/normalizeMediaAlt'
 import { slugifyFilename } from '../utils/slugify'
 import {
-  hasUploadEditsOnRequest,
+  getUploadEditsFromRequest,
   isCloudStorageUpstreamMetadataUpdate,
+  isFocalOnlyUploadEdits,
+  uploadEditsRequireBytesReupload,
+  uploadEditsRequireBytesReuploadFromRequest,
 } from '../utils/uploadEdits'
 
 export type { SanityMediaDocument }
@@ -236,7 +239,7 @@ export function createSanityMediaEnsureCropSourceUrlBeforeOperationHook(options?
     if (operation !== 'update') {
       return args
     }
-    if (!hasUploadEditsOnRequest(req)) {
+    if (!getUploadEditsFromRequest(req)) {
       return args
     }
     if (!collection.upload) {
@@ -260,6 +263,15 @@ export function createSanityMediaEnsureCropSourceUrlBeforeOperationHook(options?
     })) as SanityMediaDocument | undefined
 
     if (!doc) {
+      return args
+    }
+
+    if (
+      !uploadEditsRequireBytesReupload(getUploadEditsFromRequest(req), {
+        docWidth: doc.width,
+        docHeight: doc.height,
+      })
+    ) {
       return args
     }
 
@@ -318,10 +330,18 @@ export function createSanityMediaPersistUpstreamBeforeChangeHook(): CollectionBe
       return data
     }
 
-    const reprocess = hasUploadEditsOnRequest(req)
+    const focalOnly = isFocalOnlyUploadEdits(req, { data, originalDoc })
+    const bytesReprocess = uploadEditsRequireBytesReuploadFromRequest(req, {
+      data,
+      originalDoc,
+    })
     const hasNewBytes = Boolean(req.file?.data?.length)
     const hasSizes = hasIncomingUploadSizes(req)
-    const hasIncomingFile = hasNewBytes || hasSizes || reprocess
+    let hasIncomingFile = hasNewBytes || hasSizes || bytesReprocess
+
+    if (focalOnly) {
+      hasIncomingFile = false
+    }
 
     if (!hasIncomingFile) {
       clearStaleCloudStorageUploadContext(req)
@@ -417,7 +437,9 @@ export function createSanityMediaHydrateResponseAfterChangeHook(options?: {
     }
 
     const reprocessFlag = Boolean(req.context?.[SANITY_MEDIA_REPROCESS_CONTEXT_KEY])
-    const reprocessQuery = hasUploadEditsOnRequest(req)
+    const reprocessQuery = uploadEditsRequireBytesReuploadFromRequest(req, {
+      originalDoc: previousDoc as { width?: unknown; height?: unknown } | undefined,
+    })
     const previousAssetId = sanityAssetIdFromDocument(
       (previousDoc ?? {}) as SanityAssetIdCarrier
     )

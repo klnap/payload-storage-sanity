@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- Admin **focal-only** saves (default 100% `uploadEdits.crop`, unchanged dimensions) no longer upload to Sanity or show the media “Uploading…” toast; **crop** / resize still re-upload as before.
+- Admin **bulk delete** of media: compact per-file reference errors, stable bulk delete API shape (`docs` / `errors` arrays), aligned with Payload `deletedCountSuccessfully` + `unableToDeleteCount` toasts.
+- **“Uploading…”** toast no longer sticks after closing the media document drawer (e.g. upload from a global upload field); toast follows upload busy state and dismisses on unmount.
+
 ## 3.0.0 (2026-10-05)
 
 ### Breaking

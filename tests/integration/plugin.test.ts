@@ -346,6 +346,14 @@ describe('sanityStorage', () => {
     expect(afterChangeHooks.length).toBe(1)
   })
 
+  test('registers delete afterOperation normalizer when reference guard is enabled', () => {
+    const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const afterOperationHooks = media?.hooks?.afterOperation ?? []
+
+    expect(afterOperationHooks.length).toBeGreaterThanOrEqual(1)
+  })
+
   test('reference-integrity hook is first in the beforeDelete chain on media collections', async () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
 

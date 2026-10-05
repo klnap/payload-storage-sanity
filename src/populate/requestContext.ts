@@ -10,6 +10,21 @@ export type SanityStorageRequestContext = {
   skipPopulate?: boolean
   /** Force morph when nested-read gates would otherwise skip (does not bypass admin `req.user`). */
   forcePopulate?: boolean
+  /** Admin bulk delete (list selection or select-all). */
+  bulkDelete?: boolean
+  /** When `where` uses `id.in`, length of that array. */
+  bulkDeleteTargetCount?: number
+}
+
+export function mergeSanityStorageContext(
+  existing: unknown,
+  patch: SanityStorageRequestContext
+): SanityStorageRequestContext {
+  const base =
+    existing != null && typeof existing === 'object'
+      ? { ...(existing as SanityStorageRequestContext) }
+      : {}
+  return { ...base, ...patch }
 }
 
 export function readSanityStorageContext(context: unknown): SanityStorageRequestContext | undefined {
