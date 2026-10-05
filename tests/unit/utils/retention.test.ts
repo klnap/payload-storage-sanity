@@ -53,6 +53,31 @@ describe('deleteSanityAssetIfUnreferenced', () => {
     expect(deleted).toEqual(['image-123'])
   })
 
+  test('deletes asset when only excluded UUID media row references it', async () => {
+    const uuid = '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    const deleted: string[] = []
+    const client = {
+      delete: async (id: string) => {
+        deleted.push(id)
+      },
+    } as unknown as SanityClient
+
+    const payload = {
+      find: async () => ({ docs: [{ id: uuid }], hasNextPage: false }),
+    } as unknown as Payload
+
+    const result = await deleteSanityAssetIfUnreferenced({
+      client,
+      payload,
+      collectionSlug: 'media',
+      sanityAssetId: 'image-123',
+      excludingMediaId: uuid,
+    })
+
+    expect(result).toBe(true)
+    expect(deleted).toEqual(['image-123'])
+  })
+
   test('keeps asset when other media rows reference it', async () => {
     const deleted: string[] = []
     const client = {

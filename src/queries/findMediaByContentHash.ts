@@ -1,7 +1,9 @@
 import type { PayloadRequest } from 'payload'
 
+import type { PayloadDocumentId } from '../utils/payloadDocumentId'
+
 export type MediaRowWithHash = {
-  id: number
+  id: PayloadDocumentId
 }
 
 export async function findMediaByContentHash(

@@ -7,11 +7,16 @@ import type {
 import { findMediaByContentHash } from '../queries/findMediaByContentHash'
 import { hashFileContent } from '../utils/crypto'
 import { withContentHashLock } from '../utils/lock'
+import {
+  isPayloadDocumentId,
+  payloadDocumentIdsEqual,
+  type PayloadDocumentId,
+} from '../utils/payloadDocumentId'
 
 export const SANITY_STORAGE_DEDUPE_CONTEXT_KEY = '_sanityStorageDedupe' as const
 
 export type SanityStorageDedupeContext = {
-  existingId: number
+  existingId: PayloadDocumentId
 }
 
 type CloudStorageContext = {
@@ -88,9 +93,8 @@ export function createMediaDedupeAfterOperationHook(
 
     if (!dedupe?.existingId) return result
 
-    const createdId =
-      'id' in result && result.id != null && Number.isFinite(result.id) ? Number(result.id) : null
-    if (createdId == null || createdId === dedupe.existingId) return result
+    const createdId = 'id' in result && isPayloadDocumentId(result.id) ? result.id : null
+    if (createdId == null || payloadDocumentIdsEqual(createdId, dedupe.existingId)) return result
 
     await req.payload.delete({
       collection: collectionSlug,

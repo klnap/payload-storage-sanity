@@ -6,6 +6,7 @@ import { fetchSanityAssetSafe, mediaPatchFromSanityAsset } from '../sync/fetchAs
 import { markMediaBySanityAssetId } from '../sync/markMedia'
 import { mergeMediaSync } from '../utils/mediaSync'
 import type { PayloadMediaDraft } from '../utils/payloadMedia'
+import { isPayloadDocumentId, type PayloadDocumentId } from '../utils/payloadDocumentId'
 import { createSanityAssetFetchCache } from '../utils/sanityAssetCache'
 import {
   collectWebhookAssetIds,
@@ -153,8 +154,8 @@ export async function handleSanityWebhookEvent({
           if (doc == null) continue
 
           // SAFETY: webhook findByID returns media rows with Sanity adapter fields
-          const mediaDoc = doc as PayloadMediaDraft & { id?: number }
-          if (mediaDoc.id == null || !Number.isFinite(mediaDoc.id)) continue
+          const mediaDoc = doc as PayloadMediaDraft & { id?: PayloadDocumentId }
+          if (!isPayloadDocumentId(mediaDoc.id)) continue
 
           const patch = {
             ...mediaPatchFromSanityAsset(fetchResult.asset),

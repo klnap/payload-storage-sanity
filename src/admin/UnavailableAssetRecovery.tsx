@@ -3,9 +3,10 @@
 import { Banner, Button } from '@payloadcms/ui'
 
 import type { SanitySyncStatus } from '../sync/status'
+import type { PayloadDocumentId } from '../utils/payloadDocumentId'
 
 type UnavailableAssetRecoveryProps = {
-  mediaId?: number | null
+  mediaId?: PayloadDocumentId | null
   onReplace: () => void
   onUnlink: () => void
   readOnly?: boolean

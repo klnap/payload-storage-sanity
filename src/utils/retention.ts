@@ -2,6 +2,10 @@ import type { SanityClient } from '@sanity/client'
 import type { Payload } from 'payload'
 
 import { findAllMediaBySanityAssetId } from '../queries/findAllMediaBySanityAssetId'
+import {
+  payloadDocumentIdsEqual,
+  type PayloadDocumentId,
+} from './payloadDocumentId'
 
 export async function deleteSanityAsset(client: SanityClient, assetId: string): Promise<void> {
   if (!assetId || assetId.trim().length === 0) return
@@ -14,7 +18,7 @@ export type DeleteSanityAssetIfUnreferencedArgs = {
   collectionSlug: string
   sanityAssetId: string
   /** Media row being updated or deleted — excluded from the reference count. */
-  excludingMediaId?: number
+  excludingMediaId?: PayloadDocumentId
   req?: Parameters<Payload['find']>[0]['req']
 }
 
@@ -40,7 +44,7 @@ export async function deleteSanityAssetIfUnreferenced({
   const remaining =
     excludingMediaId == null
       ? references
-      : references.filter((entry) => entry.id !== excludingMediaId)
+      : references.filter((entry) => !payloadDocumentIdsEqual(entry.id, excludingMediaId))
 
   if (remaining.length > 0) {
     return false
@@ -57,7 +61,7 @@ export async function deleteReplacedSanityAsset(
   options?: {
     payload: Payload
     collectionSlug: string
-    mediaId?: number
+    mediaId?: PayloadDocumentId
     req?: Parameters<Payload['find']>[0]['req']
   }
 ): Promise<void> {

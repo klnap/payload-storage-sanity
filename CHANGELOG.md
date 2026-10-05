@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.3] — 2026-10-05
+
+### Fixed
+
+- Default populate no longer applies to REST document routes with non-numeric IDs (e.g. UUID `idType`), which broke the Payload admin media form after saving metadata (empty upload until refresh).
+- Retention, webhook sync, reconcile, dedupe, and `findAllMediaBySanityAssetId` now support Payload document IDs as **numbers or strings** (e.g. `idType: 'uuid'`), not only numeric ids.
+
+### Added
+
+- Exported **`isPayloadDocumentId`**, **`payloadDocumentIdsEqual`**, and **`PayloadDocumentId`** for hosts.
+
+---
+
 ## [2.0.2] — 2026-10-05
 
 npm releases **2.0.0** and **2.0.1** were unpublished (those version numbers cannot be reused on the registry). Use **`@klnap/payload-storage-sanity@2.0.2`** as the current 2.x line.
@@ -32,26 +45,3 @@ npm releases **2.0.0** and **2.0.1** were unpublished (those version numbers can
 - Draft-only reference removal no longer allows delete while **live published** still references the media.
 - **Metadata-only media saves** (alt, name, focal, etc.) preserve hidden `sanity` upstream fields and file metadata; prevents cloud-storage from re-uploading on stale request context so assets no longer “disappear” in admin after save.
 - **`sync` status** is not reset to `available` on partial admin updates when the asset was marked deleted or unavailable.
-
-### Changed
-
-- Usage table: **Status** column (Published/Draft), one row per document+field, links go to the document editor (not version URLs).
-
-## [1.0.0] — 2026-09-08
-
-### Added
-
-- Initial public release as `@klnap/payload-storage-sanity`.
-- `sanityStorage` — Payload CMS plugin that offloads media uploads to Sanity's global CDN.
-- Automatic extraction of `dimensions`, `lqip`, `blurHash`, `thumbHash`, `hasAlpha`, `isOpaque`, `location`, `palette`, and `exif` metadata on upload.
-- Upload deduplication via `sha1hash` comparison.
-- `buildSanityImageUrl` — CDN URL builder for Sanity image asset references.
-- `reconcileSanityMedia` — on-demand drift reconciliation between Payload records and Sanity assets.
-- `verifySanityWebhookSignature` — HMAC-SHA256 signature verification for Sanity webhooks.
-- `MediaUsageInspector` — admin UI panel showing every Payload document referencing a given media asset (exported via `@klnap/payload-storage-sanity/admin`).
-- `UnavailableAssetRecovery` — admin UI panel for recovering or removing broken asset references.
-- Webhook endpoint (`POST /api/sanity/webhook`) for real-time upstream reconciliation.
-- Reconcile endpoint (`POST /api/sanity/reconcile`) for batch drift repair.
-- Soft-delete mode (`onDeleted: 'mark'`) that marks assets as `deleted`, clears `url`, and preserves referential integrity.
-- `afterRead` safety filter that prevents broken or deleted asset URLs from leaking to frontend APIs.
-- PostgreSQL adapter compatibility.

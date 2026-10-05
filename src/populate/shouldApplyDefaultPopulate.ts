@@ -7,9 +7,13 @@ export type ShouldApplyDefaultPopulateArgs = {
   findMany?: boolean
 }
 
+/** Payload REST segments after `/api/{collectionSlug}/` that are not document IDs. */
+const RESERVED_COLLECTION_REST_SEGMENTS = new Set(['versions', 'files', 'file'])
+
 /**
  * True when media is returned as a populated relation over the **REST API** (`default` preset).
- * False for admin (`payloadAPI: 'local'`), direct `GET /api/{media}`, and collection `find`.
+ * False for admin (`payloadAPI: 'local'`), direct `/api/{collection}` and `/api/{collection}/{id}`
+ * (any id shape: UUID, numeric, etc.), and collection list routes.
  */
 export function shouldApplyDefaultPopulate({
   req,
@@ -36,8 +40,11 @@ export function shouldApplyDefaultPopulate({
           if (rest.length === 1) {
             return false
           }
-          if (rest.length === 2 && /^\d+$/.test(rest[1] ?? '')) {
-            return false
+          if (rest.length === 2) {
+            const segment = rest[1] ?? ''
+            if (!RESERVED_COLLECTION_REST_SEGMENTS.has(segment)) {
+              return false
+            }
           }
         }
       }

@@ -35,5 +35,11 @@ describe('resolveMediaId', () => {
     expect(resolveMediaId('42')).toBe(42)
     expect(resolveMediaId({ id: 99 })).toBe(99)
     expect(resolveMediaId(null)).toBeNull()
+    expect(resolveMediaId('0babf185-2616-41ab-9fb0-1a7f752f5af8')).toBe(
+      '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    )
+    expect(resolveMediaId({ id: '0babf185-2616-41ab-9fb0-1a7f752f5af8' })).toBe(
+      '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    )
   })
 })

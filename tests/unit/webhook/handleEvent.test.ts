@@ -115,4 +115,43 @@ describe('handleSanityWebhookEvent', () => {
     expect(result.updated).toBe(1)
     expect(update).toHaveBeenCalled()
   })
+
+  test('syncs updated upstream assets for UUID media document ids', async () => {
+    const uuid = '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    const update = mock(async () => ({}))
+    const find = mock(async () => ({
+      docs: [{ id: uuid }],
+      hasNextPage: false,
+    }))
+    const findByID = mock(async () => ({
+      id: uuid,
+      sanity: { id: 'image-updated-jpg' },
+      sync: { status: 'available' },
+    }))
+
+    const client = {
+      getDocument: mock(async () => ({
+        _id: 'image-updated-jpg',
+        _type: 'sanity.imageAsset',
+        assetId: 'updated',
+        url: 'https://cdn.sanity.io/images/demo/production/updated.jpg',
+        mimeType: 'image/jpeg',
+      })),
+    }
+
+    const result = await handleSanityWebhookEvent({
+      payload: { find, findByID, update } as never,
+      client: client as never,
+      collectionSlug: 'media',
+      projectId: 'demo',
+      dataset: 'production',
+      body: { ids: { updated: ['image-updated-jpg'] }, projectId: 'demo', dataset: 'production' },
+      onDeleted: 'mark',
+    })
+
+    expect(result.updated).toBe(1)
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ collection: 'media', id: uuid })
+    )
+  })
 })

@@ -4,6 +4,7 @@ import { createSanityMediaAfterReadHook } from '../../../src/hooks/media.js'
 
 const doc = {
   id: 5,
+  filename: 'hero.jpg',
   focalX: 10,
   focalY: 20,
   alt: 'Hero',
@@ -60,5 +61,31 @@ describe('defaultPopulateGate', () => {
 
     expect(adminDoc).toHaveProperty('sanity')
     expect(adminDoc).toMatchObject({ id: 5, url: expect.stringContaining('abc123-800x600.jpg') })
+  })
+
+  test('keeps full document on REST direct media route with UUID id', () => {
+    const hook = createSanityMediaAfterReadHook({
+      collectionSlug: 'media',
+      resolvedPreset: 'default',
+      registry: {},
+    })
+
+    const uuid = '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    const restDoc = hook({
+      doc: { ...doc, id: uuid },
+      collection: { slug: 'media' } as never,
+      context: {},
+      req: {
+        url: `http://localhost:3000/api/media/${uuid}?locale=pl&depth=0`,
+        payloadAPI: 'REST',
+      } as never,
+    })
+
+    expect(restDoc).toHaveProperty('sanity')
+    expect(restDoc).toMatchObject({
+      id: uuid,
+      filename: 'hero.jpg',
+      url: expect.stringContaining('abc123-800x600.jpg'),
+    })
   })
 })

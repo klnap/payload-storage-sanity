@@ -3,6 +3,7 @@ import type { CollectionBeforeDeleteHook } from 'payload'
 
 import { sanityAssetIdFromDocument } from '../adapter/metadata'
 import type { PayloadMediaDraft } from '../utils/payloadMedia'
+import { isPayloadDocumentId } from '../utils/payloadDocumentId'
 import { deleteSanityAssetIfUnreferenced } from '../utils/retention'
 
 /** Deletes the upstream Sanity asset when the last referencing media row is removed. */
@@ -29,7 +30,7 @@ export function createMediaDeleteSanityAssetBeforeDeleteHook(
     const assetId = sanityAssetIdFromDocument(doc as PayloadMediaDraft)
     if (!assetId) return
 
-    const mediaId = id != null && Number.isFinite(id) ? Number(id) : undefined
+    const mediaId = isPayloadDocumentId(id) ? id : undefined
 
     await deleteSanityAssetIfUnreferenced({
       client,

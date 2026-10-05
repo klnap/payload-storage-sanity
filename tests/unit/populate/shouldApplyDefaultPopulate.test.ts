@@ -9,13 +9,33 @@ const localReq = (url?: string) =>
   ({ url, payloadAPI: 'local' }) as never
 
 describe('shouldApplyDefaultPopulate', () => {
-  test('returns false for direct GET /api/media/:id', () => {
+  test('returns false for direct GET /api/media/:id (numeric)', () => {
     expect(
       shouldApplyDefaultPopulate({
         collectionSlug: 'media',
         req: restReq('http://localhost:3000/api/media/42'),
       })
     ).toBe(false)
+  })
+
+  test('returns false for direct GET /api/media/:id (UUID)', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        req: restReq(
+          'http://localhost:3000/api/media/0babf185-2616-41ab-9fb0-1a7f752f5af8?locale=pl&depth=0'
+        ),
+      })
+    ).toBe(false)
+  })
+
+  test('returns true for collection REST sub-routes (e.g. versions)', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        req: restReq('http://localhost:3000/api/media/versions'),
+      })
+    ).toBe(true)
   })
 
   test('returns false for direct GET /api/media list', () => {
@@ -63,5 +83,27 @@ describe('shouldApplyDefaultPopulate', () => {
         req: restReq('http://localhost:3000/api/globals/test'),
       })
     ).toBe(false)
+  })
+
+  test('sanitySkipDefaultPopulate on direct REST document route', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        context: { sanitySkipDefaultPopulate: true },
+        collectionSlug: 'media',
+        req: restReq(
+          'http://localhost:3000/api/media/0babf185-2616-41ab-9fb0-1a7f752f5af8'
+        ),
+      })
+    ).toBe(false)
+  })
+
+  test('respects sanityForceDefaultPopulate context flag on local API', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        context: { sanityForceDefaultPopulate: true },
+        collectionSlug: 'media',
+        req: localReq('http://localhost:3000/api/media/42'),
+      })
+    ).toBe(true)
   })
 })

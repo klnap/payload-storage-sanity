@@ -128,6 +128,38 @@ describe('reconcileSanityMedia', () => {
     expect(report.synced).toBe(2)
   })
 
+  test('syncs media row with UUID document id', async () => {
+    const uuid = '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    const find = mock(async () => ({
+      docs: [{ id: uuid, sanity: { id: 'image-uuid-jpg' }, sync: { status: 'available' } }],
+      hasNextPage: false,
+    }))
+    const update = mock(async () => ({}))
+
+    const client = {
+      getDocument: mock(async () => ({
+        _id: 'image-uuid-jpg',
+        _type: 'sanity.imageAsset',
+        assetId: 'uuid',
+        url: 'https://cdn.sanity.io/images/demo/production/uuid.jpg',
+        mimeType: 'image/jpeg',
+      })),
+    }
+
+    const report = await reconcileSanityMedia({
+      payload: { find, update } as never,
+      client: client as never,
+      collectionSlug: 'media',
+      dryRun: false,
+    })
+
+    expect(report.skipped).toBe(0)
+    expect(report.synced).toBe(1)
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ collection: 'media', id: uuid })
+    )
+  })
+
   test('syncs modified upstream assets into Payload media rows', async () => {
     const find = mock(async () => ({
       docs: [{ id: 8, sanity: { id: 'image-modified-jpg' }, sync: { status: 'available' } }],

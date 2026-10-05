@@ -2,6 +2,7 @@ import * as v from 'valibot'
 
 import type { SanityAssetReference } from '../types/asset'
 import type { SanityMediaDocument } from '../types/sanityStorageDocument'
+import { isPayloadDocumentId, type PayloadDocumentId } from './payloadDocumentId'
 
 export type SanityUploadReference =
   | string
@@ -12,7 +13,7 @@ export type SanityUploadReference =
       sanity?: { id?: string | null } | null
       sanityAssetId?: string | null
       _ref?: string | null
-      id?: number | null
+      id?: PayloadDocumentId | null
     }
   | null
   | undefined
@@ -41,7 +42,7 @@ export function resolveImageFileRef(upload: SanityUploadReference): string | nul
   return null
 }
 
-export function resolveMediaId(upload: SanityUploadReference): number | null {
+export function resolveMediaId(upload: SanityUploadReference): PayloadDocumentId | null {
   if (upload == null) return null
 
   if (v.is(v.number(), upload)) {
@@ -49,16 +50,17 @@ export function resolveMediaId(upload: SanityUploadReference): number | null {
   }
 
   if (v.is(v.string(), upload)) {
-    return /^\d+$/.test(upload) ? Number(upload) : null
+    if (/^\d+$/.test(upload)) {
+      return Number(upload)
+    }
+    return isPayloadDocumentId(upload) ? upload : null
   }
 
-  if ('id' in upload && upload.id != null) {
-    if (typeof upload.id === 'number') {
-      return Number.isFinite(upload.id) ? upload.id : null
-    }
+  if ('id' in upload && isPayloadDocumentId(upload.id)) {
     if (typeof upload.id === 'string' && /^\d+$/.test(upload.id)) {
       return Number(upload.id)
     }
+    return upload.id
   }
 
   return null

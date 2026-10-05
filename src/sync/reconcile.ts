@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 
 import { mergeMediaSync, readMediaSync } from '../utils/mediaSync'
 import type { PayloadMediaDraft } from '../utils/payloadMedia'
+import { isPayloadDocumentId, type PayloadDocumentId } from '../utils/payloadDocumentId'
 import { createSanityAssetFetchCache } from '../utils/sanityAssetCache'
 import { fetchSanityAssetSafe, mediaPatchFromSanityAsset } from './fetchAsset'
 import { markMediaBySanityAssetId } from './markMedia'
@@ -19,7 +20,7 @@ export type ReconcileOptions = {
 }
 
 export type ReconcileMediaRow = {
-  mediaId: number
+  mediaId?: PayloadDocumentId
   sanityAssetId: string
   previousStatus: SanitySyncStatus | null | undefined
   nextStatus: SanitySyncStatus
@@ -45,7 +46,7 @@ async function processReconcileDoc(
   options: ReconcileOptions,
   report: ReconcileReport,
   cache: ReturnType<typeof createSanityAssetFetchCache>,
-  mediaDoc: PayloadMediaDraft & { id?: number }
+  mediaDoc: PayloadMediaDraft & { id?: PayloadDocumentId }
 ): Promise<void> {
   const { payload, client, collectionSlug, dryRun = false, req } = options
   const mediaId = mediaDoc.id
@@ -54,10 +55,10 @@ async function processReconcileDoc(
   const previousStatus = readMediaSync(mediaDoc).status
 
   try {
-    if (mediaId == null || !Number.isFinite(mediaId) || sanityAssetId == null) {
+    if (!isPayloadDocumentId(mediaId) || sanityAssetId == null) {
       report.skipped += 1
       report.rows.push({
-        mediaId: mediaId != null && Number.isFinite(mediaId) ? mediaId : 0,
+        ...(isPayloadDocumentId(mediaId) ? { mediaId } : {}),
         sanityAssetId: sanityAssetId ?? '',
         previousStatus,
         nextStatus: previousStatus ?? 'missing',
@@ -123,7 +124,7 @@ async function processReconcileDoc(
   } catch (error) {
     report.errors += 1
     report.rows.push({
-      mediaId: mediaId != null && Number.isFinite(mediaId) ? mediaId : 0,
+      ...(isPayloadDocumentId(mediaId) ? { mediaId } : {}),
       sanityAssetId: sanityAssetId ?? '',
       previousStatus,
       nextStatus: 'error',
@@ -166,7 +167,12 @@ export async function reconcileSanityMedia(options: ReconcileOptions): Promise<R
     for (const doc of result.docs) {
       report.scanned += 1
       // SAFETY: doc returned from media find conforms to media document structure
-      await processReconcileDoc(options, report, cache, doc as PayloadMediaDraft & { id?: number })
+      await processReconcileDoc(
+        options,
+        report,
+        cache,
+        doc as PayloadMediaDraft & { id?: PayloadDocumentId }
+      )
     }
 
     hasNextPage = result.hasNextPage === true

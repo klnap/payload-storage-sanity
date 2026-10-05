@@ -1,5 +1,6 @@
 import type { SanityUpstreamFields } from '../types/sanityStorageDocument'
 import type { SanityMediaSyncFields } from '../types/sync'
+import type { PayloadDocumentId } from './payloadDocumentId'
 
 export type SanityAssetIdCarrier = {
   sanity?: SanityUpstreamFields | null
@@ -17,5 +18,5 @@ export type PayloadMediaPatch = {
 
 export type PayloadMediaDraft = Partial<PayloadMediaPatch> &
   SanityAssetIdCarrier & {
-    id?: number | null
+    id?: PayloadDocumentId | null
   }

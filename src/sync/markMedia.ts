@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import { findAllMediaBySanityAssetId } from '../queries/findAllMediaBySanityAssetId'
+import type { PayloadDocumentId } from '../utils/payloadDocumentId'
 import type { WithMediaSync } from '../utils/mediaSync'
 import { mergeMediaSync } from '../utils/mediaSync'
 import type { PayloadMediaPatch } from '../utils/payloadMedia'
@@ -27,7 +28,7 @@ export async function markMediaBySanityAssetId({
   errorAt,
   patch = {},
   req,
-}: MarkMediaSyncArgs): Promise<number[]> {
+}: MarkMediaSyncArgs): Promise<PayloadDocumentId[]> {
   const effectiveStatus = status ?? syncStatus ?? 'missing'
 
   const matches = await findAllMediaBySanityAssetId({
@@ -37,7 +38,7 @@ export async function markMediaBySanityAssetId({
     req,
   })
 
-  const updatedIds: number[] = []
+  const updatedIds: PayloadDocumentId[] = []
 
   for (const { id } of matches) {
     const doc = await payload.findByID({

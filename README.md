@@ -38,6 +38,7 @@ The plugin wraps [`@payloadcms/plugin-cloud-storage`](https://github.com/payload
 | **Guards** | Block media delete when content still references the row; scan **current** published + draft state (not stale version history). |
 | **Sync** | Optional HMAC webhooks + batch reconcile when Sanity changes upstream. |
 | **Dedupe** | Optional SHA-1 deduplication reuses an existing Sanity asset for identical bytes. |
+| **Document IDs** | Works with Payload **numeric** ids and **`idType: 'uuid'`** (PostgreSQL and others) — retention, sync, reconcile, dedupe, and populate gates all use the same id shape. |
 | **Frontend** | Optional `@klnap/payload-storage-sanity/next` — `SanityImage` (RSC-friendly), loaders, flat `DefaultPopulateAsset` for REST. |
 
 ---
@@ -284,7 +285,7 @@ Built-in presets: **`full`** (entire media document) and **`default`** (flat **`
 | :--- | :--- |
 | REST **relation** populate (nested media on a post/page) | Yes — when `preset: 'default'` |
 | Admin (`payloadAPI: 'local'`) | No — always full document for editing |
-| Direct `GET /api/media` or `GET /api/media/:id` | No — full media API |
+| Direct `GET /api/media` or `GET /api/media/:id` (numeric, UUID, …) | No — full media API |
 | Collection `find` in server code | No |
 
 `DefaultPopulateAsset` fields: `id`, `url`, `width`, `height`, `aspectRatio`, `focalX`, `focalY`, `alt`, `lqip`.

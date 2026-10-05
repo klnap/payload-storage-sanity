@@ -64,4 +64,36 @@ describe('media dedupe hooks', () => {
     expect(deletedId as number | null).toBe(99)
     expect(result).toEqual(existingDoc)
   })
+
+  test('afterOperation deletes duplicate row when ids are UUID strings', async () => {
+    const uuid = '0babf185-2616-41ab-9fb0-1a7f752f5af8'
+    const duplicateUuid = '11111111-2222-3333-4444-555555555555'
+    const existingDoc = { id: uuid, url: 'https://cdn.example/a.png' }
+    let deletedId: string | null = null
+
+    const req = {
+      context: {
+        [SANITY_STORAGE_DEDUPE_CONTEXT_KEY]: { existingId: uuid },
+      },
+      payload: {
+        delete: async ({ id }: { id: string }) => {
+          deletedId = id
+        },
+        findByID: async () => existingDoc,
+      },
+    } as unknown as PayloadRequest
+
+    const hook = createMediaDedupeAfterOperationHook('media')
+    const result = await hook({
+      args: { depth: 0, overrideAccess: true } as never,
+      collection: { slug: 'media' } as never,
+      operation: 'create',
+      overrideAccess: true,
+      req,
+      result: { id: duplicateUuid, filename: 'a.png' },
+    })
+
+    expect(deletedId).toBe(duplicateUuid)
+    expect(result).toEqual(existingDoc)
+  })
 })

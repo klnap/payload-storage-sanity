@@ -3,6 +3,7 @@ import type { CollectionAfterChangeHook } from 'payload'
 
 import { sanityAssetIdFromDocument } from '../adapter/metadata'
 import type { SanityAssetIdCarrier } from '../utils/payloadMedia'
+import { isPayloadDocumentId } from '../utils/payloadDocumentId'
 import { deleteReplacedSanityAsset } from '../utils/retention'
 
 /** Runs after cloud-storage upload so replaced Sanity assets are deleted even when filename is unchanged. */
@@ -22,7 +23,7 @@ export function createMediaReplaceSanityAssetAfterChangeHook(
     const nextAssetId = sanityAssetIdFromDocument(doc as SanityAssetIdCarrier)
 
     const mediaId =
-      doc != null && 'id' in doc && doc.id != null && Number.isFinite(doc.id) ? doc.id : undefined
+      doc != null && 'id' in doc && isPayloadDocumentId(doc.id) ? doc.id : undefined
 
     await deleteReplacedSanityAsset(client, previousAssetId, nextAssetId, {
       payload: req.payload,

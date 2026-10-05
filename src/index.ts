@@ -95,6 +95,11 @@ export {
   mergeMediaSync,
   readMediaSync,
 } from './utils/mediaSync'
+export type { PayloadDocumentId } from './utils/payloadDocumentId'
+export {
+  isPayloadDocumentId,
+  payloadDocumentIdsEqual,
+} from './utils/payloadDocumentId'
 export type { PayloadMediaDraft, PayloadMediaPatch } from './utils/payloadMedia'
 export { resolveAdminLabel } from './utils/resolveAdminLabel'
 export { resolveImageFileRef, resolveMediaId } from './utils/resolveAssetRef'
