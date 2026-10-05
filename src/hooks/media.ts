@@ -10,13 +10,13 @@ import { sanityAssetIdFromDocument } from '../adapter/metadata'
 import type { SanityAssetIdCarrier } from '../utils/payloadMedia'
 
 import { applyPopulatePreset } from '../populate/applyPopulatePreset'
-import { presetUsesDefaultPopulate } from '../populate/presets'
-import type { SanityMediaPopulatePresetRegistry } from '../populate/presets'
+import { shouldMorphMediaPopulate } from '../populate/requestContext'
 import { shouldApplyDefaultPopulate } from '../populate/shouldApplyDefaultPopulate'
 import { isUnavailableSyncStatus, normalizeSyncStatus } from '../sync/status'
 import type { SanityMediaDocument, SanityUpstreamFields } from '../types/sanityStorageDocument'
 import { resolvePublicUrl } from '../utils/resolvePublicUrl'
 import { mediaSyncStatus, readMediaSync, type WithMediaSync } from '../utils/mediaSync'
+import { normalizeLocalizedAltGroup } from '../utils/normalizeMediaAlt'
 import { slugifyFilename } from '../utils/slugify'
 import {
   hasUploadEditsOnRequest,
@@ -94,8 +94,10 @@ export type CreateSanityMediaAfterReadHookArgs = {
   collectionSlug: string
   cdnBaseUrl?: string
   resolvedPreset: string
-  registry: SanityMediaPopulatePresetRegistry
   altFallbackLocale?: string
+  localPopulate?: boolean
+  /** When true, `alt` is the injected locale group — coerce SQL `null` to `{}` for admin form state. */
+  localizedAltGroup?: boolean
 }
 
 export function createSanityMediaAfterReadHook(
@@ -107,22 +109,46 @@ export function createSanityMediaAfterReadHook(
     let mediaDoc = sanitizeMediaDocument(doc as SanityMediaDocument)
     mediaDoc = hydrateMediaOnRead(mediaDoc, args.cdnBaseUrl)
 
+    if (args.localizedAltGroup) {
+      mediaDoc = {
+        ...mediaDoc,
+        alt: normalizeLocalizedAltGroup(mediaDoc.alt, true) as SanityMediaDocument['alt'],
+      }
+    }
+
     const locale = req?.locale
 
+    const shouldApplyNestedPopulate = shouldApplyDefaultPopulate({
+      req,
+      context,
+      collectionSlug: args.collectionSlug,
+      findMany,
+      localPopulate: args.localPopulate,
+    })
+
     if (
-      shouldApplyDefaultPopulate({
-        req,
+      shouldMorphMediaPopulate({
         context,
-        collectionSlug: args.collectionSlug,
-        findMany,
-      }) &&
-      presetUsesDefaultPopulate(args.resolvedPreset, args.registry)
+        configPreset: args.resolvedPreset,
+        mediaCollectionSlug: args.collectionSlug,
+        req,
+        shouldApplyNestedPopulate,
+      })
     ) {
-      return applyPopulatePreset(mediaDoc, args.resolvedPreset, args.registry, {
+      const shaped = applyPopulatePreset(mediaDoc, args.resolvedPreset, {
         cdnBaseUrl: args.cdnBaseUrl,
         locale,
         fallbackLocale: args.altFallbackLocale,
-      }) as typeof doc
+      })
+
+      if (
+        shaped !== mediaDoc &&
+        shaped != null &&
+        typeof shaped === 'object' &&
+        !Array.isArray(shaped)
+      ) {
+        return shaped as typeof doc
+      }
     }
 
     return mediaDoc as typeof doc
@@ -420,11 +446,24 @@ export function createSanityMediaHydrateResponseAfterChangeHook(options?: {
   }
 }
 
-export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook {
+export type CreateSanityMediaBeforeChangeHookArgs = {
+  localizedAltGroup?: boolean
+}
+
+export function createSanityMediaBeforeChangeHook(
+  args: CreateSanityMediaBeforeChangeHookArgs = {}
+): CollectionBeforeChangeHook {
   return ({ data, operation, originalDoc }) => {
     if (!data) return data
 
-    const mediaData = data as SanityMediaDocument
+    let mediaData = data as SanityMediaDocument
+
+    if (args.localizedAltGroup) {
+      mediaData = {
+        ...mediaData,
+        alt: normalizeLocalizedAltGroup(mediaData.alt, true) as SanityMediaDocument['alt'],
+      }
+    }
     const previous = originalDoc as SanityMediaDocument | undefined
     const hasMedia =
       documentHasMediaFields(mediaData) ||
@@ -452,7 +491,7 @@ export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook 
         : mediaData.originalFilename
 
     const result = {
-      ...data,
+      ...mediaData,
       originalFilename: slugifiedOriginalFilename,
       sync: {
         ...sync,

@@ -33,7 +33,6 @@ export function SanityImageInteractive({
   asset,
   fallback,
   renderFallback,
-  locale,
   alt,
   fallbackAlt,
   fill,
@@ -44,7 +43,6 @@ export function SanityImageInteractive({
   ...imageProps
 }: SanityImageInteractiveProps) {
   const derived = toSanityImageProps(asset, {
-    locale,
     alt,
     fallbackAlt,
     fill,

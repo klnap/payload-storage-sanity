@@ -63,7 +63,6 @@ describe('createSanityMediaAfterReadHook', () => {
     const hook = createSanityMediaAfterReadHook({
       collectionSlug: 'media',
       resolvedPreset: 'full',
-      registry: {},
     })
 
     const hydrated = hook({
@@ -77,7 +76,7 @@ describe('createSanityMediaAfterReadHook', () => {
         sync: { status: 'available' },
       },
       collection: { slug: 'media' } as never,
-      context: { sanitySkipDefaultPopulate: true },
+      context: { sanityStorage: { skipPopulate: true } },
       req: { url: 'http://localhost:3000/api/media/2' } as never,
     })
 
@@ -92,7 +91,7 @@ describe('createSanityMediaAfterReadHook', () => {
         sync: { status: 'available' },
       },
       collection: { slug: 'media' } as never,
-      context: { sanitySkipDefaultPopulate: true },
+      context: { sanityStorage: { skipPopulate: true } },
       req: { url: 'http://localhost:3000/api/media/3' } as never,
     })
 
@@ -138,6 +137,23 @@ describe('createSanityMediaBeforeChangeHook', () => {
     })
 
     expect(result?.sync).toBeUndefined()
+  })
+
+  test('coerces null localized alt group to {} on create', async () => {
+    const hook = createSanityMediaBeforeChangeHook({ localizedAltGroup: true })
+    const result = await hook({
+      data: {
+        alt: null,
+        filename: 'a.png',
+        sanity: { id: 'image-a-png' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'create',
+      req: {} as never,
+    })
+
+    expect(result?.alt).toEqual({})
   })
 })
 

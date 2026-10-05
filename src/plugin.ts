@@ -3,7 +3,11 @@ import type { PluginOptions as CloudStoragePluginOptions } from '@payloadcms/plu
 import type { CollectionConfig, Config, Endpoint, Field, Plugin, UploadConfig } from 'payload'
 
 import { createSanityAdapter } from './adapter/createAdapter'
-import { MEDIA_USAGE_INSPECTOR_IMPORT } from './admin/constants'
+import { wrapSanityAdapterForUploadRollback } from './adapter/wrapSanityAdapterForUploadRollback'
+import {
+  MEDIA_UPLOAD_BUSY_SHIELD_IMPORT,
+  MEDIA_USAGE_INSPECTOR_IMPORT,
+} from './admin/constants'
 import { createSanityClient } from './client/createSanityClient'
 import {
   collectionHasAltField,
@@ -29,14 +33,18 @@ import {
 } from './hooks/media'
 import { createSanityMediaUploadMaxSizeBeforeChangeHook } from './hooks/uploadMaxSize'
 import { sanityMediaForceSelect } from './populate/forceSelect'
+import { sanityMediaDefaultPopulateSelect } from './populate/mediaDefaultPopulateSelect'
+import { presetUsesDefaultPopulate } from './populate/presets'
 import { resolvePopulateOptionsForCollection } from './populate/resolvePopulateOptions'
 import { createMediaReferenceIntegrityBeforeDeleteHook } from './hooks/mediaReferenceIntegrity'
 import { createMediaReplaceSanityAssetAfterChangeHook } from './hooks/replaceSanityAsset'
+import { createSanityUploadAfterChangeChain } from './hooks/uploadAfterChangeChain'
 import { warnSanityStorageConfig } from './utils/sanityConfig'
 import { validateSanityStoragePluginOptions } from './utils/validateSanityStoragePluginOptions'
 import { applyPayloadUploadFileSizeLimit, computeMaxUploadByteLimit } from './utils/uploadMaxSize'
 import { sanityAdminThumbnail } from './utils/sanityAdminThumbnail'
 import { resolveSanitySyncConfig } from './sync/resolveSyncConfig'
+import { resolveCollectionAdmin } from './utils/resolveCollectionAdmin'
 import { resolveSanityStorageMode } from './utils/sanityStorageMode'
 import type { SanityMediaDocument } from './types/sanityStorageDocument'
 import type { SanityStoragePluginOptions } from './types/index'
@@ -63,13 +71,38 @@ function mergeBeforeDeleteHooks(
   }
 }
 
-function mergeAfterChangeHooks(
+/**
+ * Replaces the cloud-storage `afterChange` tail (last hook registered by the plugin)
+ * with a chained hook: cloud upload + replace + hydrate, with Sanity rollback on failure.
+ */
+function replaceCloudStorageAfterChangeWithUploadChain(
   collection: CollectionConfig,
-  extraHooks: NonNullable<CollectionConfig['hooks']>['afterChange']
-): CollectionConfig['hooks'] {
+  args: { client: ReturnType<typeof createSanityClient>; cdnBaseUrl?: string }
+): CollectionConfig {
+  const afterChange = collection.hooks?.afterChange ?? []
+  if (afterChange.length === 0) {
+    return collection
+  }
+
+  const cloudHook = afterChange[afterChange.length - 1]
+  if (!cloudHook) {
+    return collection
+  }
+
+  const userHooks = afterChange.slice(0, -1)
+  const chained = createSanityUploadAfterChangeChain({
+    client: args.client,
+    cloudHook,
+    replaceHook: createMediaReplaceSanityAssetAfterChangeHook(args.client),
+    hydrateHook: createSanityMediaHydrateResponseAfterChangeHook({ cdnBaseUrl: args.cdnBaseUrl }),
+  })
+
   return {
-    ...collection.hooks,
-    afterChange: [...(collection.hooks?.afterChange ?? []), ...(extraHooks ?? [])],
+    ...collection,
+    hooks: {
+      ...collection.hooks,
+      afterChange: [...userHooks, chained],
+    },
   }
 }
 
@@ -113,6 +146,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
     preventDeleteWhenReferenced = true,
     sync,
     uploadMaxSize: pluginUploadMaxSize,
+    admin: pluginAdmin,
   } = options
 
   const client = createSanityClient({ projectId, dataset, token, apiVersion })
@@ -146,7 +180,9 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         {
           ...base,
           adapter: cloudStorageEnabled
-            ? createSanityAdapter({ client, cdnBaseUrl, projectId, dataset, token })
+            ? wrapSanityAdapterForUploadRollback(
+                createSanityAdapter({ client, cdnBaseUrl, projectId, dataset, token })
+              )
             : null,
         },
       ]
@@ -204,6 +240,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
         if (configuredMediaSlugs.has(slug) && collection.upload) {
           const collOptions = collections[slug]
+          const collectionAdmin = resolveCollectionAdmin(pluginAdmin, collOptions)
           const altOptions = resolveCollectionAltOptions(collOptions)
           const uploadConfig = collectionUploadConfig(collection)
           const populateResolved = resolvePopulateOptionsForCollection(options, slug)
@@ -238,6 +275,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
           const existingFields = nextCollection.fields ?? []
           const altFields: Field[] = []
+          const injectedUiFields: Field[] = []
 
           if (altOptions.enabled) {
             if (collectionHasAltField(existingFields)) {
@@ -261,21 +299,40 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             }
           }
 
+          const localizedAltGroup =
+            altOptions.enabled &&
+            localizationLocales.length > 0 &&
+            !collectionHasAltField(existingFields)
+
           const mediaAfterRead = createSanityMediaAfterReadHook({
             collectionSlug: slug,
             cdnBaseUrl,
             resolvedPreset: populateResolved.preset,
-            registry: populateResolved.registry,
             altFallbackLocale: altOptions.fallbackLocale,
+            localPopulate: populateResolved.localPopulate,
+            localizedAltGroup,
           })
+
+          const usesDefaultPopulate = presetUsesDefaultPopulate(populateResolved.preset)
+
+          if (collectionAdmin.usageInspector) {
+            injectedUiFields.push(mediaUsageField)
+          }
+
+          const existingEditComponents = nextCollection.admin?.components?.edit
+          const uploadBusyShieldControls = collectionAdmin.uploadBusyShield
+            ? [
+                ...(existingEditComponents?.beforeDocumentControls ?? []),
+                MEDIA_UPLOAD_BUSY_SHIELD_IMPORT,
+              ]
+            : existingEditComponents?.beforeDocumentControls
 
           nextCollection = {
             ...nextCollection,
-            defaultPopulate: undefined,
-            forceSelect: sanityMediaForceSelect(
-              populateResolved.preset,
-              populateResolved.registry
-            ),
+            defaultPopulate: usesDefaultPopulate
+              ? sanityMediaDefaultPopulateSelect()
+              : undefined,
+            forceSelect: sanityMediaForceSelect(populateResolved.preset),
             endpoints: [
               ...collectionEndpoints,
               createMediaUsageEndpoint({ mediaCollectionSlug: slug }),
@@ -286,11 +343,20 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
               defaultColumns:
                 nextCollection.admin?.defaultColumns ??
                 ['filename', 'name', 'id', 'updatedAt'],
+              components: {
+                ...nextCollection.admin?.components,
+                edit: {
+                  ...existingEditComponents,
+                  ...(uploadBusyShieldControls
+                    ? { beforeDocumentControls: uploadBusyShieldControls }
+                    : {}),
+                },
+              },
             },
             fields: [
               ...existingFields,
               ...altFields,
-              mediaUsageField,
+              ...injectedUiFields,
             ],
             upload,
             hooks: mergeAfterReadHooks(nextCollection, [mediaAfterRead]),
@@ -312,7 +378,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                   plugin: pluginUploadMaxSize,
                   collection: collectionUploadMaxSize,
                 }),
-                createSanityMediaBeforeChangeHook(),
+                createSanityMediaBeforeChangeHook({ localizedAltGroup }),
                 ...(nextCollection.hooks?.beforeChange ?? []),
                 createSanityMediaPersistUpstreamBeforeChangeHook(),
               ],
@@ -359,12 +425,11 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
               createMediaDeleteSanityAssetBeforeDeleteHook(client, slug),
             ]),
           }
-          nextCollection = {
-            ...nextCollection,
-            hooks: mergeAfterChangeHooks(nextCollection, [
-              createMediaReplaceSanityAssetAfterChangeHook(client),
-              createSanityMediaHydrateResponseAfterChangeHook({ cdnBaseUrl }),
-            ]),
+          if (storageMode.mode === 'full') {
+            nextCollection = replaceCloudStorageAfterChangeWithUploadChain(nextCollection, {
+              client,
+              cdnBaseUrl,
+            })
           }
         }
 

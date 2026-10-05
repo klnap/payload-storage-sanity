@@ -1,56 +1,57 @@
 import type { PayloadRequest } from 'payload'
 
+import {
+  isAdminCollectionRoute,
+  isDirectMediaDocumentApiRequest,
+  isMediaCollectionListApiRequest,
+} from './mediaApiRoute'
+import { shouldForcePopulateMorph, shouldSkipPopulateMorph } from './requestContext'
+
 export type ShouldApplyDefaultPopulateArgs = {
   req?: PayloadRequest
   context?: unknown
   collectionSlug?: string
   findMany?: boolean
+  /**
+   * When false, Local API reads keep the full media document (legacy).
+   * @default true for preset `default`
+   */
+  localPopulate?: boolean
 }
 
-/** Payload REST segments after `/api/{collectionSlug}/` that are not document IDs. */
-const RESERVED_COLLECTION_REST_SEGMENTS = new Set(['versions', 'files', 'file'])
-
 /**
- * True when media is returned as a populated relation over the **REST API** (`default` preset).
- * False for admin (`payloadAPI: 'local'`), direct `/api/{collection}` and `/api/{collection}/{id}`
- * (any id shape: UUID, numeric, etc.), and collection list routes.
+ * True when media `afterRead` should return the flat storefront DTO (`DefaultPopulateAsset`).
+ * False for authenticated requests (admin), direct `/api/{media}/:id`, collection list routes, and when opted out on Local API.
  */
 export function shouldApplyDefaultPopulate({
   req,
   context,
   collectionSlug,
+  findMany,
+  localPopulate = true,
 }: ShouldApplyDefaultPopulateArgs): boolean {
-  const ctx = context as Record<string, unknown> | undefined
-  if (ctx?.sanitySkipDefaultPopulate === true) return false
-  if (ctx?.sanityForceDefaultPopulate === true) return true
+  if (shouldSkipPopulateMorph(context)) return false
 
-  if (req?.payloadAPI !== 'REST') {
+  // Admin and other authenticated reads use the same `/api/*` routes as the storefront.
+  // Keep the native media document shape (filename, thumbnails, sanity group) for editors.
+  if (req?.user) return false
+
+  if (shouldForcePopulateMorph(context)) return true
+
+  if (collectionSlug) {
+    if (isDirectMediaDocumentApiRequest(req, collectionSlug)) return false
+    if (isMediaCollectionListApiRequest(req, collectionSlug)) return false
+    if (isAdminCollectionRoute(req, collectionSlug)) return false
+  }
+
+  if (localPopulate === false && req?.payloadAPI === 'local') {
     return false
   }
 
-  const url = req?.url
-  if (url && collectionSlug) {
-    try {
-      const pathname = new URL(url, 'http://localhost').pathname
-      const segments = pathname.split('/').filter(Boolean)
-      const apiIndex = segments.indexOf('api')
-      if (apiIndex >= 0) {
-        const rest = segments.slice(apiIndex + 1)
-        if (rest[0] === collectionSlug) {
-          if (rest.length === 1) {
-            return false
-          }
-          if (rest.length === 2) {
-            const segment = rest[1] ?? ''
-            if (!RESERVED_COLLECTION_REST_SEGMENTS.has(segment)) {
-              return false
-            }
-          }
-        }
-      }
-    } catch {
-      // ignore malformed URL
-    }
+  // Flat DTO only when media is read as a populated relation (dataloader / findMany batch).
+  // Root reads (admin editor, findByID, POST create response) keep the full document shape.
+  if (findMany !== true) {
+    return false
   }
 
   return true

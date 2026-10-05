@@ -1,9 +1,9 @@
 import type { SanityStoragePluginOptions } from '../types/adapter'
-import type { SanityMediaPopulatePresetRegistry } from './presets'
+import { presetUsesDefaultPopulate } from './presets'
 
 export type ResolvedPopulateOptions = {
   preset: string
-  registry: SanityMediaPopulatePresetRegistry
+  localPopulate: boolean
 }
 
 export function resolvePopulateOptionsForCollection(
@@ -18,10 +18,13 @@ export function resolvePopulateOptionsForCollection(
 
   const preset = collPopulate?.preset ?? pluginOptions.populate?.preset ?? 'default'
 
-  const registry: SanityMediaPopulatePresetRegistry = {
-    ...pluginOptions.populate?.presets,
-    ...collPopulate?.presets,
-  }
+  const populateConfig = pluginOptions.populate
+  const localPopulateExplicit =
+    collPopulate && typeof collPopulate === 'object' && 'localPopulate' in collPopulate
+      ? (collPopulate as { localPopulate?: boolean }).localPopulate
+      : populateConfig?.localPopulate
 
-  return { preset, registry }
+  const localPopulate = localPopulateExplicit ?? (presetUsesDefaultPopulate(preset) ? true : false)
+
+  return { preset, localPopulate }
 }

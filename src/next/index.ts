@@ -1,5 +1,5 @@
 export type { DefaultPopulateAsset } from '../types/defaultPopulate'
-export { assetFocalObjectPosition } from '../utils/assetFocalObjectPosition'
+export { focalObjectPosition } from '../utils/focalObjectPosition'
 export { createSanityImage, type CreateSanityImageOptions } from './createSanityImage'
 export { SanityImage, type SanityImageProps } from './SanityImage'
 export { SanityImageClient, type SanityImageClientProps } from './SanityImageClient'

@@ -1,15 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import type { SanityMediaPopulatePresetRegistry } from './presets'
 import { presetUsesDefaultPopulate } from './presets'
 
 type SanityMediaForceSelect = NonNullable<CollectionConfig['forceSelect']>
 
 /** Base forceSelect so hidden `sanity` group is available to afterRead hooks. */
-export function sanityMediaForceSelect(
-  preset: string,
-  registry: SanityMediaPopulatePresetRegistry = {}
-): SanityMediaForceSelect {
+export function sanityMediaForceSelect(preset: string): SanityMediaForceSelect {
   const base = {
     sanity: true,
     alt: true,
@@ -21,7 +17,7 @@ export function sanityMediaForceSelect(
     width: true,
   } as SanityMediaForceSelect
 
-  if (presetUsesDefaultPopulate(preset, registry)) {
+  if (presetUsesDefaultPopulate(preset)) {
     return {
       ...base,
       focalX: true,

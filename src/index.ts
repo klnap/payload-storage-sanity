@@ -38,14 +38,25 @@ export {
 } from './hooks/media'
 export { applyPopulatePreset } from './populate/applyPopulatePreset'
 export { defaultPopulateMediaDoc } from './populate/defaultPopulateMediaDoc'
+export { isBuiltinPopulatePreset, presetUsesDefaultPopulate } from './populate/presets'
 export {
-  defineSanityMediaPopulatePreset,
-  isBuiltinPopulatePreset,
-  presetUsesDefaultPopulate,
-  type SanityMediaPopulatePreset,
-  type SanityMediaPopulatePresetRegistry,
-} from './populate/presets'
+  createPopulate,
+  fullPopulate,
+  getFullPopulateBase,
+  type PopulateFn,
+  type PopulateOptions,
+  type PopulateSelect,
+} from './populate/fullPopulate'
 export { shouldApplyDefaultPopulate } from './populate/shouldApplyDefaultPopulate'
+export { hasExplicitMediaPopulateSelect } from './populate/explicitMediaPopulate'
+export {
+  readSanityStorageContext,
+  SANITY_STORAGE_CONTEXT_KEY,
+  type SanityStorageRequestContext,
+  shouldForcePopulateMorph,
+  shouldMorphMediaPopulate,
+  shouldSkipPopulateMorph,
+} from './populate/requestContext'
 export type { SanityStorageOptions } from './plugin'
 export { sanityStorage } from './plugin'
 export { isSanitySyncEnabled } from './sync/enabled'
@@ -71,7 +82,6 @@ export type {
   SanityImageAsset,
   SanityImageDimensions,
   SanityImagePalette,
-  SanityMediaAsset,
   SanityPaletteSwatch,
   SanityStoragePluginOptions,
   SanityUpstreamFields,
@@ -91,7 +101,7 @@ export {
   syncRoutePath,
 } from './sync/resolveSyncConfig'
 export type { JsonValue } from './utils/json'
-export { assetFocalObjectPosition } from './utils/assetFocalObjectPosition'
+export { focalObjectPosition } from './utils/focalObjectPosition'
 export { classifySanityAssetType } from './utils/classifySanityAssetType'
 export { isSanityCompatibleHost } from './utils/isSanityCompatibleHost'
 export {

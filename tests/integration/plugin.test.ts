@@ -25,11 +25,16 @@ function applyPlugin(collections: Config['collections']): Config {
 }
 
 describe('sanityStorage', () => {
-  test('clears defaultPopulate and sets forceSelect on media collections', () => {
+  test('sets defaultPopulate and forceSelect on media collections for preset default', () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
     const media = config.collections?.find((c) => c.slug === 'media')
 
-    expect(media?.defaultPopulate).toBeUndefined()
+    expect(media?.defaultPopulate).toMatchObject({
+      id: true,
+      url: true,
+      focalX: true,
+      sanity: { metadata: { dimensions: true, lqip: true } },
+    })
     expect(media?.forceSelect).toMatchObject({
       sanity: true,
       alt: true,
@@ -332,6 +337,15 @@ describe('sanityStorage', () => {
     expect(paths).not.toContain('/sanity-storage/reconcile')
   })
 
+  test('replaces cloud-storage afterChange tail with chained upload rollback hook in full mode', () => {
+    const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const afterChangeHooks = media?.hooks?.afterChange ?? []
+
+    // No user afterChange hooks: cloud-storage registers one hook; sanity replaces it with a single chain.
+    expect(afterChangeHooks.length).toBe(1)
+  })
+
   test('reference-integrity hook is first in the beforeDelete chain on media collections', async () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
 
@@ -415,5 +429,79 @@ describe('sanityStorage', () => {
     const beforeDeleteHooks = media?.hooks?.beforeDelete ?? []
 
     expect(beforeDeleteHooks.length).toBe(1)
+  })
+
+  test('registers upload busy shield on beforeDocumentControls by default', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    expect(media?.admin?.components?.edit?.beforeDocumentControls).toContain(
+      '@klnap/payload-storage-sanity/admin#MediaUploadBusyShield'
+    )
+  })
+
+  test('skips upload busy shield when admin.uploadBusyShield is false', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      admin: { uploadBusyShield: false },
+      collections: { media: true },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    const controls = media?.admin?.components?.edit?.beforeDocumentControls ?? []
+    expect(controls).not.toContain(
+      '@klnap/payload-storage-sanity/admin#MediaUploadBusyShield'
+    )
+  })
+
+  test('omits usage inspector UI field when admin.usageInspector is false', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: { admin: { usageInspector: false } } },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    const media = config.collections?.find((c) => c.slug === 'media')
+    expect(
+      media?.fields?.some((f) => 'name' in f && f.name === 'mediaUsageInspector')
+    ).toBe(false)
   })
 });

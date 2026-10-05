@@ -1,6 +1,6 @@
 import type { DefaultPopulateAsset } from '../types/defaultPopulate'
 
-export function assetFocalObjectPosition(
+export function focalObjectPosition(
   asset: Pick<DefaultPopulateAsset, 'focalX' | 'focalY'>
 ): string {
   const x = asset.focalX ?? 50

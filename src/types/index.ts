@@ -1,5 +1,7 @@
 export type {
+  SanityStorageAdminOptions,
   SanityStorageAltOptions,
+  SanityStorageCollectionOptions,
   SanityStoragePluginOptions,
   SanityStoragePopulateConfig,
   SanityStorageUploadMaxSizeConfig,
@@ -17,7 +19,6 @@ export type {
   SanityImagePalette,
   SanityPaletteSwatch,
 } from './asset'
-export type { SanityMediaAsset } from './image'
 export { SANITY_IMAGE_METADATA_EXTRACT } from './asset'
 export type { DefaultPopulateAsset } from './defaultPopulate'
 export { SANITY_ASSET_DEFAULT_POPULATE_FIELDS } from './defaultPopulate'

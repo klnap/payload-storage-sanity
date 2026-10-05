@@ -160,7 +160,7 @@ Default routes use **`sync.basePath`** (`'/sanity-storage'`). Override a single 
 
 ### Query behaviour
 
-- **`defaultPopulate`** on configured media collections is cleared; the plugin sets **`forceSelect`** so hidden `sanity` fields remain available to hooks even when clients use sparse selects.
+- For preset **`default`**, **`defaultPopulate`** on media collections selects fields needed for **`DefaultPopulateAsset`** when parents use sparse selects (`image: true`). **`forceSelect`** still merges hidden `sanity` fields for hooks.
 - **`afterRead`** is the single place that exposes computed `url` / `thumbnailURL` to admin and API consumers.
 
 ---
@@ -182,17 +182,26 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `cdnBaseUrl` | `string` | `'https://cdn.sanity.io'` | CDN origin for `resolvePublicUrl` and Next loaders. |
 | `mode` | `'full' \| 'fields-only' \| 'off'` | `'full'` | See [Storage mode](#storage-mode) below. |
 | `collections` | `Record<string, true \| SanityStorageCollectionOptions>` | — | **Required.** Upload collection slugs. |
-| `populate` | `SanityStoragePopulateConfig` | `{ preset: 'default' }` | Global preset for **nested REST populate**; overridable per collection. Use `full` for the entire media document on relations. |
+| `populate` | `SanityStoragePopulateConfig` | `{ preset: 'default' }` | Preset for nested relations (REST + Local API by default). `localPopulate: false` keeps full media on server `find`. Use `full` for entire media documents on relations. |
 | `sync` | `SanityStorageSyncConfig` | — | Webhooks + reconcile. |
 | `dedupeUploads` | `boolean` | `true` | SHA-1 deduplication on create. |
 | `preventDeleteWhenReferenced` | `boolean` | `true` | Reference integrity guard. |
 | `uploadMaxSize` | `number \| SanityStorageUploadMaxSizeConfig` | — | Max upload size in **bytes** (`default` + optional `byType`). A bare number sets `default` only. |
 | `extraFields` | `Field[]` | `[]` | Extra fields appended to each configured upload collection. |
+| `admin` | `SanityStorageAdminOptions` | — | Default admin UX for configured upload collections (overridable per collection). |
+
+### `SanityStorageAdminOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `uploadBusyShield` | `boolean` | `true` | While a media Save/upload request is in flight: neutral **“Uploading…”** toast, field area non-interactive (preview stays visible). Success uses Payload’s normal admin toast only — no extra success toast from the plugin. |
+| `usageInspector` | `boolean` | `true` | Inject the Usage Inspector UI field on media edit views. |
 
 ### `SanityStorageCollectionOptions`
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `admin` | `SanityStorageAdminOptions` | inherits plugin | Per-collection admin UX overrides. |
 | `alt` | `{ enabled?, required?, fallbackLocale? }` | `enabled: true`, `required: false` | Localized **group** when `localization.locales` exist; plain **`alt` text** field otherwise. `fallbackLocale` drives populate when the request locale has no value. |
 | `disableLocalStorage` | `boolean` | `true` | Keep files off local disk. |
 | `prefix` | `string` | — | Cloud-storage path prefix segment. |
@@ -351,6 +360,7 @@ Upload collections use Payload’s **native** upload preview and **filename** li
 - **Delete Payload row** → upstream Sanity asset removed only when **no other** media documents share the same `sanity.id`.
 - **Replace file on update** → previous Sanity asset deleted after successful upload, with the same reference counting.
 - Adapter **`handleDelete`** from cloud-storage is intentionally a no-op; retention runs in **`beforeDelete`** hooks.
+- **Failed upload persist** (`mode: 'full'` only) → when Sanity `assets.upload` succeeds but Payload fails before the request finishes (metadata patch, replace cleanup, or response hydrate), the plugin deletes **only** the Sanity asset ids uploaded on that same request (`req.context`). This is not a global Sanity janitor — assets created outside Payload or in other requests are never touched.
 
 ### Upload deduplication
 
@@ -399,28 +409,81 @@ Built-in presets: **`default`** (flat **`DefaultPopulateAsset`** on nested relat
 
 | Context | Preset applied? |
 | :--- | :--- |
-| REST **relation** populate (nested media on a post/page) | Yes — default **`preset: 'default'`** (or custom preset) |
-| Admin (`payloadAPI: 'local'`) | No — always full document for editing |
-| Direct `GET /api/media` or `GET /api/media/:id` (numeric, UUID, …) | No — full media API |
-| Collection `find` in server code | No |
+| REST **relation** populate (nested media on a post/page/global) | Yes — **`preset: 'default'`** (or custom preset) |
+| Local API **`find` / `findGlobal`** with `depth` (Next.js `getPayload`, SDK) | Yes — same DTO when **`populate.localPopulate`** is not disabled (default **on**) |
+| Direct `GET /api/media/:id` (REST or local — admin editor) | No — full media document |
+| Authenticated REST/Local reads (logged-in admin editing any doc with upload relations) | No — full media document |
+| `GET /api/media` collection list | No |
+| Preset **`full`** or **`populate.localPopulate: false`** on Local API | No — full document |
 
 `DefaultPopulateAsset` fields: `id`, `url`, `width`, `height`, `aspectRatio`, `focalX`, `focalY`, **`alt`** (`string | null` when empty for the request locale), `lqip`.
 
-Use the **same `locale`** on REST/SDK requests as in your UI when resolving alt. Optional **`collections.media.alt.fallbackLocale`** applies when the request locale has no value in the localized group.
+Use the **same `locale`** on REST/SDK requests as in your UI when resolving alt — not on **`SanityImage`** (`asset.alt` is already a string). Optional **`collections.media.alt.fallbackLocale`** applies when the request locale has no value in the localized group.
 
-Custom presets:
+Nested groups (e.g. `socialMedia.image.asset`) need **`depth ≥ 2`**. Top-level upload relations usually need **`depth ≥ 1`** and `select: { image: true }` (Payload uses the media collection **`defaultPopulate`** select automatically).
+
+### Storefront query cookbook (SDK / REST)
+
+Use **`@payloadcms/sdk`** (or Local API) with **`populate`** on the **upload collection slug** (e.g. `media`). Do **not** rely on `context` for storefront — the official SDK does not serialize `context` on REST.
+
+**Flat default** — shallow relation; plugin morphs to `DefaultPopulateAsset` for `SanityImage`:
 
 ```typescript
-import { defineSanityMediaPopulatePreset } from '@klnap/payload-storage-sanity'
-
-const myPreset = defineSanityMediaPopulatePreset('storefront', ({ doc, locale }) => ({
-  id: doc.id,
-  url: doc.url,
-  alt: resolveLocalizedAlt(doc, locale),
-}))
+const page = await sdk.findGlobal({
+  slug: 'home-page',
+  depth: 1,
+  locale: 'pl',
+  select: { image: true },
+})
 ```
 
-Register via `populate.presets` and set `populate.preset` on the plugin or collection.
+**Manual field select** — native Payload `populate`; plugin hydrates but **does not** morph:
+
+```typescript
+const page = await sdk.find({
+  collection: 'posts',
+  depth: 1,
+  select: { heroImage: true },
+  populate: {
+    media: {
+      filename: true,
+      focalX: true,
+      sanity: { path: true, metadata: { dimensions: true } },
+    },
+  },
+})
+```
+
+**Full media (helper)** — same mechanism as manual select; baseline fields stay aligned with plugin hooks:
+
+```typescript
+import { fullPopulate, createPopulate } from '@klnap/payload-storage-sanity'
+
+const page = await sdk.findGlobal({
+  slug: 'home-page',
+  depth: 1,
+  locale: 'pl',
+  select: { image: true },
+  populate: { media: fullPopulate() },
+})
+
+// Project aliases (partial, card, …)
+export const partialPopulate = createPopulate({ exclude: ['sync', 'mimeType', 'sizes'] })
+populate: { media: partialPopulate({ extend: { credit: true } }) }
+```
+
+**Why `fullPopulate`?** Shallow `select: { image: true }` triggers morph to `DefaultPopulateAsset`. A richer shape requires an explicit `populate[mediaCollectionSlug]` object — Payload has no separate “full mode” flag. The helper keeps that field tree in sync with `defaultPopulate` / `forceSelect` inside the plugin.
+
+**Always full on every relation** — config only: `sanityStorage({ populate: { preset: 'full' } })`.
+
+### Request context (`sanityStorage`, Local API)
+
+Per-request flags under **`context.sanityStorage`** apply to **Local API** (`getPayload`, server components calling `payload.find`). They are not sent by `@payloadcms/sdk` over REST.
+
+| Flag | Effect |
+| :--- | :--- |
+| `skipPopulate` | Skip morph; return hydrated full media document. |
+| `forcePopulate` | Force morph on nested reads; **does not** bypass authenticated admin (`req.user`). |
 
 ---
 
@@ -452,8 +515,26 @@ Import **`@klnap/payload-storage-sanity/admin`** only from admin bundles / `impo
 | Export | Role |
 | :--- | :--- |
 | **`MediaUsageInspector`** | Table of inbound references (auto-placed via injected UI field). |
+| **`MediaUploadBusyShield`** | Client hook for `admin.uploadBusyShield` — “Uploading…” toast during Save/upload (on by default). |
 | **`UnavailableAssetRecovery`** | Client banner when sync status is broken; guides replace / unlink. |
 | **`MEDIA_USAGE_INSPECTOR_IMPORT`** | String token for custom `admin.components` placement. |
+| **`MEDIA_UPLOAD_BUSY_SHIELD_IMPORT`** | Import map path for the busy shield (registered automatically when `uploadBusyShield` is on). |
+
+### Upload busy shield
+
+On by default for configured upload collections. Disable per plugin or collection:
+
+```typescript
+sanityStorage({
+  // ...
+  admin: { uploadBusyShield: false },
+  collections: { media: true },
+})
+```
+
+Before Save you can pick a file, edit **alt**, and save once. During the request the plugin shows a single neutral **“Uploading…”** toast (no banner). When the request finishes, that toast is dismissed and Payload shows its usual success message. User-facing copy does not name the storage provider.
+
+Regenerate the admin **import map** after upgrading if you use `uploadBusyShield` (`payload generate:importmap` or your project’s equivalent).
 
 ---
 

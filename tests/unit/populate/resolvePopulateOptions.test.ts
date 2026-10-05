@@ -13,6 +13,7 @@ describe('resolvePopulateOptionsForCollection', () => {
   test('defaults to default preset when populate omitted', () => {
     const resolved = resolvePopulateOptionsForCollection(baseOptions, 'media')
     expect(resolved.preset).toBe('default')
+    expect(resolved.localPopulate).toBe(true)
   })
 
   test('full preset is explicit opt-in', () => {
@@ -21,6 +22,14 @@ describe('resolvePopulateOptionsForCollection', () => {
       'media'
     )
     expect(resolved.preset).toBe('full')
+    expect(resolved.localPopulate).toBe(false)
   })
 
+  test('localPopulate can be disabled explicitly', () => {
+    const resolved = resolvePopulateOptionsForCollection(
+      { ...baseOptions, populate: { preset: 'default', localPopulate: false } },
+      'media'
+    )
+    expect(resolved.localPopulate).toBe(false)
+  })
 })

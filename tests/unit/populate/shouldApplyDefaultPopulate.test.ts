@@ -29,10 +29,11 @@ describe('shouldApplyDefaultPopulate', () => {
     ).toBe(false)
   })
 
-  test('returns true for collection REST sub-routes (e.g. versions)', () => {
+  test('returns true for collection REST sub-routes (e.g. versions) when batched', () => {
     expect(
       shouldApplyDefaultPopulate({
         collectionSlug: 'media',
+        findMany: true,
         req: restReq('http://localhost:3000/api/media/versions'),
       })
     ).toBe(true)
@@ -51,16 +52,69 @@ describe('shouldApplyDefaultPopulate', () => {
     expect(
       shouldApplyDefaultPopulate({
         collectionSlug: 'media',
+        findMany: true,
         req: restReq('http://localhost:3000/api/globals/test?depth=1'),
       })
     ).toBe(true)
   })
 
-  test('returns false for admin local API (document edit)', () => {
+  test('returns false for nested populate when request is authenticated (admin editor)', () => {
     expect(
       shouldApplyDefaultPopulate({
         collectionSlug: 'media',
-        req: localReq('http://localhost:3000/api/globals/test'),
+        findMany: true,
+        req: {
+          ...restReq('http://localhost:3000/api/globals/test?depth=1'),
+          user: { id: '1', collection: 'users' },
+        } as never,
+      })
+    ).toBe(false)
+  })
+
+  test('returns true for nested populate on Local API (e.g. findGlobal)', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        findMany: true,
+        req: localReq('http://localhost:3000/api/globals/home-page?depth=1'),
+      })
+    ).toBe(true)
+  })
+
+  test('returns false for admin document load without findMany batch', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        req: localReq('http://localhost:3000/admin/collections/media/07c5141a-df0f-4593-8953-0c9e523c3e7c'),
+      })
+    ).toBe(false)
+  })
+
+  test('returns false for admin collection list even when findMany is true', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        findMany: true,
+        req: localReq('http://localhost:3000/admin/collections/media'),
+      })
+    ).toBe(false)
+  })
+
+  test('returns false for direct Local API GET /api/media/:id (admin editor)', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        req: localReq('http://localhost:3000/api/media/42'),
+      })
+    ).toBe(false)
+  })
+
+  test('returns false on Local API when localPopulate is disabled', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        collectionSlug: 'media',
+        localPopulate: false,
+        req: localReq('http://localhost:3000/api/globals/home-page'),
       })
     ).toBe(false)
   })
@@ -75,20 +129,20 @@ describe('shouldApplyDefaultPopulate', () => {
     ).toBe(true)
   })
 
-  test('respects sanitySkipDefaultPopulate context flag', () => {
+  test('respects context.sanityStorage.skipPopulate', () => {
     expect(
       shouldApplyDefaultPopulate({
-        context: { sanitySkipDefaultPopulate: true },
+        context: { sanityStorage: { skipPopulate: true } },
         collectionSlug: 'media',
         req: restReq('http://localhost:3000/api/globals/test'),
       })
     ).toBe(false)
   })
 
-  test('sanitySkipDefaultPopulate on direct REST document route', () => {
+  test('skipPopulate on direct REST document route', () => {
     expect(
       shouldApplyDefaultPopulate({
-        context: { sanitySkipDefaultPopulate: true },
+        context: { sanityStorage: { skipPopulate: true } },
         collectionSlug: 'media',
         req: restReq(
           'http://localhost:3000/api/media/0babf185-2616-41ab-9fb0-1a7f752f5af8'
@@ -97,13 +151,27 @@ describe('shouldApplyDefaultPopulate', () => {
     ).toBe(false)
   })
 
-  test('respects sanityForceDefaultPopulate context flag on local API', () => {
+  test('respects context.sanityStorage.forcePopulate on local API', () => {
     expect(
       shouldApplyDefaultPopulate({
-        context: { sanityForceDefaultPopulate: true },
+        context: { sanityStorage: { forcePopulate: true } },
         collectionSlug: 'media',
         req: localReq('http://localhost:3000/api/media/42'),
       })
     ).toBe(true)
+  })
+
+  test('forcePopulate does not bypass authenticated admin reads', () => {
+    expect(
+      shouldApplyDefaultPopulate({
+        context: { sanityStorage: { forcePopulate: true } },
+        collectionSlug: 'media',
+        findMany: true,
+        req: {
+          ...restReq('http://localhost:3000/api/globals/test?depth=1'),
+          user: { id: 'admin-1', collection: 'users' },
+        } as never,
+      })
+    ).toBe(false)
   })
 })

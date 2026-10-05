@@ -1,6 +1,5 @@
 import type { Field } from 'payload'
 
-import type { SanityMediaPopulatePresetRegistry } from '../populate/presets'
 import type { SanityStorageUploadMaxSizeInput } from '../utils/uploadMaxSize'
 import type { SanitySyncAccessFn } from '../utils/sanitySyncAccess'
 import type { SanityStorageMode } from '../utils/sanityStorageMode'
@@ -33,6 +32,20 @@ export type SanityStorageSyncConfig = {
   access?: SanitySyncAccessFn
 }
 
+export type SanityStorageAdminOptions = {
+  /**
+   * During Save/upload: neutral “Uploading…” toast and non-interactive field area (preview stays visible).
+   * Success uses Payload’s standard admin toast only.
+   * @default true
+   */
+  uploadBusyShield?: boolean
+  /**
+   * Inject the Usage Inspector UI field on media edit views.
+   * @default true
+   */
+  usageInspector?: boolean
+}
+
 export type SanityStorageAltOptions = {
   /**
    * Inject localized `alt` group on configured upload collections.
@@ -53,10 +66,13 @@ export type SanityStorageAltOptions = {
 
 export type SanityStoragePopulateConfig = {
   /** @default 'default' */
-  preset?: 'default' | 'full' | string
-  presets?: SanityMediaPopulatePresetRegistry
-  /** When Payload does not expose populate context, allow forcing flat populate on all afterRead (debug). */
-  defaultPopulateOnRead?: boolean
+  preset?: 'default' | 'full'
+  /**
+   * Apply preset `default` on Local API (`find` / `findGlobal`) as well as REST nested populate.
+   * Direct `GET /api/media/:id` still returns the full document for the admin editor.
+   * @default true when preset is `default`
+   */
+  localPopulate?: boolean
 }
 
 export type {
@@ -66,6 +82,8 @@ export type {
 } from '../utils/uploadMaxSize'
 
 export type SanityStorageCollectionOptions = {
+  /** Per-collection admin UX overrides (merged with plugin-level `admin`). */
+  admin?: SanityStorageAdminOptions
   /**
    * Localized alt group (`alt.pl`, `alt.en`, …). Skipped if the collection already defines `alt`.
    * Defaults: `enabled: true`, `required: false` (including `collections.media: true` shorthand).
@@ -83,6 +101,8 @@ export type SanityStorageCollectionOptions = {
 }
 
 export type SanityStoragePluginOptions = {
+  /** Default admin UX for all configured upload collections (overridable per collection). */
+  admin?: SanityStorageAdminOptions
   projectId: string
   dataset: string
   token?: string

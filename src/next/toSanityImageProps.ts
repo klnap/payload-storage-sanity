@@ -1,5 +1,5 @@
 import type { DefaultPopulateAsset } from '../types/defaultPopulate'
-import { assetFocalObjectPosition } from '../utils/assetFocalObjectPosition'
+import { focalObjectPosition } from '../utils/focalObjectPosition'
 import { resolveAssetAlt, type ResolveAssetAltOptions } from './resolveAssetAlt'
 
 export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
@@ -23,7 +23,7 @@ export function toSanityImageProps(
 
   if (!opts.disableFocal) {
     style.objectFit = 'cover'
-    style.objectPosition = assetFocalObjectPosition(asset)
+    style.objectPosition = focalObjectPosition(asset)
   }
 
   const hasLqip = !opts.disablePlaceholder && Boolean(asset.lqip?.trim())

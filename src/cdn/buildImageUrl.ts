@@ -3,13 +3,13 @@ import imageUrlBuilder from '@sanity/image-url'
 import * as v from 'valibot'
 
 import type { SanityAssetReference } from '../types/asset'
-import type { SanityMediaAsset } from '../types/image'
+import type { SanityMediaDocument } from '../types/sanityStorageDocument'
 import { isMediaAssetAvailable } from '../utils/mediaAvailability'
 import { resolveImageFileRef } from '../utils/resolveAssetRef'
 
 export type SanityImageSource =
   | string
-  | SanityMediaAsset
+  | SanityMediaDocument
   | SanityAssetReference
   | { url?: string | null; sanity?: { id?: string | null } | null }
   | null

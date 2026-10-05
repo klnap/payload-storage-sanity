@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
 import { applyPopulatePreset } from '../../../src/populate/applyPopulatePreset.js'
-import { defineSanityMediaPopulatePreset } from '../../../src/populate/presets.js'
 
 const doc = {
   id: 1,
@@ -19,18 +18,21 @@ const doc = {
   },
 }
 
-describe('applyPopulatePreset custom shape', () => {
-  test('passes locale into custom preset context', () => {
-    const myPreset = defineSanityMediaPopulatePreset('myPreset', {
-      shape(_doc, ctx) {
-        return { locale: ctx.locale }
-      },
-    })
-
-    const result = applyPopulatePreset(doc, 'myPreset', { myPreset }, {
+describe('applyPopulatePreset', () => {
+  test('default preset passes locale into flat DTO', () => {
+    const result = applyPopulatePreset(doc, 'default', {
       locale: 'en',
     })
 
-    expect(result).toEqual({ locale: 'en' })
+    expect(result).toMatchObject({
+      id: 1,
+      url: expect.stringContaining('abc-800x600.jpg'),
+      width: 800,
+    })
+    expect(result).not.toHaveProperty('sanity')
+  })
+
+  test('full preset returns document unchanged', () => {
+    expect(applyPopulatePreset(doc, 'full')).toBe(doc)
   })
 })

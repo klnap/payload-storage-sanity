@@ -31,7 +31,6 @@ export type SanityImageProps = {
 export function SanityImage({
   asset,
   fallback,
-  locale,
   alt,
   fallbackAlt,
   fill,
@@ -42,7 +41,6 @@ export function SanityImage({
   ...imageProps
 }: SanityImageProps) {
   const derived = toSanityImageProps(asset, {
-    locale,
     alt,
     fallbackAlt,
     fill,
