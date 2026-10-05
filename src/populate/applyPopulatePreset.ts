@@ -1,13 +1,12 @@
 import type { SanityMediaDocument } from '../types/sanityStorageDocument'
 import { classifySanityAssetType } from '../utils/classifySanityAssetType'
+import type { ResolveLocalizedAltContext } from '../utils/resolveLocalizedAlt'
 import type { ResolvePublicUrlContext } from '../utils/resolvePublicUrl'
 import { defaultPopulateMediaDoc } from './defaultPopulateMediaDoc'
 import type { SanityMediaPopulatePresetRegistry } from './presets'
 import { isBuiltinPopulatePreset } from './presets'
 
-export type ApplyPopulatePresetContext = ResolvePublicUrlContext & {
-  locale?: string | null
-}
+export type ApplyPopulatePresetContext = ResolvePublicUrlContext & ResolveLocalizedAltContext
 
 export function applyPopulatePreset(
   doc: SanityMediaDocument,

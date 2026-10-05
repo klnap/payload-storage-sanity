@@ -105,10 +105,22 @@ export function createSanityAdapter({
           : uploaded
 
         const patch = mapSanityUploadToMedia(asset, uploadFile, (data ?? {}) as PayloadMediaDraft)
+        const docForUrl = {
+          ...(data ?? {}),
+          ...patch,
+          filename: asset._id,
+        } as SanityMediaDocument
+        const publicUrl = resolvePublicUrl(docForUrl, { cdnBaseUrl })
+        const dimensions =
+          asset._type === 'sanity.imageAsset' ? asset.metadata?.dimensions : undefined
 
         return {
           ...patch,
           filename: asset._id,
+          ...(publicUrl ? { url: publicUrl } : {}),
+          ...(dimensions?.width != null ? { width: dimensions.width } : {}),
+          ...(dimensions?.height != null ? { height: dimensions.height } : {}),
+          ...(asset.size != null ? { filesize: asset.size } : {}),
           sync: {
             ...existingSync,
             status: 'available' as const,

@@ -2,7 +2,7 @@
 
 **Payload CMS ↔ Sanity** storage adapter: uploads live on Sanity’s CDN, metadata and sync state live in Payload, and your frontends consume safe, predictable URLs.
 
-The plugin wraps [`@payloadcms/plugin-cloud-storage`](https://github.com/payloadcms/payload/tree/main/packages/plugin-cloud-storage) with a Sanity-specific adapter, admin tooling, reference-integrity guards, optional webhook reconciliation, and an optional **Next.js** entry point for images.
+The plugin wraps [`@payloadcms/plugin-cloud-storage`](https://github.com/payloadcms/payload/tree/main/packages/plugin-cloud-storage) with a Sanity-specific adapter, admin tooling, reference-integrity guards, optional webhook reconciliation, and an optional **`/next` entry** with image helpers for storefront apps.
 
 [![npm version](https://img.shields.io/npm/v/@klnap/payload-storage-sanity)](https://www.npmjs.com/package/@klnap/payload-storage-sanity)
 [![license](https://img.shields.io/npm/l/@klnap/payload-storage-sanity)](./LICENSE)
@@ -16,13 +16,13 @@ The plugin wraps [`@payloadcms/plugin-cloud-storage`](https://github.com/payload
 - [Quick start](#quick-start)
 - [What the plugin adds to Payload](#what-the-plugin-adds-to-payload)
 - [Configuration](#configuration)
+- [Document IDs](#document-ids)
 - [Prevention, safety, and data integrity](#prevention-safety-and-data-integrity)
 - [Populate presets and REST shape](#populate-presets-and-rest-shape)
 - [Upstream sync (webhooks and reconcile)](#upstream-sync-webhooks-and-reconcile)
 - [Admin UI (`/admin`)](#admin-ui-admin)
 - [Security model](#security-model)
 - [Package exports and tree-shaking](#package-exports-and-tree-shaking)
-- [Next.js (`/next`)](#nextjs-next)
 - [Programmatic APIs](#programmatic-apis)
 - [License](#license)
 
@@ -38,8 +38,8 @@ The plugin wraps [`@payloadcms/plugin-cloud-storage`](https://github.com/payload
 | **Guards** | Block media delete when content still references the row; scan **current** published + draft state (not stale version history). |
 | **Sync** | Optional HMAC webhooks + batch reconcile when Sanity changes upstream. |
 | **Dedupe** | Optional SHA-1 deduplication reuses an existing Sanity asset for identical bytes. |
-| **Document IDs** | Works with Payload **numeric** ids and **`idType: 'uuid'`** (PostgreSQL and others) — retention, sync, reconcile, dedupe, and populate gates all use the same id shape. |
-| **Frontend** | Optional `@klnap/payload-storage-sanity/next` — `SanityImage` (RSC-friendly), loaders, flat `DefaultPopulateAsset` for REST. |
+| **Document IDs** | Works with Payload **numeric** ids and **`idType: 'uuid'`** (PostgreSQL and others) — retention, sync, reconcile, dedupe, and populate gates all use the same id shape. See [Document IDs](#document-ids). |
+| **Consumers** | Optional [`@klnap/payload-storage-sanity/next`](https://github.com/klnap/payload-storage-sanity/blob/main/docs/consumers.md) — `SanityImage`, `createSanityImage`, **`DefaultPopulateAsset`** from REST populate. |
 
 ---
 
@@ -77,21 +77,23 @@ export default buildConfig({
     sanityStorage({
       projectId: process.env.SANITY_PROJECT_ID!,
       dataset: process.env.SANITY_DATASET!,
-      token: process.env.SANITY_API_TOKEN,
-      populate: { preset: 'default' }, // flat assets on REST relations (see below)
+      token: process.env.SANITY_API_TOKEN!,
+      // nested REST populate uses preset `default` (flat DTO) — see Populate presets
       collections: {
         media: true,
       },
       sync: {
         enabled: true,
-        webhookSecret: process.env.SANITY_WEBHOOK_SECRET!,
+        webhook: { secret: process.env.SANITY_WEBHOOK_SECRET! },
       },
     }),
   ],
 })
 ```
 
-Set `SANITY_PROJECT_ID`, `SANITY_DATASET`, and a **write** token for uploads. Webhook secret is only required when `sync.enabled` is on.
+**Required:** `projectId`, `dataset`, and a **write** `token` when **`mode: 'full'`** (default) or **`sync.enabled`**. With **`sync.enabled`**, also **`sync.webhook.secret`**.
+
+Invalid plugin options throw at config time: missing **`projectId`** / **`dataset`**, **`mode: 'full'`** or **`sync.enabled`** without **`token`**, or **`sync.enabled`** without **`sync.webhook.secret`**.
 
 ---
 
@@ -119,7 +121,7 @@ Unless you override them on the collection’s `upload` config:
 | Setting | Default | Effect |
 | :--- | :--- | :--- |
 | `disableLocalStorage` | `true` | No duplicate copy on the Payload server disk. |
-| `disablePayloadAccessControl` | `true` | Admin and APIs use **direct Sanity CDN URLs** (no Payload file proxy). |
+| `disablePayloadAccessControl` | `true` | Admin and APIs use **direct Sanity CDN URLs** (no Payload file proxy). See [Security model](#security-model). |
 | `hideRemoveFile` | `true` | “Remove file” hidden — lifecycle is tied to Sanity + hooks. |
 | `displayPreview` | `true` | Preview in admin. |
 | `adminThumbnail` | Sanity CDN thumbnail | List view uses `sanityAdminThumbnail` + `resolvePublicUrl`. |
@@ -131,8 +133,9 @@ Unless you override them on the collection’s `upload` config:
 | :--- | :--- | :--- |
 | **`beforeChange`** (sync metadata) | Create / update | Normalizes `sync`, slugifies `originalFilename`. |
 | **`beforeChange`** (persist upstream) | Update | **Metadata-only saves** (alt, name, focal): merges hidden `sanity.*` and file fields from `originalDoc`; clears stale cloud-storage upload context; sets **`skipCloudStorage`** so alt-only saves never call Sanity `assets.upload`. |
+| **`beforeChange`** (max size) | Create / update with bytes | Per-kind limits when `uploadMaxSize` is set. The plugin raises Payload **`upload.limits.fileSize`** to the **maximum** across all configured limits (global multipart cap for the whole app, not only Sanity media). |
 | **`beforeChange`** (dedupe) | Create | SHA-1 hash; reuses existing row / skips duplicate upload when `dedupeUploads` is on. |
-| **`afterOperation`** (dedupe) | Create | Deletes duplicate row if dedupe matched an existing asset. |
+| **`afterOperation`** (dedupe) | Create | If dedupe matched an existing row: deletes the **new** duplicate DB row and **returns the existing document** (use the `id` from the create response). |
 | **`afterRead`** | Read | `sanitizeMediaDocument` + hydrate root **`url`** / **`thumbnailURL`** (not persisted); optional populate preset shaping. |
 | **`afterChange`** (replace) | Update | When `sanity.id` changes after re-upload, deletes **previous** Sanity asset if no other Payload rows reference it. |
 | **`beforeDelete`** (reference guard) | Delete | **First** in chain: `findMediaUsage` on live published + draft; throws `400` if still referenced. |
@@ -144,16 +147,16 @@ Cloud-storage’s own `beforeChange` / `afterChange` still run for real file upl
 
 | Route | Description |
 | :--- | :--- |
-| `GET /api/{media}/:id/usage` | JSON list of documents/globals referencing this media (powers Usage Inspector). |
+| `GET /api/{media}/:id/usage` | JSON list of references (Usage Inspector). Requires a logged-in user with **read** access to that media document. |
 
 ### Global endpoints (when sync is enabled)
 
 | Route | Default path | Description |
 | :--- | :--- | :--- |
-| Webhook | `POST /api/sanity/webhook` | Sanity dataset events; HMAC verified. |
-| Reconcile | `POST /api/sanity/reconcile` | Authenticated batch drift repair (`dryRun`, `limit`). |
+| Webhook | `POST /api/sanity-storage/webhook` | Sanity dataset events; HMAC verified. |
+| Reconcile | `POST /api/sanity-storage/reconcile` | Batch drift repair (`dryRun`, `limit`). **`sync.access`** (default: Payload **admin** auth collection only, usually `users`). |
 
-Paths overridable via `sync.webhookPath` / `sync.reconcilePath`.
+Default routes use **`sync.basePath`** (`'/sanity-storage'`). Override a single route with `sync.webhook.path` / `sync.reconcile.path`, or change both via `sync.basePath`. Set `sync.reconcile: false` to disable batch reconcile.
 
 ### Query behaviour
 
@@ -174,46 +177,111 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | :--- | :--- | :--- | :--- |
 | `projectId` | `string` | — | **Required.** Sanity project ID. |
 | `dataset` | `string` | — | **Required.** Target dataset. |
-| `token` | `string` | — | Write token for uploads, fetch, reconcile (server-only). |
-| `apiVersion` | `string` | `'2024-01-01'` | Sanity API version. |
+| `token` | `string` | — | Write token for uploads, fetch, reconcile (server-only). **Required** when `mode: 'full'` or `sync.enabled`. |
+| `apiVersion` | `string` | `'2026-01-01'` | Sanity API version. |
 | `cdnBaseUrl` | `string` | `'https://cdn.sanity.io'` | CDN origin for `resolvePublicUrl` and Next loaders. |
-| `enabled` | `boolean` | `true` | `false` disables adapter (fields-only mode with `alwaysInsertFields`). |
-| `alwaysInsertFields` | `boolean` | `false` | Inject Sanity fields without full storage adapter. |
+| `mode` | `'full' \| 'fields-only' \| 'off'` | `'full'` | See [Storage mode](#storage-mode) below. |
 | `collections` | `Record<string, true \| SanityStorageCollectionOptions>` | — | **Required.** Upload collection slugs. |
-| `populate` | `SanityStoragePopulateConfig` | `{ preset: 'full' }` | Global preset; overridable per collection. |
+| `populate` | `SanityStoragePopulateConfig` | `{ preset: 'default' }` | Global preset for **nested REST populate**; overridable per collection. Use `full` for the entire media document on relations. |
 | `sync` | `SanityStorageSyncConfig` | — | Webhooks + reconcile. |
 | `dedupeUploads` | `boolean` | `true` | SHA-1 deduplication on create. |
 | `preventDeleteWhenReferenced` | `boolean` | `true` | Reference integrity guard. |
+| `uploadMaxSize` | `number \| SanityStorageUploadMaxSizeConfig` | — | Max upload size in **bytes** (`default` + optional `byType`). A bare number sets `default` only. |
 | `extraFields` | `Field[]` | `[]` | Extra fields appended to each configured upload collection. |
 
 ### `SanityStorageCollectionOptions`
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `alt` | `{ enabled?, required? }` | `enabled: true`, `required: false` | Localized alt group injection. |
+| `alt` | `{ enabled?, required?, fallbackLocale? }` | `enabled: true`, `required: false` | Localized **group** when `localization.locales` exist; plain **`alt` text** field otherwise. `fallbackLocale` drives populate when the request locale has no value. |
 | `disableLocalStorage` | `boolean` | `true` | Keep files off local disk. |
 | `prefix` | `string` | — | Cloud-storage path prefix segment. |
-| `disablePayloadAccessControl` | `boolean` | `true` | Serve from CDN directly in admin. |
+| `disablePayloadAccessControl` | `boolean` | `true` | Direct CDN URLs in admin/API (not a confidentiality control — see Security). |
 | `preventDeleteWhenReferenced` | `boolean` | inherits global | Per-collection delete guard. |
 | `populate` | `SanityStoragePopulateConfig` | inherits global | Per-collection populate preset. |
-| `stableAdminThumbnail` | `boolean` | `true` | Fixed admin preview + shimmer; disables stock upload `displayPreview`. |
+| `uploadMaxSize` | `number \| SanityStorageUploadMaxSizeConfig` | — | Overrides plugin `uploadMaxSize` for this collection (deep-merge `byType`). |
+
+### `SanityStorageUploadMaxSizeConfig`
+
+All values are **bytes**. You may pass a **number** shorthand (equivalent to `{ default: number }`).
+
+| Field | Role |
+| :--- | :--- |
+| **`default`** | Limit for every upload kind that has no entry in `byType`. |
+| **`byType`** | Optional map: **`image`**, **`video`**, **`file`**. Each entry **overrides** `default` for that kind (stricter or looser). Classification: image MIME/extensions, video MIME/common extensions, else **`file`**. |
+
+Import **`MB`** from the main entry (`25 * MB`). Plugin and collection configs are merged: collection **`default`** wins over the plugin; **`byType`** is **deep-merged** (collection `byType.file` does not remove plugin `byType.image`). The plugin raises **`upload.limits.fileSize`** to the **largest** limit across all merged configs and never lowers a larger limit already set on **`upload`** or **`bodyParser.limits.fileSize`** (Payload merges both into busboy; the plugin only writes **`upload`**). `beforeChange` still enforces the **per-kind** cap when bytes are present.
+
+```typescript
+import { MB, sanityStorage } from '@klnap/payload-storage-sanity'
+
+sanityStorage({
+  // ...
+  uploadMaxSize: {
+    default: 25 * MB,
+    byType: {
+      image: 10 * MB,
+      video: 100 * MB,
+      file: 5 * MB,
+    },
+  },
+  collections: {
+    media: {
+      uploadMaxSize: {
+        byType: { file: 2 * MB }, // overrides plugin `byType.file` (5 * MB); plugin `byType.image` (10 * MB) still applies
+      },
+    },
+  },
+})
+```
+
+Validation runs in `beforeChange` when a new file is present (create or replace); metadata-only saves are unchanged.
+
+### Storage mode
+
+| Mode | Cloud-storage plugin | Sanity adapter / uploads | Dedupe + Sanity delete / replace hooks | Plugin fields, `afterRead`, usage endpoint, `uploadMaxSize`, sync routes |
+| :--- | :--- | :--- | :--- | :--- |
+| **`full`** (default) | enabled | yes | yes | yes |
+| **`fields-only`** | enabled with **`alwaysInsertFields`** (injects cloud-storage field layout; **no** Sanity adapter / no uploads via Payload) | no | no | yes |
+| **`off`** | disabled | no | no | yes (your collection must define any `sanity` / upload fields you still need) |
+
+Use **`fields-only`** when another process uploads to Sanity but you want Payload metadata, populate, and sync. Use **`off`** only when cloud-storage must not register on those collections at all. In **`fields-only`** and **`full`**, **`afterRead`** still runs **`sanitizeMediaDocument`** (unavailable upstream assets get **`url`** / **`thumbnailURL`** cleared in API responses, same as in **`full`**).
 
 ### `SanityStorageSyncConfig`
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `enabled` | `boolean` | `false` | Master switch for sync features. |
-| `webhookSecret` | `string` | — | HMAC secret (required to register webhook route). |
-| `webhookPath` | `string` | `'/sanity/webhook'` | Mounted under `/api`. |
-| `webhookCollection` | `string` | first configured slug | Media collection for webhook updates. |
+| `basePath` | `string` | `'/sanity-storage'` | Prefix for webhook + reconcile routes under `/api`. |
+| `webhook` | `{ secret, path?, collection? }` | — | Registers webhook route when `secret` is set. |
+| `reconcile` | `{ path?, collection? } \| false` | reconcile on | Batch reconcile endpoint; `false` disables it. |
 | `onDeleted` | `'mark' \| 'delete'` | `'mark'` | Upstream delete → soft mark vs hard delete Payload row. |
-| `reconcile` | `boolean` | `true` | Expose reconcile endpoint when sync enabled. |
-| `reconcilePath` | `string` | `'/sanity/reconcile'` | Mounted under `/api`. |
-| `reconcileCollection` | `string` | first configured slug | Collection scanned in reconcile. |
+| `access` | `({ req }) => boolean` | admin auth collection | Who may call **`POST /api/sanity-storage/reconcile`** (default path). |
 
-### Localized `alt` group
+```typescript
+sync: {
+  enabled: true,
+  basePath: '/sanity-storage',
+  webhook: {
+    secret: process.env.SANITY_WEBHOOK_SECRET!,
+    collection: 'media',
+  },
+  reconcile: { collection: 'media' },
+  // reconcile: false,
+  onDeleted: 'mark',
+}
+```
 
-Requires `localization.locales` in Payload config. API shape:
+### `alt` field injection
+
+When `collections.*.alt.enabled` (default **true**):
+
+- With **`localization.locales`**: injects a localized **group** (`alt.pl`, `alt.en`, …).
+- Without localization: injects a single **`alt`** text field.
+
+Optional **`alt.fallbackLocale`** applies during populate when the request locale has no value in the group.
+
+Localized API shape:
 
 ```json
 "alt": { "pl": "Opis", "en": "Caption" }
@@ -261,17 +329,17 @@ Auto-injected on every configured media document:
 
 Editing **alt**, **name**, focal point, etc. without re-uploading no longer strips hidden **`sanity.path`** / **`url`** or triggers a spurious re-upload from stale request context. **Alt-only saves never upload to Sanity** (no new bytes → cloud-storage is skipped).
 
+### Crop / focal (admin)
+
+Enable Payload’s native **`upload.crop`** and **`upload.focalPoint`** on your media collection (see harness `Media.ts`). Crop and focal saves send **`uploadEdits`** and re-process the image (fetch → Sharp → new bytes). The plugin treats that as a real re-upload: it does **not** set `skipCloudStorage`, does **not** merge stale `sanity.*` / `width` / `height` from `originalDoc`, and passes through the cloud-storage metadata patch after Sanity `assets.upload`. Top-level **`url`** and dimensions are persisted on upload so Payload can fetch the correct CDN file for the next crop (no thumbnail transforms). An **`afterChange`** hook re-hydrates **`url`** / **`thumbnailURL`** on the PATCH response (Payload runs `afterRead` before cloud-storage finishes, which would otherwise leave a stale admin preview until refresh).
+
 ### Shared media row vs new upload
 
 Many articles can point at the **same** Payload media document. **Replacing the file on that row** keeps the same document `id`, so every article with that relation gets the new CDN URL after the next read or populate (watch front-end cache / ISR). **Metadata-only edits** stay in Payload only; Sanity asset bytes are unchanged. **New media row** or changing which media an article references only affects documents you wire up manually.
 
-### Stable admin preview (default)
+### Admin list and edit preview
 
-When **`stableAdminThumbnail`** is enabled (default `true` on configured collections), the plugin injects a fixed-size preview with shimmer while the CDN image loads and keeps the previous image visible until a new `src` finishes loading—so replace/save does not flash an empty slot. Payload’s built-in upload `displayPreview` is turned off to avoid duplicate previews. Set `collections.media.stableAdminThumbnail: false` to restore stock behaviour.
-
-### `SanityImage` in Next.js apps
-
-Use a thin app wrapper so `fallback` defaults correctly: destructure `fallback = defaultFallback` **before** spreading props (`undefined` → default shimmer, `null` → disable, a node → custom). See `test-next/lib/sanity-image.tsx` for a reference.
+Upload collections use Payload’s **native** upload preview and **filename** list column. The plugin only sets **`adminThumbnail`** (CDN URL from `url` / `sanity.path`) and leaves **`displayPreview`** enabled unless you override it in collection `upload`.
 
 ### `afterRead` sanitization
 
@@ -286,22 +354,59 @@ Use a thin app wrapper so `fallback` defaults correctly: destructure `fallback =
 
 ### Upload deduplication
 
-When `dedupeUploads: true` (default), identical file bytes reuse an existing media row and skip a second Sanity upload.
+When `dedupeUploads: true` (default), identical file bytes on **create**:
+
+1. **`beforeChange`** finds an existing row with the same SHA-1, sets **`skipCloudStorage`**, and records the existing document id in request context.
+2. Payload may still insert a short-lived duplicate row for the duration of the operation.
+3. **`afterOperation`** deletes that duplicate row and **returns the existing media document** from the create API (same **`id`** as the canonical asset). Treat the response body as the source of truth for `id`; no second Sanity upload runs.
+
+If the process crashes **after** Payload inserts the duplicate row but **before** `afterOperation` runs, an extra media row can remain (same **`sanity.id`** and **`sanity.sha1hash`** as the canonical row). Batch reconcile reports these as **`duplicates`**; remove them manually when you are sure which row is canonical.
+
+---
+
+## Document IDs
+
+Payload **numeric** ids and **`idType: 'uuid'`** (database adapter option) both work — dedupe, usage, sync, reconcile, and **`DefaultPopulateAsset.id`** follow the same id shape. Turning on **`idType: 'uuid'`** on a database that already has numeric ids requires a **migration** (PostgreSQL will reject in-place `ALTER COLUMN … TYPE uuid` until you backfill or recreate tables).
+
+```typescript
+// payload.config.ts — Postgres + UUID example
+import { buildConfig } from 'payload'
+import { postgresAdapter } from '@payloadcms/db-postgres'
+import { sanityStorage } from '@klnap/payload-storage-sanity'
+
+export default buildConfig({
+  db: postgresAdapter({
+    idType: 'uuid',
+    pool: { connectionString: process.env.DATABASE_URL },
+  }),
+  collections: [{ slug: 'media', upload: true }],
+  plugins: [
+    sanityStorage({
+      projectId: process.env.SANITY_PROJECT_ID!,
+      dataset: process.env.SANITY_DATASET!,
+      token: process.env.SANITY_API_TOKEN!,
+      collections: { media: true },
+    }),
+  ],
+})
+```
 
 ---
 
 ## Populate presets and REST shape
 
-Built-in presets: **`full`** (entire media document) and **`default`** (flat **`DefaultPopulateAsset`**).
+Built-in presets: **`default`** (flat **`DefaultPopulateAsset`** on nested relations — **plugin default**) and **`full`** (entire media document, explicit opt-in).
 
 | Context | Preset applied? |
 | :--- | :--- |
-| REST **relation** populate (nested media on a post/page) | Yes — when `preset: 'default'` |
+| REST **relation** populate (nested media on a post/page) | Yes — default **`preset: 'default'`** (or custom preset) |
 | Admin (`payloadAPI: 'local'`) | No — always full document for editing |
 | Direct `GET /api/media` or `GET /api/media/:id` (numeric, UUID, …) | No — full media API |
 | Collection `find` in server code | No |
 
-`DefaultPopulateAsset` fields: `id`, `url`, `width`, `height`, `aspectRatio`, `focalX`, `focalY`, `alt`, `lqip`.
+`DefaultPopulateAsset` fields: `id`, `url`, `width`, `height`, `aspectRatio`, `focalX`, `focalY`, **`alt`** (`string | null` when empty for the request locale), `lqip`.
+
+Use the **same `locale`** on REST/SDK requests as in your UI when resolving alt. Optional **`collections.media.alt.fallbackLocale`** applies when the request locale has no value in the localized group.
 
 Custom presets:
 
@@ -323,16 +428,20 @@ Register via `populate.presets` and set `populate.preset` on the plugin or colle
 
 ### Webhooks
 
-Point Sanity at `POST https://your-cms.example.com/api/sanity/webhook`.  
+Point Sanity at `POST https://your-cms.example.com/api/sanity-storage/webhook` (or your `sync.basePath` + `/webhook`).  
 Signature: **`verifySanityWebhookSignature`** (HMAC-SHA256, timestamp tolerance).
+
+Respond with **2xx quickly** and treat handlers as **idempotent** — Sanity retries webhook delivery on failure or slow responses.
 
 On **create/update** upstream: matching Payload rows get metadata patches and `sync.status = 'available'`.  
 On **delete** upstream: `onDeleted: 'mark'` (default) sets `deleted` and clears URLs, or `'delete'` removes Payload rows.
 
 ### Batch reconcile
 
-`POST /api/sanity/reconcile` (logged-in user required). Body optional: `{ "dryRun": true, "limit": 500 }`.  
-Programmatic: **`reconcileSanityMedia`** from the main entry.
+`POST /api/sanity-storage/reconcile`. Body optional: `{ "dryRun": true, "limit": 500 }`.  
+HTTP JSON summary: `{ dryRun, scanned, updated, duplicates }` or, when `dryRun: true`, `{ dryRun, scanned, wouldUpdate, duplicates }` (`duplicates` = dedupe orphan rows sharing **`sanity.id`** + **`sanity.sha1hash`** with an older row; reported only, not auto-deleted).  
+Default **`sync.access`**: only users from Payload’s admin auth collection (`config.admin.user`, usually **`users`**). Not every logged-in collection (e.g. `customers`) unless you allow it explicitly.  
+Programmatic: **`reconcileSanityMedia`** returns the full **`ReconcileReport`** (pass your own access rules in scripts).
 
 ---
 
@@ -353,7 +462,8 @@ Import **`@klnap/payload-storage-sanity/admin`** only from admin bundles / `impo
 - **`token`** lives in server config / env — never in collection fields or REST JSON.
 - All Sanity writes and fetches run **on the Payload server**.
 - Admin UI calls **Payload REST** only; it never receives the Sanity token.
-- Public **CDN URLs** are read-only and asset-scoped.
+- **`disablePayloadAccessControl`** defaults to **`true`**: admin and APIs expose **direct Sanity CDN URLs**. Anyone with the URL can fetch the bytes; Payload collection **read** rules do **not** gate CDN access. That is appropriate for most storefronts (public product images) but not for confidential files — use private storage, signed URLs, or keep files behind Payload’s proxy (`disablePayloadAccessControl: false`) and understand the trade-offs.
+- Public **CDN URLs** are read-only and asset-scoped when using the default CDN model.
 
 ---
 
@@ -368,7 +478,7 @@ The package is **ESM-only** (`"type": "module"`) with **`"sideEffects": false`**
 | `@klnap/payload-storage-sanity` | Payload config, jobs, scripts | `sanityStorage`, hooks, `resolvePublicUrl`, sync helpers, types |
 | `@klnap/payload-storage-sanity/admin` | Admin `importMap` / React admin | Usage Inspector, recovery UI |
 | `@klnap/payload-storage-sanity/client` | Server utilities | `createSanityClient`, metadata extract constants |
-| `@klnap/payload-storage-sanity/next` | Next.js app | `SanityImage`, loaders, `toSanityImageProps` |
+| `@klnap/payload-storage-sanity/next` | Storefront / Next.js app | `SanityImage`, loaders, `toSanityImageProps` |
 | `@klnap/payload-storage-sanity/next/loader` | `next.config` only | Default export for `images.loaderFile` |
 
 ### What not to import where
@@ -389,100 +499,7 @@ The package is **ESM-only** (`"type": "module"`) with **`"sideEffects": false`**
 
 ### Published files
 
-Only `dist/`, `README.md`, `CHANGELOG.md`, and `LICENSE` ship on npm — no raw `src/`.
-
----
-
-## Next.js (`/next`)
-
-Optional helpers for App Router sites that consume **`DefaultPopulateAsset`** from the Payload REST API (SDK or `fetch` with `depth` + populate).
-
-### `SanityImage` (Server Component)
-
-- **No `'use client'`** on the main export.
-- Runs **`toSanityImageProps`** on the server (alt, focal `object-position`, LQIP blur placeholder).
-- If the asset/url is missing → renders optional **`fallback`** (server).
-- If the image loads → renders a **small client child** (`SanityImageClient`) only for **`next/image` `onError`** (CDN failure).
-
-| Prop | Description |
-| :--- | :--- |
-| `asset` | `DefaultPopulateAsset \| null` from populated relations. |
-| `fallback` | React node when missing or failed load. `fallback={null}` disables fallback for that instance. |
-| `locale` / `alt` / `fallbackAlt` | Passed to `resolveAssetAlt`. |
-| `fill`, `disableFocal`, `disablePlaceholder` | Layout and LQIP behaviour. |
-| … | Other props forwarded to `next/image` (except derived `src`, `width`, etc.). |
-
-**App-wide default (recommended):** thin wrapper — no Provider in the plugin.
-
-```tsx
-// lib/sanity-image.tsx
-import type { ComponentProps } from 'react'
-import { SanityImage as Base } from '@klnap/payload-storage-sanity/next'
-
-const defaultFallback = (
-  <div
-    className="absolute inset-0 bg-zinc-200/70 backdrop-blur-sm dark:bg-zinc-800/70"
-    aria-hidden
-  />
-)
-
-export function SanityImage({
-  fallback = defaultFallback,
-  ...props
-}: ComponentProps<typeof Base>) {
-  return <Base {...props} fallback={fallback} />
-}
-```
-
-```tsx
-<SanityImage asset={hero} sizes="100vw" fill />
-<SanityImage asset={hero} fallback={<div className="bg-red-100" />} />
-<SanityImage asset={hero} fallback={null} />
-```
-
-Use **`className="absolute inset-0 …"`** on fallback when the image uses **`fill`**.
-
-### `SanityImageInteractive` (`'use client'`)
-
-Same as `SanityImage` but supports **`renderFallback={({ reason, asset }) => …}`** when you need different UI for **`missing`** vs **`error`**. Import only from a client module.
-
-### `toSanityImageProps`
-
-Pure function — use in RSC or tests without rendering:
-
-```typescript
-import { toSanityImageProps } from '@klnap/payload-storage-sanity/next'
-
-const props = toSanityImageProps(asset, { locale: 'pl', fill: true })
-```
-
-### Image loader (`/next` and `/next/loader`)
-
-```typescript
-// next.config.ts
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
-  images: {
-    loader: 'custom',
-    loaderFile: './node_modules/@klnap/payload-storage-sanity/dist/next/loader.js',
-    // or copy the one-liner from docs into your repo
-  },
-}
-```
-
-- **`createSanityImageLoader({ cdnBaseUrl })`** — custom loader with your CDN host rules.
-- **`sanityCdnUrl`**, **`appendSanityCdnParams`** — append `w` / `q` for compatible Sanity CDN hosts.
-
-### Fallback helpers
-
-Exported for custom UI: **`resolveSanityImageFallback`**, **`shouldUseSanityImageFallback`**, types **`SanityImageFallbackReason`**, **`SanityImageFallbackProps`**.
-
-### Next.js tree-shaking
-
-- Import **`@klnap/payload-storage-sanity/next`** only in app code.
-- **`SanityImageClient`** is a separate module; pages that never render images do not need to import `/next` at all.
-- Keep **`payload.config.ts`** on the main entry — never import `/next` there.
+`dist/`, `docs/`, `README.md`, `CHANGELOG.md`, and `LICENSE` ship on npm — no raw `src/`. Storefront integration is in **[docs/consumers.md](https://github.com/klnap/payload-storage-sanity/blob/main/docs/consumers.md)**.
 
 ---
 
@@ -494,7 +511,9 @@ Selected exports from the main entry (see `src/index.ts` for the full list):
 | :--- | :--- |
 | `sanityStorage` | Payload plugin factory. |
 | `resolvePublicUrl` | CDN URL + optional image transforms. |
-| `resolveLocalizedAlt` | `alt[locale]` without cross-locale fallback. |
+| `resolveLocalizedAlt` | Plain or localized `alt`; optional `fallbackLocale`. |
+| `MB`, `uploadMaxSize` helpers | `mergeUploadMaxSizeConfig`, `computeMaxUploadByteLimit`, … |
+| `defaultSanitySyncAccess` | Default `sync.access` for reconcile. |
 | `buildSanityImageUrl` | Build URL from ref or populated doc (non-React). |
 | `reconcileSanityMedia` | Batch sync in scripts. |
 | `verifySanityWebhookSignature` | Custom webhook routes. |

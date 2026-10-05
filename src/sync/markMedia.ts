@@ -52,9 +52,6 @@ export async function markMediaBySanityAssetId({
 
     if (doc == null) continue
 
-    const unavailable =
-      effectiveStatus === 'missing' || effectiveStatus === 'deleted' || effectiveStatus === 'error'
-
     const data: PayloadMediaPatch = {
       ...patch,
       ...mergeMediaSync(

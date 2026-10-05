@@ -14,6 +14,8 @@ export {
   localizedAltGroupField,
   type LocaleLike,
   type LocalizedAltGroupFieldOptions,
+  plainAltTextField,
+  type PlainAltTextFieldOptions,
   resolveCollectionAltOptions,
   type ResolvedCollectionAltOptions,
 } from './fields/localizedAltGroup'
@@ -49,8 +51,8 @@ export { sanityStorage } from './plugin'
 export { isSanitySyncEnabled } from './sync/enabled'
 export { fetchSanityAssetSafe } from './sync/fetchAsset'
 export { markMediaBySanityAssetId } from './sync/markMedia'
-export type { ReconcileReport } from './sync/reconcile'
-export { reconcileSanityMedia } from './sync/reconcile'
+export type { ReconcileHttpResponse, ReconcileReport } from './sync/reconcile'
+export { formatReconcileHttpResponse, reconcileSanityMedia } from './sync/reconcile'
 export type { SanitySyncStatus } from './sync/status'
 export {
   isUnavailableSyncStatus,
@@ -75,6 +77,19 @@ export type {
   SanityUpstreamFields,
 } from './types/index'
 export { SANITY_ASSET_DEFAULT_POPULATE_FIELDS } from './types/index'
+export type { SanityStorageMode } from './utils/sanityStorageMode'
+export { resolveSanityStorageMode } from './utils/sanityStorageMode'
+export type {
+  ResolvedSanitySyncConfig,
+  ResolvedSanitySyncReconcile,
+  ResolvedSanitySyncWebhook,
+} from './sync/resolveSyncConfig'
+export {
+  DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH,
+  normalizeSanityStorageSyncBasePath,
+  resolveSanitySyncConfig,
+  syncRoutePath,
+} from './sync/resolveSyncConfig'
 export type { JsonValue } from './utils/json'
 export { assetFocalObjectPosition } from './utils/assetFocalObjectPosition'
 export { classifySanityAssetType } from './utils/classifySanityAssetType'
@@ -104,6 +119,23 @@ export type { PayloadMediaDraft, PayloadMediaPatch } from './utils/payloadMedia'
 export { resolveAdminLabel } from './utils/resolveAdminLabel'
 export { resolveImageFileRef, resolveMediaId } from './utils/resolveAssetRef'
 export { resolveLocalizedAlt } from './utils/resolveLocalizedAlt'
+export {
+  defaultSanitySyncAccess,
+  type SanitySyncAccessFn,
+} from './utils/sanitySyncAccess'
+export {
+  applyPayloadUploadFileSizeLimit,
+  classifyUploadMediaKind,
+  computeMaxUploadByteLimit,
+  formatBytesForMessage,
+  formatUploadMaxSizeError,
+  MB,
+  mergeUploadMaxSizeConfig,
+  normalizeUploadMaxSizeConfig,
+  resolveUploadMaxSizeBytes,
+  uploadMaxSizeConfigHasLimits,
+} from './utils/uploadMaxSize'
+export type { SanityStorageUploadMaxSizeInput } from './utils/uploadMaxSize'
 export { resolvePublicUrl } from './utils/resolvePublicUrl'
 export { sanityAdminThumbnail } from './utils/sanityAdminThumbnail'
 export { handleSanityWebhookEvent } from './webhook/handleEvent'

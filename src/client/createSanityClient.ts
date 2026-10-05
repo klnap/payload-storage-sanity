@@ -20,7 +20,7 @@ export function createSanityClient(config: SanityClientConfig): SanityClient {
     projectId: config.projectId,
     dataset: config.dataset,
     token: config.token,
-    apiVersion: config.apiVersion ?? '2025-01-01',
+    apiVersion: config.apiVersion ?? '2026-01-01',
     useCdn: false,
   })
 

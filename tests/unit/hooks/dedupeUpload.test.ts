@@ -93,7 +93,7 @@ describe('media dedupe hooks', () => {
       result: { id: duplicateUuid, filename: 'a.png' },
     })
 
-    expect(deletedId).toBe(duplicateUuid)
+    expect(deletedId as string | null).toBe(duplicateUuid)
     expect(result).toEqual(existingDoc)
   })
 })

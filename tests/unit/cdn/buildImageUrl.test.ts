@@ -8,7 +8,7 @@ function mockClient(): SanityClient {
     clientConfig: {
       projectId: 'proj123',
       dataset: 'production',
-      apiVersion: '2025-01-01',
+      apiVersion: '2026-01-01',
     },
   } as unknown as SanityClient
 }

@@ -16,11 +16,11 @@ export function resolvePopulateOptionsForCollection(
       ? (coll as { populate?: SanityStoragePluginOptions['populate'] }).populate
       : undefined
 
-  const preset = collPopulate?.preset ?? pluginOptions.populate?.preset ?? 'full'
+  const preset = collPopulate?.preset ?? pluginOptions.populate?.preset ?? 'default'
 
   const registry: SanityMediaPopulatePresetRegistry = {
-    ...(pluginOptions.populate?.presets ?? {}),
-    ...(collPopulate?.presets ?? {}),
+    ...pluginOptions.populate?.presets,
+    ...collPopulate?.presets,
   }
 
   return { preset, registry }

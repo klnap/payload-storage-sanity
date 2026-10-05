@@ -1,4 +1,13 @@
-import type { CollectionAfterReadHook, CollectionBeforeChangeHook, PayloadRequest } from 'payload'
+import type {
+  CollectionAfterChangeHook,
+  CollectionAfterReadHook,
+  CollectionBeforeChangeHook,
+  CollectionBeforeOperationHook,
+  PayloadRequest,
+} from 'payload'
+
+import { sanityAssetIdFromDocument } from '../adapter/metadata'
+import type { SanityAssetIdCarrier } from '../utils/payloadMedia'
 
 import { applyPopulatePreset } from '../populate/applyPopulatePreset'
 import { presetUsesDefaultPopulate } from '../populate/presets'
@@ -9,6 +18,10 @@ import type { SanityMediaDocument, SanityUpstreamFields } from '../types/sanityS
 import { resolvePublicUrl } from '../utils/resolvePublicUrl'
 import { mediaSyncStatus, readMediaSync, type WithMediaSync } from '../utils/mediaSync'
 import { slugifyFilename } from '../utils/slugify'
+import {
+  hasUploadEditsOnRequest,
+  isCloudStorageUpstreamMetadataUpdate,
+} from '../utils/uploadEdits'
 
 export type { SanityMediaDocument }
 
@@ -61,6 +74,8 @@ export function sanitizeMediaDocument<T extends SanityMediaDocument>(doc: T): T 
   }
 }
 
+export const SANITY_MEDIA_REPROCESS_CONTEXT_KEY = 'sanityMediaReprocessed' as const
+
 function hydrateMediaOnRead(doc: SanityMediaDocument, cdnBaseUrl?: string): SanityMediaDocument {
   const url = resolvePublicUrl(doc, { cdnBaseUrl })
   const thumbnailURL = resolvePublicUrl(doc, {
@@ -80,6 +95,7 @@ export type CreateSanityMediaAfterReadHookArgs = {
   cdnBaseUrl?: string
   resolvedPreset: string
   registry: SanityMediaPopulatePresetRegistry
+  altFallbackLocale?: string
 }
 
 export function createSanityMediaAfterReadHook(
@@ -105,6 +121,7 @@ export function createSanityMediaAfterReadHook(
       return applyPopulatePreset(mediaDoc, args.resolvedPreset, args.registry, {
         cdnBaseUrl: args.cdnBaseUrl,
         locale,
+        fallbackLocale: args.altFallbackLocale,
       }) as typeof doc
     }
 
@@ -136,7 +153,7 @@ function mergeSanityUpstreamOnUpdate(
     return incoming ?? undefined
   }
 
-  const merged: SanityUpstreamFields = { ...previous, ...(incoming ?? {}) }
+  const merged: SanityUpstreamFields = { ...previous, ...incoming }
 
   for (const key of UPSTREAM_PRESERVE_KEYS) {
     const nextVal = incoming?.[key]
@@ -149,7 +166,7 @@ function mergeSanityUpstreamOnUpdate(
   if (previous.metadata) {
     merged.metadata = {
       ...previous.metadata,
-      ...(incoming?.metadata ?? {}),
+      ...incoming?.metadata,
     }
   }
 
@@ -176,21 +193,126 @@ function clearStaleCloudStorageUploadContext(req: PayloadRequest): void {
  * Runs last in `beforeChange`: keeps upstream Sanity fields on metadata-only saves and
  * prevents cloud-storage from re-uploading when no new file bytes are present.
  */
+function requestWithoutUploadEdits(req: PayloadRequest): PayloadRequest {
+  if (req.query?.uploadEdits == null) {
+    return req
+  }
+  const query = { ...req.query }
+  delete query.uploadEdits
+  return { ...req, query }
+}
+
+/** Persists top-level `url` / dimensions before Payload fetches the file for crop (uses `originalDoc`). */
+export function createSanityMediaEnsureCropSourceUrlBeforeOperationHook(options?: {
+  cdnBaseUrl?: string
+}): CollectionBeforeOperationHook {
+  return async ({ args, collection, operation, req }) => {
+    if (operation !== 'update') {
+      return args
+    }
+    if (!hasUploadEditsOnRequest(req)) {
+      return args
+    }
+    if (!collection.upload) {
+      return args
+    }
+    const rawId = 'id' in args ? (args as { id: unknown }).id : undefined
+    if (rawId == null || rawId === '') {
+      return args
+    }
+    if (typeof rawId !== 'string' && typeof rawId !== 'number') {
+      return args
+    }
+    const id = rawId
+
+    const doc = (await req.payload.findByID({
+      collection: collection.slug,
+      id,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })) as SanityMediaDocument | undefined
+
+    if (!doc) {
+      return args
+    }
+
+    const hasTopLevelUrl = typeof doc.url === 'string' && doc.url.trim().length > 0
+    const widthOk = typeof doc.width === 'number' && doc.width > 0
+    const heightOk = typeof doc.height === 'number' && doc.height > 0
+
+    if (hasTopLevelUrl && widthOk && heightOk) {
+      return args
+    }
+
+    const patch: Record<string, unknown> = {}
+    if (!hasTopLevelUrl) {
+      const publicUrl = resolvePublicUrl(doc, { cdnBaseUrl: options?.cdnBaseUrl })
+      if (publicUrl) {
+        patch.url = publicUrl
+      }
+    }
+
+    const dimensions = doc.sanity?.metadata?.dimensions
+    if (!widthOk && dimensions?.width != null) {
+      patch.width = dimensions.width
+    }
+    if (!heightOk && dimensions?.height != null) {
+      patch.height = dimensions.height
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return args
+    }
+
+    await req.payload.update({
+      collection: collection.slug,
+      id,
+      data: patch as Record<string, unknown>,
+      depth: 0,
+      overrideAccess: true,
+      context: {
+        ...(req.context ?? {}),
+        skipCloudStorage: true,
+      },
+      req: requestWithoutUploadEdits(req),
+    })
+
+    return args
+  }
+}
+
 export function createSanityMediaPersistUpstreamBeforeChangeHook(): CollectionBeforeChangeHook {
   return ({ data, operation, originalDoc, req }) => {
     if (!data || operation !== 'update') {
       return data
     }
 
+    if (isCloudStorageUpstreamMetadataUpdate(req, data)) {
+      return data
+    }
+
+    const reprocess = hasUploadEditsOnRequest(req)
     const hasNewBytes = Boolean(req.file?.data?.length)
     const hasSizes = hasIncomingUploadSizes(req)
+    const hasIncomingFile = hasNewBytes || hasSizes || reprocess
 
-    if (!hasNewBytes && !hasSizes) {
+    if (!hasIncomingFile) {
       clearStaleCloudStorageUploadContext(req)
       if (!req.context) {
         req.context = {}
       }
       req.context.skipCloudStorage = true
+    } else {
+      if (!req.context) {
+        req.context = {}
+      }
+      req.context[SANITY_MEDIA_REPROCESS_CONTEXT_KEY] = true
+
+      const ctx = req.context as { _payloadCloudStorage?: { file?: PayloadRequest['file'] } }
+      if (!hasNewBytes && ctx?._payloadCloudStorage?.file?.data?.length) {
+        req.file = ctx._payloadCloudStorage.file
+      }
     }
 
     const previous = originalDoc as SanityMediaDocument | undefined
@@ -198,37 +320,39 @@ export function createSanityMediaPersistUpstreamBeforeChangeHook(): CollectionBe
       return data
     }
 
-    const mergedSanity = mergeSanityUpstreamOnUpdate(
-      data.sanity as SanityUpstreamFields | undefined,
-      previous.sanity
-    )
-
     let next = data as SanityMediaDocument
 
-    if (mergedSanity) {
-      next = { ...next, sanity: mergedSanity }
-    }
+    if (!hasIncomingFile) {
+      const mergedSanity = mergeSanityUpstreamOnUpdate(
+        data.sanity as SanityUpstreamFields | undefined,
+        previous.sanity
+      )
 
-    const scalarFileFields = [
-      'filename',
-      'mimeType',
-      'filesize',
-      'width',
-      'height',
-      'focalX',
-      'focalY',
-      'prefix',
-    ] as const
-    for (const key of scalarFileFields) {
-      const nextVal = next[key]
-      const prevVal = previous[key]
-      if ((nextVal == null || nextVal === '') && prevVal != null && prevVal !== '') {
-        next = { ...next, [key]: prevVal }
+      if (mergedSanity) {
+        next = { ...next, sanity: mergedSanity }
       }
-    }
 
-    if (next.sizes == null && previous.sizes != null) {
-      next = { ...next, sizes: previous.sizes }
+      const scalarFileFields = [
+        'filename',
+        'mimeType',
+        'filesize',
+        'width',
+        'height',
+        'focalX',
+        'focalY',
+        'prefix',
+      ] as const
+      for (const key of scalarFileFields) {
+        const nextVal = next[key]
+        const prevVal = previous[key]
+        if ((nextVal == null || nextVal === '') && prevVal != null && prevVal !== '') {
+          next = { ...next, [key]: prevVal }
+        }
+      }
+
+      if (next.sizes == null && previous.sizes != null) {
+        next = { ...next, sizes: previous.sizes }
+      }
     }
 
     if (data.sync?.status == null && previous.sync?.status != null) {
@@ -251,6 +375,49 @@ function documentHasMediaFields(doc: SanityMediaDocument): boolean {
     hasUpstreamLocators(doc) ||
     Boolean(doc.filename && doc.filename.trim().length > 0)
   )
+}
+
+/**
+ * Payload runs collection `afterRead` before `afterChange`. Cloud-storage uploads in
+ * `afterChange`, so the API response can still carry a stale `thumbnailURL` from the
+ * pre-upload read. Re-hydrate after reprocess / asset replacement.
+ */
+export function createSanityMediaHydrateResponseAfterChangeHook(options?: {
+  cdnBaseUrl?: string
+}): CollectionAfterChangeHook {
+  return ({ doc, operation, previousDoc, req }) => {
+    if (!doc || operation !== 'update' || req.context?.skipCloudStorage) {
+      return doc
+    }
+
+    const reprocessFlag = Boolean(req.context?.[SANITY_MEDIA_REPROCESS_CONTEXT_KEY])
+    const reprocessQuery = hasUploadEditsOnRequest(req)
+    const previousAssetId = sanityAssetIdFromDocument(
+      (previousDoc ?? {}) as SanityAssetIdCarrier
+    )
+    const nextAssetId = sanityAssetIdFromDocument(doc as SanityAssetIdCarrier)
+    const assetReplaced = Boolean(
+      previousAssetId && nextAssetId && previousAssetId !== nextAssetId
+    )
+
+    if (!reprocessFlag && !reprocessQuery && !assetReplaced) {
+      return doc
+    }
+
+    if (req.context) {
+      delete req.context[SANITY_MEDIA_REPROCESS_CONTEXT_KEY]
+    }
+
+    const hydrated = hydrateMediaOnRead(
+      sanitizeMediaDocument(doc as SanityMediaDocument),
+      options?.cdnBaseUrl
+    )
+
+    return {
+      ...doc,
+      ...hydrated,
+    } as typeof doc
+  }
 }
 
 export function createSanityMediaBeforeChangeHook(): CollectionBeforeChangeHook {

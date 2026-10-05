@@ -1,13 +1,14 @@
 /** Flat DTO for populate preset `default` (REST populated relations). */
 export type DefaultPopulateAsset = {
-  id: number | string
+  id: string | number
   url: string
   width?: number
   height?: number
   aspectRatio?: number
   focalX?: number
   focalY?: number
-  alt?: string
+  /** Resolved for request locale; `null` when missing or empty (always present on preset `default`). */
+  alt: string | null
   lqip?: string
 }
 

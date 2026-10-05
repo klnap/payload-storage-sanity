@@ -44,16 +44,18 @@ describe('sanityStorage', () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
     const media = config.collections?.find((c) => c.slug === 'media')
 
-    expect(media?.admin?.defaultColumns).toEqual(['filename', 'name', 'id', 'updatedAt'])
-    expect(typeof media?.upload).toBe('object')
-    expect(typeof (media?.upload as { adminThumbnail?: unknown }).adminThumbnail).toBe(
-      'function'
-    )
-    expect((media?.upload as { displayPreview?: boolean }).displayPreview).toBe(false)
-    const stablePreview = media?.fields?.find(
-      (f) => 'name' in f && f.name === 'sanityStablePreview'
-    )
-    expect(stablePreview).toBeDefined()
+    expect(media).toBeDefined()
+    expect(media!.admin?.defaultColumns).toEqual(['filename', 'name', 'id', 'updatedAt'])
+    const upload = media!.upload
+    expect(typeof upload).toBe('object')
+    expect(typeof (upload as { adminThumbnail?: unknown }).adminThumbnail).toBe('function')
+    expect((upload as { displayPreview?: boolean }).displayPreview).toBe(true)
+    expect(
+      media?.fields?.some((f) => 'name' in f && f.name === 'sanityStablePreview')
+    ).toBe(false)
+    expect(
+      media?.fields?.some((f) => 'name' in f && f.name === 'sanityAssetList')
+    ).toBe(false)
   })
 
   test('sets disableLocalStorage on configured upload collections', () => {
@@ -75,13 +77,39 @@ describe('sanityStorage', () => {
     expect(pages?.upload).toBeUndefined()
   })
 
-  test('does not inject alt group without localization locales', () => {
+  test('raises Payload upload fileSize from uploadMaxSize limits', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      uploadMaxSize: { default: 10, byType: { video: 500 } },
+      collections: { media: true },
+    })
+
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    expect(config.upload?.limits?.fileSize).toBe(500)
+  })
+
+  test('injects plain alt text field when localization locales are missing', () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
     const media = config.collections?.find((c) => c.slug === 'media')
-    const altField = media?.fields?.find(
+    const altGroup = media?.fields?.find(
       (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
     )
-    expect(altField).toBeUndefined()
+    const altText = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'alt' && f.type === 'text'
+    )
+    expect(altGroup).toBeUndefined()
+    expect(altText).toBeDefined()
   })
 
   test('injects alt group when collections.media is true shorthand and localization is set', () => {
@@ -136,7 +164,7 @@ describe('sanityStorage', () => {
         defaultLocale: 'pl',
       },
       collections: [{ slug: 'media', upload: true, fields: [] }],
-    } as Config)
+    } as unknown as Config)
 
     if (config instanceof Promise) {
       throw new Error('expected sync plugin result')
@@ -165,7 +193,7 @@ describe('sanityStorage', () => {
         defaultLocale: 'pl',
       },
       collections: [{ slug: 'media', upload: true, fields: [] }],
-    } as Config)
+    } as unknown as Config)
 
     if (config instanceof Promise) {
       throw new Error('expected sync plugin result')
@@ -201,7 +229,7 @@ describe('sanityStorage', () => {
           fields: [{ name: 'alt', type: 'text', localized: true }],
         },
       ],
-    } as Config)
+    } as unknown as Config)
 
     if (config instanceof Promise) {
       throw new Error('expected sync plugin result')
@@ -259,7 +287,7 @@ describe('sanityStorage', () => {
       collections: { media: true },
       sync: {
         enabled: true,
-        webhookSecret: 'secret',
+        webhook: { secret: 'secret' },
       },
     })
 
@@ -274,8 +302,8 @@ describe('sanityStorage', () => {
     }
 
     const paths = (config.endpoints ?? []).map((endpoint) => endpoint.path)
-    expect(paths).toContain('/sanity/webhook')
-    expect(paths).toContain('/sanity/reconcile')
+    expect(paths).toContain('/sanity-storage/webhook')
+    expect(paths).toContain('/sanity-storage/reconcile')
   })
 
   test('does not register sync endpoints when sync is disabled', () => {
@@ -285,7 +313,7 @@ describe('sanityStorage', () => {
       token: 'token',
       collections: { media: true },
       sync: {
-        webhookSecret: 'secret',
+        webhook: { secret: 'secret' },
       },
     })
 
@@ -300,8 +328,8 @@ describe('sanityStorage', () => {
     }
 
     const paths = (config.endpoints ?? []).map((endpoint) => endpoint.path)
-    expect(paths).not.toContain('/sanity/webhook')
-    expect(paths).not.toContain('/sanity/reconcile')
+    expect(paths).not.toContain('/sanity-storage/webhook')
+    expect(paths).not.toContain('/sanity-storage/reconcile')
   })
 
   test('reference-integrity hook is first in the beforeDelete chain on media collections', async () => {

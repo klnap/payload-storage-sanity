@@ -1,4 +1,4 @@
-import type { Endpoint, PayloadHandler } from 'payload'
+import { APIError, type Endpoint, type PayloadHandler } from 'payload'
 
 export type CreateMediaUsageEndpointArgs = {
   mediaCollectionSlug: string
@@ -32,6 +32,27 @@ export function createMediaUsageEndpoint({
     }
 
     const mediaId = /^\d+$/.test(String(rawId)) ? Number(rawId) : String(rawId)
+
+    if (!req.user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    try {
+      await req.payload.findByID({
+        collection: mediaCollectionSlug,
+        id: mediaId,
+        depth: 0,
+        req,
+      })
+    } catch (error) {
+      if (error instanceof APIError) {
+        return Response.json(
+          { error: error.message || 'Forbidden' },
+          { status: error.status }
+        )
+      }
+      return Response.json({ error: 'Not found' }, { status: 404 })
+    }
 
     try {
       const { findMediaUsage } = await import('../queries/findMediaUsage')

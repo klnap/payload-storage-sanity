@@ -1,6 +1,6 @@
 {
   "name": "@klnap/payload-storage-sanity",
-  "version": "2.0.4",
+  "version": "2.0.3",
   "description": "Sanity storage adapter for Payload CMS",
   "license": "MIT",
   "author": "klnap",
@@ -47,6 +47,7 @@
   },
   "files": [
     "dist",
+    "docs",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -67,12 +68,10 @@
     "test": "bun test tests",
     "prepublishOnly": "bun run build && bun test tests",
     "prepack": "bun run build",
-    "lint": "biome check .",
-    "lint:code": "biome check .",
-    "lint:oxlint": "oxlint --deny-warnings src tests"
+    "lint": "oxlint --deny-warnings src tests"
   },
   "dependencies": {
-    "@payloadcms/plugin-cloud-storage": "3.88.0",
+    "@payloadcms/plugin-cloud-storage": "3.90.2",
     "@sanity/client": "^7.12.0",
     "@sanity/image-url": "^1.2.0",
     "slugify": "^1.6.9",
@@ -90,7 +89,8 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "bun-types": "^1.4.2",
-    "payload": "3.88.0",
+    "oxlint": "^1.87.0",
+    "payload": "3.90.2",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "typescript": "5.7.3"

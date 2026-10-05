@@ -9,8 +9,7 @@ function clampFocal(value: unknown, fallback: number): number {
   return Math.min(100, Math.max(0, value))
 }
 
-export type DefaultPopulateMediaDocContext = ResolvePublicUrlContext &
-  ResolveLocalizedAltContext
+export type DefaultPopulateMediaDocContext = ResolvePublicUrlContext & ResolveLocalizedAltContext
 
 export function defaultPopulateMediaDoc(
   doc: SanityMediaDocument,
@@ -28,6 +27,7 @@ export function defaultPopulateMediaDoc(
   const base: DefaultPopulateAsset = {
     id: doc.id,
     url,
+    alt,
   }
 
   if (assetType === 'image' && dimensions) {
@@ -42,8 +42,6 @@ export function defaultPopulateMediaDoc(
     const lqip = doc.sanity?.metadata?.lqip?.trim()
     if (lqip) base.lqip = lqip
   }
-
-  if (alt) base.alt = alt
 
   return base
 }

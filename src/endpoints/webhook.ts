@@ -34,7 +34,7 @@ export function createSanityWebhookEndpoint({
   webhookSecret,
   projectId,
   dataset,
-  path = '/sanity/webhook',
+  path = '/sanity-storage/webhook',
   onDeleted = 'mark',
 }: CreateSanityWebhookEndpointArgs): Endpoint {
   const handler: PayloadHandler = async (req) => {

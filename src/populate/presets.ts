@@ -1,6 +1,6 @@
 import type { SanityMediaDocument } from '../types/sanityStorageDocument'
 
-/** Built-in `full` keeps the Payload media document; `default` is the flat API DTO on populated relations. */
+/** Built-in `full` keeps the Payload media document; `default` is the flat storefront DTO on populated relations. */
 export type SanityMediaPopulateBuiltinPreset = 'full' | 'default'
 
 export type SanityMediaPopulatePresetContext = {

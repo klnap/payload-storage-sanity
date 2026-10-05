@@ -1,68 +1,60 @@
 import { describe, expect, test } from 'bun:test'
 
 import { defaultPopulateMediaDoc } from '../../../src/populate/defaultPopulateMediaDoc.js'
+import type { SanityMediaDocument } from '../../../src/types/sanityStorageDocument.js'
 
-const baseDoc = {
-  id: 1,
-  focalX: 10,
-  focalY: 20,
-  alt: 'Hero',
-  sync: { status: 'available' as const },
+const baseDoc: SanityMediaDocument = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
   sanity: {
-    id: 'image-abc-800x600-jpg',
-    type: 'sanity.imageAsset',
-    path: 'images/demo/production/abc-800x600.jpg',
-    url: 'https://cdn.sanity.io/images/demo/production/abc-800x600.jpg',
-    source: 'dataset' as const,
+    id: 'image-abc-jpg',
+    path: 'images/demo/production/abc.jpg',
     metadata: {
-      dimensions: { width: 800, height: 600, aspectRatio: 1.33 },
-      lqip: 'data:image/jpeg;base64,x',
+      dimensions: { width: 800, height: 600, aspectRatio: 1.333 },
+      lqip: 'data:image/jpeg;base64,/9j/',
     },
   },
+  alt: 'Caption',
 }
 
 describe('defaultPopulateMediaDoc', () => {
-  test('returns flat DefaultPopulateAsset with url only (no path)', () => {
+  test('returns DefaultPopulateAsset with url only (no path)', () => {
     const result = defaultPopulateMediaDoc(baseDoc)
-    expect(result).toMatchObject({
-      id: 1,
-      url: 'https://cdn.sanity.io/images/demo/production/abc-800x600.jpg',
+    expect(result).toEqual({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      url: 'https://cdn.sanity.io/images/demo/production/abc.jpg',
       width: 800,
       height: 600,
-      focalX: 10,
-      focalY: 20,
-      alt: 'Hero',
+      aspectRatio: 1.333,
+      focalX: 50,
+      focalY: 50,
+      alt: 'Caption',
+      lqip: 'data:image/jpeg;base64,/9j/',
     })
-    expect('path' in result).toBe(false)
+    expect(result).not.toHaveProperty('path')
   })
 
-  test('resolves localized alt from context locale', () => {
+  test('uses localized alt for request locale', () => {
     const result = defaultPopulateMediaDoc(
-      {
-        ...baseDoc,
-        alt: { pl: 'Opis PL', en: 'Caption EN' },
-      },
+      { ...baseDoc, alt: { pl: 'Opis', en: 'Caption' } },
       { locale: 'pl' }
     )
-    expect(result.alt).toBe('Opis PL')
+    expect(result.alt).toBe('Opis')
   })
 
-  test('omits alt when locale has no value', () => {
+  test('falls back when locale missing in group', () => {
     const result = defaultPopulateMediaDoc(
-      {
-        ...baseDoc,
-        alt: { pl: 'Opis PL', en: 'Caption EN' },
-      },
-      { locale: 'de' }
+      { ...baseDoc, alt: { en: 'Caption' } },
+      { locale: 'pl', fallbackLocale: 'en' }
     )
-    expect(result.alt).toBeUndefined()
+    expect(result.alt).toBe('Caption')
   })
 
-  test('omits alt when empty', () => {
+  test('null alt when empty', () => {
     const result = defaultPopulateMediaDoc({
       ...baseDoc,
-      alt: undefined,
+      alt: '',
     })
-    expect(result.alt).toBeUndefined()
+    expect(result.alt).toBeNull()
   })
 })

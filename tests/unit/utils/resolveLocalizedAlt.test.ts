@@ -20,4 +20,22 @@ describe('resolveLocalizedAlt', () => {
     expect(resolveLocalizedAlt({ pl: 'Opis PL' }, { locale: 'en' })).toBeNull()
     expect(resolveLocalizedAlt({ pl: 'Opis PL', en: 'EN' }, {})).toBeNull()
   })
+
+  test('fallbackLocale when request locale is empty', () => {
+    expect(
+      resolveLocalizedAlt({ pl: 'Opis PL', en: 'Caption EN' }, {
+        locale: 'de',
+        fallbackLocale: 'en',
+      })
+    ).toBe('Caption EN')
+  })
+
+  test('request locale wins over fallbackLocale', () => {
+    expect(
+      resolveLocalizedAlt({ pl: 'Opis PL', en: 'Caption EN' }, {
+        locale: 'pl',
+        fallbackLocale: 'en',
+      })
+    ).toBe('Opis PL')
+  })
 })

@@ -8,6 +8,7 @@ import type {
 export type ResolvedCollectionAltOptions = {
   enabled: boolean
   required: boolean
+  fallbackLocale?: string
 }
 
 export function resolveCollectionAltOptions(
@@ -22,6 +23,24 @@ export function resolveCollectionAltOptions(
   return {
     enabled: alt?.enabled ?? true,
     required: alt?.required ?? false,
+    fallbackLocale: alt?.fallbackLocale,
+  }
+}
+
+export type PlainAltTextFieldOptions = {
+  /** @default false */
+  required?: boolean
+}
+
+/** Single-locale `alt` text field when Payload has no `localization.locales`. */
+export function plainAltTextField(options: PlainAltTextFieldOptions = {}): Field {
+  const required = options.required ?? false
+
+  return {
+    name: 'alt',
+    type: 'text',
+    label: 'Alt text',
+    required,
   }
 }
 

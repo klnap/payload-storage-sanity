@@ -33,7 +33,7 @@ describe('createMediaDeleteSanityAssetBeforeDeleteHook', () => {
     expect(deleted).toEqual(['image-orphan-jpg'])
   })
 
-  test('skips upstream delete when another media row still references the asset', async () => {
+  test('skips upstream delete when another media row shares the same sanity.id (dedupe duplicate row)', async () => {
     const deleted: string[] = []
     const client = {
       delete: async (id: string) => {

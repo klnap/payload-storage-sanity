@@ -2,13 +2,18 @@ import type { SanityClient } from '@sanity/client'
 import type { Endpoint, PayloadHandler } from 'payload'
 import * as v from 'valibot'
 
-import { reconcileSanityMedia } from '../sync/reconcile'
+import { formatReconcileHttpResponse, reconcileSanityMedia } from '../sync/reconcile'
 import { parseJsonText } from '../utils/json'
+import {
+  defaultSanitySyncAccess,
+  type SanitySyncAccessFn,
+} from '../utils/sanitySyncAccess'
 
 export type CreateSanityReconcileEndpointArgs = {
   client: SanityClient
   collectionSlug: string
   path?: string
+  access?: SanitySyncAccessFn
 }
 
 const ReconcileBodySchema = v.object({
@@ -19,10 +24,11 @@ const ReconcileBodySchema = v.object({
 export function createSanityReconcileEndpoint({
   client,
   collectionSlug,
-  path = '/sanity/reconcile',
+  path = '/sanity-storage/reconcile',
+  access = defaultSanitySyncAccess,
 }: CreateSanityReconcileEndpointArgs): Endpoint {
   const handler: PayloadHandler = async (req) => {
-    if (!req.user) {
+    if (!access({ req })) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -57,7 +63,7 @@ export function createSanityReconcileEndpoint({
         req,
       })
 
-      return Response.json(report)
+      return Response.json(formatReconcileHttpResponse(report))
     } catch (error) {
       req.payload.logger?.error?.(
         `Sanity reconcile failed: ${error instanceof Error ? error.message : 'Unknown error'}`

@@ -2,6 +2,7 @@ export type {
   SanityStorageAltOptions,
   SanityStoragePluginOptions,
   SanityStoragePopulateConfig,
+  SanityStorageUploadMaxSizeConfig,
 } from './adapter'
 export type {
   SanityAsset,

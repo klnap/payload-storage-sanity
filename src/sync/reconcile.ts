@@ -6,6 +6,11 @@ import type { PayloadMediaDraft } from '../utils/payloadMedia'
 import { isPayloadDocumentId, type PayloadDocumentId } from '../utils/payloadDocumentId'
 import { createSanityAssetFetchCache } from '../utils/sanityAssetCache'
 import { fetchSanityAssetSafe, mediaPatchFromSanityAsset } from './fetchAsset'
+import {
+  countDuplicatesInGroups,
+  recordMediaRowForDuplicateCount,
+  type MediaRowForDedupe,
+} from './countDuplicateMediaRows'
 import { markMediaBySanityAssetId } from './markMedia'
 import type { SanitySyncStatus } from './status'
 
@@ -35,7 +40,42 @@ export type ReconcileReport = {
   markedUnavailable: number
   skipped: number
   errors: number
+  /** Media rows sharing sanity.id + sha1hash with an older row (dedupe orphans). */
+  duplicates: number
   rows: ReconcileMediaRow[]
+}
+
+export type ReconcileHttpResponse =
+  | {
+      dryRun: false
+      scanned: number
+      updated: number
+      duplicates: number
+    }
+  | {
+      dryRun: true
+      scanned: number
+      wouldUpdate: number
+      duplicates: number
+    }
+
+/** Summary JSON for `POST /api/.../reconcile` (full `ReconcileReport` remains for `reconcileSanityMedia`). */
+export function formatReconcileHttpResponse(report: ReconcileReport): ReconcileHttpResponse {
+  const changed = report.synced + report.markedUnavailable
+  if (report.dryRun) {
+    return {
+      dryRun: true,
+      scanned: report.scanned,
+      wouldUpdate: changed,
+      duplicates: report.duplicates,
+    }
+  }
+  return {
+    dryRun: false,
+    scanned: report.scanned,
+    updated: changed,
+    duplicates: report.duplicates,
+  }
 }
 
 function reconcileErrorMessage(error: Error): string {
@@ -145,10 +185,12 @@ export async function reconcileSanityMedia(options: ReconcileOptions): Promise<R
     markedUnavailable: 0,
     skipped: 0,
     errors: 0,
+    duplicates: 0,
     rows: [],
   }
 
   const cache = createSanityAssetFetchCache()
+  const duplicateGroups = new Map<string, MediaRowForDedupe[]>()
   let page = 1
   let hasNextPage = true
 
@@ -166,18 +208,17 @@ export async function reconcileSanityMedia(options: ReconcileOptions): Promise<R
 
     for (const doc of result.docs) {
       report.scanned += 1
+      const mediaDoc = doc as PayloadMediaDraft & { id?: PayloadDocumentId }
+      recordMediaRowForDuplicateCount(duplicateGroups, mediaDoc as MediaRowForDedupe)
       // SAFETY: doc returned from media find conforms to media document structure
-      await processReconcileDoc(
-        options,
-        report,
-        cache,
-        doc as PayloadMediaDraft & { id?: PayloadDocumentId }
-      )
+      await processReconcileDoc(options, report, cache, mediaDoc)
     }
 
     hasNextPage = result.hasNextPage === true
     page += 1
   }
+
+  report.duplicates = countDuplicatesInGroups(duplicateGroups)
 
   return report
 }

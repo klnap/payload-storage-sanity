@@ -146,7 +146,7 @@ When a media document deletion is initiated:
    - If `retention: 'retain'`, preserves the binary on the CDN while removing the local database row.
 
 ### 5.3. Inbound Webhook Processing (`handleEvent.ts`)
-- Receives events via `POST /api/sanity/webhook`.
+- Receives events via `POST /api/sanity-storage/webhook` (configurable `sync.basePath`).
 - Authenticates the request using constant-time cryptographic verification of the `sanity-webhook-signature` header via HMAC SHA256.
 - Updates matching Payload records using the Local API (`payload.update`), setting `syncStatus = 'deleted'` when an asset is removed upstream.
 

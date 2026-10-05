@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import type { ReactElement } from 'react'
 
 import {
   resolveSanityImageFallback,
@@ -15,7 +16,7 @@ describe('resolveSanityImageFallback', () => {
   })
 
   test('returns fallback node when set', () => {
-    const node = { type: 'glass' }
+    const node = { type: 'glass' } as ReactElement
     expect(resolveSanityImageFallback('error', { fallback: node })).toBe(node)
   })
 
@@ -23,7 +24,7 @@ describe('resolveSanityImageFallback', () => {
     const out = resolveSanityImageFallback('missing', {
       fallback: 'jsx',
       renderFallback: ({ reason }) => `fn:${reason}`,
-      asset: { url: 'https://cdn/x.jpg' },
+      asset: { id: '1', url: 'https://cdn/x.jpg', alt: null },
     })
     expect(out).toBe('fn:missing')
   })

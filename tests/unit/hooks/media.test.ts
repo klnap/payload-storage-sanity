@@ -3,7 +3,9 @@ import { describe, expect, test } from 'bun:test'
 import {
   createSanityMediaAfterReadHook,
   createSanityMediaBeforeChangeHook,
+  createSanityMediaHydrateResponseAfterChangeHook,
   createSanityMediaPersistUpstreamBeforeChangeHook,
+  SANITY_MEDIA_REPROCESS_CONTEXT_KEY,
   sanitizeMediaDocument,
 } from '../../../src/hooks/media.js'
 
@@ -174,7 +176,7 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
 
   test('sets skipCloudStorage on metadata-only update', async () => {
     const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
-    const req = { context: {} } as never
+    const req = { context: {} as Record<string, unknown> }
 
     await hook({
       data: { alt: { en: 'x' } },
@@ -187,7 +189,7 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
       collection: { slug: 'media' } as never,
       context: {},
       operation: 'update',
-      req,
+      req: req as never,
     })
 
     expect(req.context.skipCloudStorage).toBe(true)
@@ -195,13 +197,16 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
 
   test('clears stale cloud-storage file context when update has no new bytes', async () => {
     const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
-    const req = {
+    const req: {
+      context: Record<string, unknown>
+      file?: unknown
+    } = {
       context: {
         _payloadCloudStorage: {
           file: { data: Buffer.from('stale') },
         },
       },
-    } as never
+    }
 
     await hook({
       data: { alt: { en: 'x' } },
@@ -214,7 +219,7 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
       collection: { slug: 'media' } as never,
       context: {},
       operation: 'update',
-      req,
+      req: req as never,
     })
 
     expect(req.file).toBeUndefined()
@@ -246,6 +251,90 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
     })
   })
 
+  test('does not set skipCloudStorage when uploadEdits crop is present', async () => {
+    const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
+    const req = {
+      context: {} as Record<string, unknown>,
+      query: { uploadEdits: { crop: { x: 0, y: 0, width: 100, height: 100 } } },
+      file: { data: Buffer.from('cropped') },
+    }
+
+    await hook({
+      data: { width: 400, height: 300 },
+      originalDoc: {
+        id: 1,
+        filename: 'image-old',
+        width: 1200,
+        height: 800,
+        sanity: { id: 'image-old', path: 'images/a.jpg' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: req as never,
+    })
+
+    expect(req.context.skipCloudStorage).toBeUndefined()
+  })
+
+  test('keeps new width and height from generateFileData when uploadEdits crop is present', async () => {
+    const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
+    const result = await hook({
+      data: { width: 400, height: 300, focalX: 50, focalY: 50 },
+      originalDoc: {
+        id: 1,
+        filename: 'image-old',
+        width: 1200,
+        height: 800,
+        focalX: 10,
+        focalY: 20,
+        sanity: { id: 'image-old', path: 'images/a.jpg' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: {
+        context: {},
+        query: { uploadEdits: { crop: { x: 0, y: 0, width: 400, height: 300 } } },
+        file: { data: Buffer.from('x') },
+      } as never,
+    })
+
+    expect(result).toMatchObject({ width: 400, height: 300, focalX: 50, focalY: 50 })
+  })
+
+  test('passes through cloud-storage sanity metadata patch without merging stale upstream', async () => {
+    const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
+    const result = await hook({
+      data: {
+        sanity: {
+          id: 'image-new',
+          path: 'images/demo/production/new.jpg',
+          rev: 'rev-new',
+        },
+      },
+      originalDoc: {
+        id: 1,
+        filename: 'image-old',
+        sanity: {
+          id: 'image-old',
+          path: 'images/demo/production/old.jpg',
+          rev: 'rev-old',
+        },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: { context: { skipCloudStorage: true } } as never,
+    })
+
+    expect(result?.sanity).toMatchObject({
+      id: 'image-new',
+      path: 'images/demo/production/new.jpg',
+      rev: 'rev-new',
+    })
+  })
+
   test('preserves sync status when admin omits sync group', async () => {
     const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
     const result = await hook({
@@ -263,6 +352,66 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
     })
 
     expect(result?.sync?.status).toBe('deleted')
+  })
+})
+
+describe('createSanityMediaHydrateResponseAfterChangeHook', () => {
+  test('refreshes url and thumbnailURL after crop when afterRead ran with stale upstream', async () => {
+    const hook = createSanityMediaHydrateResponseAfterChangeHook({
+      cdnBaseUrl: 'https://cdn.sanity.io',
+    })
+
+    const result = await hook({
+      doc: {
+        id: '74bf748e-c528-44b0-80a7-f2b615fbe87a',
+        filename: 'image-new-jpg',
+        url: 'https://cdn.sanity.io/images/demo/production/old.jpg',
+        thumbnailURL: 'https://cdn.sanity.io/images/demo/production/old.jpg?w=300',
+        sanity: {
+          id: 'image-new-jpg',
+          path: 'images/demo/production/new.jpg',
+          url: 'https://cdn.sanity.io/images/demo/production/new.jpg',
+        },
+        sync: { status: 'available' },
+      },
+      previousDoc: {
+        id: '74bf748e-c528-44b0-80a7-f2b615fbe87a',
+        filename: 'image-old-jpg',
+        sanity: { id: 'image-old-jpg', path: 'images/demo/production/old.jpg' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: {
+        context: { [SANITY_MEDIA_REPROCESS_CONTEXT_KEY]: true },
+        query: { uploadEdits: { crop: { width: 100 } } },
+      } as never,
+    })
+
+    expect(result?.url).toBe('https://cdn.sanity.io/images/demo/production/new.jpg')
+    expect(result?.thumbnailURL).toContain('images/demo/production/new.jpg')
+    expect(result?.thumbnailURL).toContain('w=300')
+  })
+
+  test('no-op on metadata-only update', async () => {
+    const hook = createSanityMediaHydrateResponseAfterChangeHook()
+    const doc = {
+      id: 1,
+      url: 'https://cdn.sanity.io/images/demo/production/a.jpg',
+      sanity: { id: 'image-a', path: 'images/demo/production/a.jpg' },
+      sync: { status: 'available' },
+    }
+
+    const result = await hook({
+      doc,
+      previousDoc: doc,
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req: { context: {} } as never,
+    })
+
+    expect(result).toBe(doc)
   })
 })
 

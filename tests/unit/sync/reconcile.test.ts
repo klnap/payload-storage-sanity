@@ -53,6 +53,46 @@ describe('reconcileSanityMedia', () => {
     expect(update).not.toHaveBeenCalled()
   })
 
+  test('reports duplicates in dry run', async () => {
+    const find = mock(async () => ({
+      docs: [
+        {
+          id: 'older',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          sanity: { id: 'image-dup', sha1hash: 'same' },
+          sync: { status: 'available' },
+        },
+        {
+          id: 'newer',
+          createdAt: '2024-06-01T00:00:00.000Z',
+          sanity: { id: 'image-dup', sha1hash: 'same' },
+          sync: { status: 'available' },
+        },
+      ],
+      hasNextPage: false,
+    }))
+    const update = mock(async () => ({}))
+    const client = {
+      getDocument: mock(async (id: string) => ({
+        _id: id,
+        _type: 'sanity.imageAsset',
+        assetId: id,
+        url: `https://cdn.sanity.io/images/demo/production/${id}.jpg`,
+        mimeType: 'image/jpeg',
+      })),
+    }
+
+    const report = await reconcileSanityMedia({
+      payload: { find, update } as never,
+      client: client as never,
+      collectionSlug: 'media',
+      dryRun: true,
+    })
+
+    expect(report.duplicates).toBe(1)
+    expect(update).not.toHaveBeenCalled()
+  })
+
   test('records row errors without aborting the batch', async () => {
     const find = mock(async () => ({
       docs: [

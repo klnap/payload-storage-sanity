@@ -15,12 +15,15 @@ describe('localizedAltGroupField', () => {
       { code: 'en', label: 'English' },
     ])
 
-    expect(field.name).toBe('alt')
-    expect(field.type).toBe('group')
+    expect(field).toMatchObject({ name: 'alt', type: 'group' })
     expect(field.fields).toHaveLength(2)
-    expect(field.fields[0]).toMatchObject({ name: 'pl', type: 'text', required: false })
-    expect(field.fields[1]).toMatchObject({ name: 'en', type: 'text', required: false })
-    expect(field.fields[0].label).toBe('Alt — Polish')
+    expect(field.fields?.[0]).toMatchObject({
+      name: 'pl',
+      type: 'text',
+      required: false,
+      label: 'Alt — Polish',
+    })
+    expect(field.fields?.[1]).toMatchObject({ name: 'en', type: 'text', required: false })
   })
 
   test('honors required option', () => {
