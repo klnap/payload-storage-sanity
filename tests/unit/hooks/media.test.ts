@@ -362,6 +362,7 @@ describe('createSanityMediaHydrateResponseAfterChangeHook', () => {
     })
 
     const result = await hook({
+      data: {},
       doc: {
         id: '74bf748e-c528-44b0-80a7-f2b615fbe87a',
         filename: 'image-new-jpg',
@@ -403,6 +404,7 @@ describe('createSanityMediaHydrateResponseAfterChangeHook', () => {
     }
 
     const result = await hook({
+      data: {},
       doc,
       previousDoc: doc,
       collection: { slug: 'media' } as never,
