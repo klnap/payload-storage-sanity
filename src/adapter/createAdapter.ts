@@ -106,7 +106,7 @@ export function createSanityAdapter({
 
         const patch = mapSanityUploadToMedia(asset, uploadFile, (data ?? {}) as PayloadMediaDraft)
         const docForUrl = {
-          ...(data ?? {}),
+          ...data,
           ...patch,
           filename: asset._id,
         } as SanityMediaDocument

@@ -272,7 +272,7 @@ export function createSanityMediaEnsureCropSourceUrlBeforeOperationHook(options?
       depth: 0,
       overrideAccess: true,
       context: {
-        ...(req.context ?? {}),
+        ...req.context,
         skipCloudStorage: true,
       },
       req: requestWithoutUploadEdits(req),
