@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4] — 2026-10-05
+
+### Added
+
+- **`stableAdminThumbnail`** (default `true`): fixed-size admin preview with shimmer and crossfade on CDN `src` changes; optional disable per collection.
+- Metadata-only media updates set **`req.context.skipCloudStorage`** so cloud-storage does not run after alt/name/focal saves.
+
+### Documentation
+
+- README: shared media row vs replace, alt-only behaviour, stable preview, and `SanityImage` `fallback` wrapper pattern.
+
+---
+
 ## [2.0.3] — 2026-10-05
 
 ### Fixed

@@ -3,7 +3,10 @@ import type { PluginOptions as CloudStoragePluginOptions } from '@payloadcms/plu
 import type { CollectionConfig, Config, Endpoint, Field, Plugin, UploadConfig } from 'payload'
 
 import { createSanityAdapter } from './adapter/createAdapter'
-import { MEDIA_USAGE_INSPECTOR_IMPORT } from './admin/constants'
+import {
+  MEDIA_USAGE_INSPECTOR_IMPORT,
+  SANITY_MEDIA_STABLE_PREVIEW_IMPORT,
+} from './admin/constants'
 import { createSanityClient } from './client/createSanityClient'
 import {
   collectionHasAltField,
@@ -202,6 +205,11 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             ? nextCollection.endpoints
             : []
 
+          const stableAdminThumbnail =
+            collections[slug] === true
+              ? true
+              : (collections[slug].stableAdminThumbnail ?? true)
+
           const upload: UploadConfig = {
             ...uploadConfig,
             disableLocalStorage:
@@ -209,11 +217,23 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             crop: uploadConfig.crop ?? false,
             focalPoint: uploadConfig.focalPoint ?? false,
             hideRemoveFile: uploadConfig.hideRemoveFile ?? true,
-            displayPreview: uploadConfig.displayPreview ?? true,
+            displayPreview:
+              uploadConfig.displayPreview ??
+              (stableAdminThumbnail ? false : true),
             adminThumbnail:
               uploadConfig.adminThumbnail ??
               (({ doc }) =>
                 sanityAdminThumbnail(doc as SanityMediaDocument, { cdnBaseUrl })),
+          }
+
+          const stablePreviewField: Field = {
+            name: 'sanityStablePreview',
+            type: 'ui',
+            admin: {
+              components: {
+                Field: SANITY_MEDIA_STABLE_PREVIEW_IMPORT,
+              },
+            },
           }
 
           const mediaUsageField: Field = {
@@ -228,6 +248,9 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
           const existingFields = nextCollection.fields ?? []
           const altFields: Field[] = []
+          const uiFields: Field[] = stableAdminThumbnail
+            ? [stablePreviewField, mediaUsageField]
+            : [mediaUsageField]
 
           if (altOptions.enabled) {
             if (collectionHasAltField(existingFields)) {
@@ -277,7 +300,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                 nextCollection.admin?.defaultColumns ??
                 ['filename', 'name', 'id', 'updatedAt'],
             },
-            fields: [...existingFields, ...altFields, mediaUsageField],
+            fields: [...existingFields, ...altFields, ...uiFields],
             upload,
             hooks: mergeAfterReadHooks(nextCollection, [mediaAfterRead]),
           }

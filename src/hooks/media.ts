@@ -187,6 +187,10 @@ export function createSanityMediaPersistUpstreamBeforeChangeHook(): CollectionBe
 
     if (!hasNewBytes && !hasSizes) {
       clearStaleCloudStorageUploadContext(req)
+      if (!req.context) {
+        req.context = {}
+      }
+      req.context.skipCloudStorage = true
     }
 
     const previous = originalDoc as SanityMediaDocument | undefined

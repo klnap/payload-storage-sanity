@@ -49,7 +49,11 @@ describe('sanityStorage', () => {
     expect(typeof (media?.upload as { adminThumbnail?: unknown }).adminThumbnail).toBe(
       'function'
     )
-    expect((media?.upload as { displayPreview?: boolean }).displayPreview).toBe(true)
+    expect((media?.upload as { displayPreview?: boolean }).displayPreview).toBe(false)
+    const stablePreview = media?.fields?.find(
+      (f) => 'name' in f && f.name === 'sanityStablePreview'
+    )
+    expect(stablePreview).toBeDefined()
   })
 
   test('sets disableLocalStorage on configured upload collections', () => {

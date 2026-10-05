@@ -172,6 +172,27 @@ describe('createSanityMediaPersistUpstreamBeforeChangeHook', () => {
     expect(result?.mimeType).toBe('image/jpeg')
   })
 
+  test('sets skipCloudStorage on metadata-only update', async () => {
+    const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
+    const req = { context: {} } as never
+
+    await hook({
+      data: { alt: { en: 'x' } },
+      originalDoc: {
+        id: 1,
+        filename: 'image-abc',
+        mimeType: 'image/jpeg',
+        sanity: { id: 'image-abc', path: 'images/a.jpg' },
+      },
+      collection: { slug: 'media' } as never,
+      context: {},
+      operation: 'update',
+      req,
+    })
+
+    expect(req.context.skipCloudStorage).toBe(true)
+  })
+
   test('clears stale cloud-storage file context when update has no new bytes', async () => {
     const hook = createSanityMediaPersistUpstreamBeforeChangeHook()
     const req = {

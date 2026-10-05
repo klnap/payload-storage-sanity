@@ -45,6 +45,11 @@ export type SanityStorageCollectionOptions = {
   disablePayloadAccessControl?: boolean
   preventDeleteWhenReferenced?: boolean
   populate?: SanityStoragePopulateConfig
+  /**
+   * Stable CDN thumbnail preview in admin (fixed box + shimmer). Disables Payload upload `displayPreview` and uses plugin preview field.
+   * @default true
+   */
+  stableAdminThumbnail?: boolean
 }
 
 export type SanityStoragePluginOptions = {

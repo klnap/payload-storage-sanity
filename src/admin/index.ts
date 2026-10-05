@@ -1,3 +1,5 @@
-export { MEDIA_USAGE_INSPECTOR_IMPORT } from './constants'
+export { MEDIA_USAGE_INSPECTOR_IMPORT, SANITY_MEDIA_STABLE_PREVIEW_IMPORT } from './constants'
 export { MediaUsageInspector } from './MediaUsageInspector'
+export { SanityMediaStablePreviewField } from './SanityMediaStablePreviewField'
+export { SanityStableThumbnail } from './SanityStableThumbnail'
 export { UnavailableAssetRecovery } from './UnavailableAssetRecovery'

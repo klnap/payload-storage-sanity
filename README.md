@@ -130,7 +130,7 @@ Unless you override them on the collection’s `upload` config:
 | Hook | When | What it does |
 | :--- | :--- | :--- |
 | **`beforeChange`** (sync metadata) | Create / update | Normalizes `sync`, slugifies `originalFilename`. |
-| **`beforeChange`** (persist upstream) | Update | **Metadata-only saves** (alt, name, focal): merges hidden `sanity.*` and file fields from `originalDoc`; clears stale cloud-storage upload context so assets do not “disappear” after save. |
+| **`beforeChange`** (persist upstream) | Update | **Metadata-only saves** (alt, name, focal): merges hidden `sanity.*` and file fields from `originalDoc`; clears stale cloud-storage upload context; sets **`skipCloudStorage`** so alt-only saves never call Sanity `assets.upload`. |
 | **`beforeChange`** (dedupe) | Create | SHA-1 hash; reuses existing row / skips duplicate upload when `dedupeUploads` is on. |
 | **`afterOperation`** (dedupe) | Create | Deletes duplicate row if dedupe matched an existing asset. |
 | **`afterRead`** | Read | `sanitizeMediaDocument` + hydrate root **`url`** / **`thumbnailURL`** (not persisted); optional populate preset shaping. |
@@ -196,6 +196,7 @@ import type { SanityStorageOptions } from '@klnap/payload-storage-sanity'
 | `disablePayloadAccessControl` | `boolean` | `true` | Serve from CDN directly in admin. |
 | `preventDeleteWhenReferenced` | `boolean` | inherits global | Per-collection delete guard. |
 | `populate` | `SanityStoragePopulateConfig` | inherits global | Per-collection populate preset. |
+| `stableAdminThumbnail` | `boolean` | `true` | Fixed admin preview + shimmer; disables stock upload `displayPreview`. |
 
 ### `SanityStorageSyncConfig`
 
@@ -258,7 +259,19 @@ Auto-injected on every configured media document:
 
 ### Metadata-only saves (admin)
 
-Editing **alt**, **name**, focal point, etc. without re-uploading no longer strips hidden **`sanity.path`** / **`url`** or triggers a spurious re-upload from stale request context.
+Editing **alt**, **name**, focal point, etc. without re-uploading no longer strips hidden **`sanity.path`** / **`url`** or triggers a spurious re-upload from stale request context. **Alt-only saves never upload to Sanity** (no new bytes → cloud-storage is skipped).
+
+### Shared media row vs new upload
+
+Many articles can point at the **same** Payload media document. **Replacing the file on that row** keeps the same document `id`, so every article with that relation gets the new CDN URL after the next read or populate (watch front-end cache / ISR). **Metadata-only edits** stay in Payload only; Sanity asset bytes are unchanged. **New media row** or changing which media an article references only affects documents you wire up manually.
+
+### Stable admin preview (default)
+
+When **`stableAdminThumbnail`** is enabled (default `true` on configured collections), the plugin injects a fixed-size preview with shimmer while the CDN image loads and keeps the previous image visible until a new `src` finishes loading—so replace/save does not flash an empty slot. Payload’s built-in upload `displayPreview` is turned off to avoid duplicate previews. Set `collections.media.stableAdminThumbnail: false` to restore stock behaviour.
+
+### `SanityImage` in Next.js apps
+
+Use a thin app wrapper so `fallback` defaults correctly: destructure `fallback = defaultFallback` **before** spreading props (`undefined` → default shimmer, `null` → disable, a node → custom). See `test-next/lib/sanity-image.tsx` for a reference.
 
 ### `afterRead` sanitization
 
