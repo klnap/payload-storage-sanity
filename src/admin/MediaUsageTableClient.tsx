@@ -219,6 +219,14 @@ export function MediaUsageTableClient({ usages }: { usages: MediaUsageEntry[] })
     [filtered, sortCol, sortDir, toggleSort]
   )
 
+  if (usages.length === 0) {
+    return (
+      <div className='group-field group-field--top-level'>
+        <p className='field-description'>This asset is not referenced by any documents yet.</p>
+      </div>
+    )
+  }
+
   return (
     <div className='group-field group-field--top-level'>
       <div className='collection-list__wrap'>

@@ -5,7 +5,6 @@ export function sanityMediaDefaultPopulateSelect(): NonNullable<CollectionConfig
   return {
     id: true,
     filename: true,
-    name: true,
     url: true,
     thumbnailURL: true,
     width: true,

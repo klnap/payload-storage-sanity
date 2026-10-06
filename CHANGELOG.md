@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 3.0.2 (2026-10-06)
+
+### Changed
+
+- Default **`name`** is no longer injected on media; list **`useAsTitle`** defaults to **`id`**. Custom **sidebar** fields on the collection render above plugin **`originalFilename`** / **`sync`**.
+
+## 3.0.1 (2026-10-05)
+
 ### Fixed
 
 - Admin **focal-only** saves (default 100% `uploadEdits.crop`, unchanged dimensions) no longer upload to Sanity or show the media “Uploading…” toast; **crop** / resize still re-upload as before.
@@ -25,8 +33,4 @@
 
 ### Changed
 
-- Populate request flags remain under **`context.sanityStorage`**: **`skipPopulate`**, **`forcePopulate`** (Local API; not serialized by `@payloadcms/sdk` REST).
-
-## 2.0.3
-
-Sanity storage adapter for Payload CMS: cloud uploads, CDN URLs, admin sync UI, reference-integrity guards, SHA-1 upload deduplication, optional webhooks and batch reconcile, populate preset **`default`** (`DefaultPopulateAsset`) for storefront REST, and optional **`/next`** image helpers.
+- **`defaultPopulate`** / nested-read morph aligned with built-in presets only (`default`, `full`).

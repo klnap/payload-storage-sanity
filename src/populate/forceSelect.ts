@@ -10,7 +10,6 @@ export function sanityMediaForceSelect(preset: string): SanityMediaForceSelect {
     sanity: true,
     alt: true,
     sync: true,
-    name: true,
     originalFilename: true,
     mimeType: true,
     url: true,

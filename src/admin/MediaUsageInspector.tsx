@@ -27,9 +27,5 @@ export const MediaUsageInspector: UIFieldServerComponent = async ({
     usages = []
   }
 
-  if (usages.length === 0) {
-    return null
-  }
-
   return <MediaUsageTableClient usages={usages} />
 }

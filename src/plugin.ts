@@ -16,6 +16,8 @@ import {
   plainAltTextField,
   resolveCollectionAltOptions,
 } from './fields/localizedAltGroup'
+import { finalizeSanityMediaCollectionFields } from './fields/mediaFieldLayout'
+import { collectTopLevelFieldNames } from './fields/mediaFields'
 import { createMediaUsageEndpoint } from './endpoints/mediaUsage'
 import { createSanityReconcileEndpoint } from './endpoints/reconcile'
 import { createSanityWebhookEndpoint } from './endpoints/webhook'
@@ -275,6 +277,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             },
           }
 
+          const userFieldNames = new Set(collectTopLevelFieldNames(collection.fields ?? []))
           const existingFields = nextCollection.fields ?? []
           const altFields: Field[] = []
           const injectedUiFields: Field[] = []
@@ -341,10 +344,10 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
             ],
             admin: {
               ...nextCollection.admin,
-              useAsTitle: nextCollection.admin?.useAsTitle ?? 'name',
+              useAsTitle: nextCollection.admin?.useAsTitle ?? 'id',
               defaultColumns:
                 nextCollection.admin?.defaultColumns ??
-                ['filename', 'name', 'id', 'updatedAt'],
+                ['filename', 'originalFilename', 'id', 'updatedAt'],
               components: {
                 ...nextCollection.admin?.components,
                 edit: {
@@ -355,11 +358,10 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                 },
               },
             },
-            fields: [
-              ...existingFields,
-              ...altFields,
-              ...injectedUiFields,
-            ],
+            fields: finalizeSanityMediaCollectionFields(
+              [...existingFields, ...altFields, ...injectedUiFields],
+              userFieldNames
+            ),
             upload,
             hooks: mergeAfterReadHooks(nextCollection, [mediaAfterRead]),
           }

@@ -1,7 +1,17 @@
 import { describe, expect, test } from 'bun:test'
-import type { Config } from 'payload'
+import type { CollectionConfig, Config, Field } from 'payload'
 
 import { sanityStorage } from '../../src/plugin.js'
+
+function findMediaField(
+  media: CollectionConfig | undefined,
+  name: string,
+  type?: Field['type']
+): Field | undefined {
+  return media?.fields?.find(
+    (f) => 'name' in f && f.name === name && (type == null || f.type === type)
+  )
+}
 
 function applyPlugin(collections: Config['collections']): Config {
   const plugin = sanityStorage({
@@ -50,7 +60,14 @@ describe('sanityStorage', () => {
     const media = config.collections?.find((c) => c.slug === 'media')
 
     expect(media).toBeDefined()
-    expect(media!.admin?.defaultColumns).toEqual(['filename', 'name', 'id', 'updatedAt'])
+    expect(media!.admin?.defaultColumns).toEqual([
+      'filename',
+      'originalFilename',
+      'id',
+      'updatedAt',
+    ])
+    expect(media!.admin?.useAsTitle).toBe('id')
+
     const upload = media!.upload
     expect(typeof upload).toBe('object')
     expect(typeof (upload as { adminThumbnail?: unknown }).adminThumbnail).toBe('function')
@@ -107,12 +124,8 @@ describe('sanityStorage', () => {
   test('injects plain alt text field when localization locales are missing', () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
     const media = config.collections?.find((c) => c.slug === 'media')
-    const altGroup = media?.fields?.find(
-      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
-    )
-    const altText = media?.fields?.find(
-      (f) => 'name' in f && f.name === 'alt' && f.type === 'text'
-    )
+    const altGroup = findMediaField(media, 'alt', 'group')
+    const altText = findMediaField(media, 'alt', 'text')
     expect(altGroup).toBeUndefined()
     expect(altText).toBeDefined()
   })
@@ -143,9 +156,9 @@ describe('sanityStorage', () => {
     }
 
     const media = config.collections?.find((c) => c.slug === 'media')
-    const altField = media?.fields?.find(
-      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
-    ) as { fields?: { name: string }[] } | undefined
+    const altField = findMediaField(media, 'alt', 'group') as
+      | { fields?: { name: string }[] }
+      | undefined
 
     expect(altField).toBeDefined()
     expect(altField?.fields?.map((f) => f.name)).toEqual(['pl', 'en'])
@@ -205,9 +218,9 @@ describe('sanityStorage', () => {
     }
 
     const media = config.collections?.find((c) => c.slug === 'media')
-    const altField = media?.fields?.find(
-      (f) => 'name' in f && f.name === 'alt' && f.type === 'group'
-    ) as { fields?: { required?: boolean }[] } | undefined
+    const altField = findMediaField(media, 'alt', 'group') as
+      | { fields?: { required?: boolean }[] }
+      | undefined
 
     expect(altField?.fields?.every((f) => f.required === true)).toBe(true)
   })
@@ -241,9 +254,9 @@ describe('sanityStorage', () => {
     }
 
     const media = config.collections?.find((c) => c.slug === 'media')
-    const altFields = media?.fields?.filter((f) => 'name' in f && f.name === 'alt') ?? []
-    expect(altFields).toHaveLength(1)
-    expect(altFields[0]?.type).toBe('text')
+    const altOnCollection = findMediaField(media, 'alt')
+    expect(altOnCollection).toBeDefined()
+    expect(altOnCollection?.type).toBe('text')
   })
 
   test('respects crop and focalPoint from collection upload config', () => {

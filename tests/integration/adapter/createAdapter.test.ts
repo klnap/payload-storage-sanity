@@ -40,12 +40,12 @@ function mockClient(overrides: Record<string, unknown> = {}): SanityClient {
 }
 
 describe('createSanityAdapter', () => {
-  test('injects Sanity media fields (sync sidebar + sanity group)', () => {
+  test('injects Sanity media fields (sidebar + sanity group)', () => {
     const adapter = createSanityAdapter({ client: mockClient(), ...sanityCreds })({ collection })
 
     expect(adapter.name).toBe('sanity')
     const names = collectTopLevelFieldNames(adapter.fields ?? [])
-    expect(names).toEqual(['name', 'originalFilename', 'sync', 'sanity'])
+    expect(names).toEqual(['originalFilename', 'sync', 'sanity'])
   })
 
   test('handleUpload maps Sanity asset to media document', async () => {

@@ -97,12 +97,12 @@ export const sanityUpstreamGroup = (): Field => ({
   ],
 })
 
+/** @deprecated No longer injected by default; kept for custom field configs. */
 export const sanityMediaNameField = (): Field => ({
   name: 'name',
   type: 'text',
   label: 'Name',
   admin: {
-    position: 'sidebar',
     description: 'Internal name used for identification.',
   },
 })
@@ -163,7 +163,6 @@ export const sanityMediaSyncFields = (): Field => ({
 })
 
 export const sanityMediaAdminFields = (): Field[] => [
-  sanityMediaNameField(),
   sanityOriginalFilenameField(),
   sanityMediaSyncFields(),
   sanityUpstreamGroup(),

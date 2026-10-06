@@ -105,12 +105,13 @@ For every slug listed under `collections` that is an **upload** collection, `san
 
 | Field / group | Purpose |
 | :--- | :--- |
-| **`name`** | Sidebar label for editors (internal title). |
-| **`originalFilename`** | Read-only slugified original name from upload. |
+| **`originalFilename`** | Read-only slugified original name from upload (sidebar, below your custom sidebar fields). |
 | **`sync`** | Sidebar group: `status`, `checkedAt`, `errorAt` — mirrors upstream health (`available`, `missing`, `deleted`, `error`, …). |
 | **`sanity`** | Hidden read-only group: `id`, `rev`, `path`, `url`, `sha1hash`, dimensions metadata, palette, LQIP, EXIF, etc. |
 | **`alt`** *(optional)* | Localized **group** (`alt.pl`, `alt.en`, …) when `collections.*.alt.enabled` and Payload `localization` is configured. Skipped if the collection already defines `alt`. |
-| **`mediaUsageInspector`** | UI field — auto-injected Usage Inspector panel on the media edit view. |
+| **`mediaUsageInspector`** | UI field — where this asset is referenced (main column). |
+
+Custom fields with `admin.position: 'sidebar'` on your media collection are ordered **above** the plugin’s `originalFilename` / `sync` sidebar fields.
 
 The adapter also sets **`filename`** to the Sanity asset `_id` after upload (cloud-storage contract).
 
