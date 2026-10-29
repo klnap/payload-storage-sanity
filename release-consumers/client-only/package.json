@@ -1,0 +1,16 @@
+{
+  "name": "pss-release-consumer-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "smoke": "bun run smoke.ts"
+  },
+  "dependencies": {
+    "@klnap/payload-storage-sanity": "file:__PSS_TARBALL__",
+    "@sanity/client": "^7.12.0"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "pss-css-sidefx-fixture",
+  "private": true,
+  "dependencies": {
+    "@klnap/payload-storage-sanity": "file:./package.tgz"
+  }
+}

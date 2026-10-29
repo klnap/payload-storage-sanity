@@ -1,0 +1,22 @@
+{
+  "name": "pss-release-consumer-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "smoke": "bun run smoke.ts"
+  },
+  "dependencies": {
+    "@klnap/payload-storage-sanity": "file:__PSS_TARBALL__",
+    "@payloadcms/ui": "3.90.2",
+    "@sanity/client": "^7.12.0",
+    "payload": "3.90.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.7.3"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "name": "@klnap/payload-storage-sanity",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Sanity storage adapter for Payload CMS media collections",
+  "license": "MIT",
+  "author": "klnap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klnap/payload-storage-sanity"
+  },
+  "homepage": "https://github.com/klnap/payload-storage-sanity#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css",
+    "./dist/**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js"
+    },
+    "./client": {
+      "types": "./dist/sanity/client/index.d.ts",
+      "import": "./dist/sanity/client/index.js"
+    },
+    "./next": {
+      "types": "./dist/presentation/adapters/next/index.d.ts",
+      "import": "./dist/presentation/adapters/next/index.js"
+    },
+    "./next/loader": {
+      "types": "./dist/presentation/adapters/next/loader.d.ts",
+      "import": "./dist/presentation/adapters/next/loader.js"
+    },
+    "./styles/admin-tailwind.css": "./dist/admin/tailwind/admin-tailwind.css"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "sanity",
+    "storage",
+    "media",
+    "upload",
+    "cdn"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "build": "bun run build:dist",
+    "build:styles": "tailwindcss -i ./src/admin/tailwind/entry.css -o ./src/admin/tailwind/admin-tailwind.css --minify",
+    "build:dist": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && bun run build:styles && bun run build:copy-admin-css",
+    "build:copy-admin-css": "mkdir -p dist/admin/tailwind && cp src/admin/tailwind/admin-tailwind.css dist/admin/tailwind/admin-tailwind.css",
+    "check:dist-alias": "node scripts/check-dist-alias.mjs",
+    "check:dist-imports": "node scripts/check-dist-relative-imports.mjs",
+    "check:dist": "bun run build:dist && bun run check:dist-alias && bun run check:dist-imports",
+    "check:exports": "node scripts/check-exports.mjs",
+    "check:public-api": "bun scripts/check-public-api.mjs",
+    "check:release-matrix": "node scripts/run-release-matrix.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "check:css-side-effects": "PSS_CSS_WEBPACK=1 node scripts/verify-css-side-effects.mjs",
+    "check:publint": "publint",
+    "check:attw": "node scripts/check-attw.mjs",
+    "check:deps": "node scripts/check-deps.mjs",
+    "check:public-types": "node scripts/check-public-types.mjs",
+    "public-types:snapshot": "bun run build:dist && node scripts/snapshot-public-types.mjs",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "bun test tests",
+    "lint": "biome check .",
+    "prepack": "bun run build:dist",
+    "postpack": "bun run build:dist"
+  },
+  "dependencies": {
+    "@payloadcms/plugin-cloud-storage": "3.90.2",
+    "@sanity/client": "^7.12.0",
+    "@sanity/image-url": "^1.2.0",
+    "slugify": "^1.6.9",
+    "tailwind-variants": "^3.3.1",
+    "valibot": "^1.4.2"
+  },
+  "peerDependencies": {
+    "@payloadcms/translations": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "@sanity/client": ">=6.0.0",
+    "next": ">=15.0.0",
+    "payload": "3.90.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@payloadcms/translations": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "@tailwindcss/cli": "^4.3.3",
+    "@biomejs/biome": "2.5.14",
+    "tailwindcss": "^4.3.3",
+    "tsc-alias": "^1.8.16",
+    "@types/bun": "^1.2.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "payload": "3.90.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "typescript": "5.7.3",
+    "dependency-cruiser": "16.10.4",
+    "@arethetypeswrong/cli": "^0.18.2",
+    "publint": "^0.3.15",
+    "css-loader": "7.1.2",
+    "webpack": "5.98.0",
+    "webpack-cli": "6.0.1"
+  },
+  "engines": {
+    "node": "^24.0.0",
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,957 @@
+{
+  ".": [
+    {
+      "name": "applyPayloadUploadFileSizeLimit",
+      "kind": "value",
+      "declaration": "applyPayloadUploadFileSizeLimit"
+    },
+    {
+      "name": "applyPopulatePreset",
+      "kind": "value",
+      "declaration": "applyPopulatePreset"
+    },
+    {
+      "name": "buildSanityImageUrl",
+      "kind": "value",
+      "declaration": "buildSanityImageUrl"
+    },
+    {
+      "name": "BuildSanityImageUrlArgs",
+      "kind": "type",
+      "declaration": "type BuildSanityImageUrlArgs"
+    },
+    {
+      "name": "classifySanityAssetType",
+      "kind": "value",
+      "declaration": "classifySanityAssetType"
+    },
+    {
+      "name": "classifyUploadMediaKind",
+      "kind": "value",
+      "declaration": "classifyUploadMediaKind"
+    },
+    {
+      "name": "collectionHasAltField",
+      "kind": "value",
+      "declaration": "collectionHasAltField"
+    },
+    {
+      "name": "collectTopLevelFieldNames",
+      "kind": "value",
+      "declaration": "collectTopLevelFieldNames"
+    },
+    {
+      "name": "computeMaxUploadByteLimit",
+      "kind": "value",
+      "declaration": "computeMaxUploadByteLimit"
+    },
+    {
+      "name": "createPopulate",
+      "kind": "value",
+      "declaration": "createPopulate"
+    },
+    {
+      "name": "createSanityClient",
+      "kind": "value",
+      "declaration": "createSanityClient"
+    },
+    {
+      "name": "createSanityMediaAfterReadHook",
+      "kind": "value",
+      "declaration": "createSanityMediaAfterReadHook"
+    },
+    {
+      "name": "createSanityMediaBeforeChangeHook",
+      "kind": "value",
+      "declaration": "createSanityMediaBeforeChangeHook"
+    },
+    {
+      "name": "createSanityReconcileEndpoint",
+      "kind": "value",
+      "declaration": "createSanityReconcileEndpoint"
+    },
+    {
+      "name": "createSanityWebhookEndpoint",
+      "kind": "value",
+      "declaration": "createSanityWebhookEndpoint"
+    },
+    {
+      "name": "DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH",
+      "kind": "value",
+      "declaration": "DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH"
+    },
+    {
+      "name": "DefaultPopulateAsset",
+      "kind": "type",
+      "declaration": "DefaultPopulateAsset"
+    },
+    {
+      "name": "defaultPopulateMediaDoc",
+      "kind": "value",
+      "declaration": "defaultPopulateMediaDoc"
+    },
+    {
+      "name": "defaultSanitySyncAccess",
+      "kind": "value",
+      "declaration": "defaultSanitySyncAccess"
+    },
+    {
+      "name": "fetchSanityAssetSafe",
+      "kind": "value",
+      "declaration": "fetchSanityAssetSafe"
+    },
+    {
+      "name": "fetchSanityImageAsset",
+      "kind": "value",
+      "declaration": "fetchSanityImageAsset"
+    },
+    {
+      "name": "focalObjectPosition",
+      "kind": "value",
+      "declaration": "focalObjectPosition"
+    },
+    {
+      "name": "formatBytesForMessage",
+      "kind": "value",
+      "declaration": "formatBytesForMessage"
+    },
+    {
+      "name": "formatReconcileHttpResponse",
+      "kind": "value",
+      "declaration": "formatReconcileHttpResponse"
+    },
+    {
+      "name": "fullPopulate",
+      "kind": "value",
+      "declaration": "fullPopulate"
+    },
+    {
+      "name": "getFullPopulateBase",
+      "kind": "value",
+      "declaration": "getFullPopulateBase"
+    },
+    {
+      "name": "getLocalizationLocales",
+      "kind": "value",
+      "declaration": "getLocalizationLocales"
+    },
+    {
+      "name": "getSanityAssetFromMedia",
+      "kind": "value",
+      "declaration": "getSanityAssetFromMedia"
+    },
+    {
+      "name": "getSanityAssetId",
+      "kind": "value",
+      "declaration": "getSanityAssetId"
+    },
+    {
+      "name": "getSanityAssetMetadata",
+      "kind": "value",
+      "declaration": "getSanityAssetMetadata"
+    },
+    {
+      "name": "getSanityAssetPath",
+      "kind": "value",
+      "declaration": "getSanityAssetPath"
+    },
+    {
+      "name": "getSanityAssetSha1",
+      "kind": "value",
+      "declaration": "getSanityAssetSha1"
+    },
+    {
+      "name": "getSanityAssetUrl",
+      "kind": "value",
+      "declaration": "getSanityAssetUrl"
+    },
+    {
+      "name": "handleSanityWebhookEvent",
+      "kind": "value",
+      "declaration": "handleSanityWebhookEvent"
+    },
+    {
+      "name": "hasExplicitMediaPopulateSelect",
+      "kind": "value",
+      "declaration": "hasExplicitMediaPopulateSelect"
+    },
+    {
+      "name": "hasResolvableMediaUrl",
+      "kind": "value",
+      "declaration": "hasResolvableMediaUrl"
+    },
+    {
+      "name": "imageDimensionsFromMedia",
+      "kind": "value",
+      "declaration": "imageDimensionsFromMedia"
+    },
+    {
+      "name": "isBuiltinPopulatePreset",
+      "kind": "value",
+      "declaration": "isBuiltinPopulatePreset"
+    },
+    {
+      "name": "isMediaAssetAvailable",
+      "kind": "value",
+      "declaration": "isMediaAssetAvailable"
+    },
+    {
+      "name": "isPayloadDocumentId",
+      "kind": "value",
+      "declaration": "isPayloadDocumentId"
+    },
+    {
+      "name": "isSanityCompatibleHost",
+      "kind": "value",
+      "declaration": "isSanityCompatibleHost"
+    },
+    {
+      "name": "isSanitySyncEnabled",
+      "kind": "value",
+      "declaration": "isSanitySyncEnabled"
+    },
+    {
+      "name": "isUnavailableSyncStatus",
+      "kind": "value",
+      "declaration": "isUnavailableSyncStatus"
+    },
+    {
+      "name": "JsonValue",
+      "kind": "type",
+      "declaration": "JsonValue"
+    },
+    {
+      "name": "LocaleLike",
+      "kind": "type",
+      "declaration": "type LocaleLike"
+    },
+    {
+      "name": "localizedAltGroupField",
+      "kind": "value",
+      "declaration": "localizedAltGroupField"
+    },
+    {
+      "name": "LocalizedAltGroupFieldOptions",
+      "kind": "type",
+      "declaration": "type LocalizedAltGroupFieldOptions"
+    },
+    {
+      "name": "mapSanityUploadToMedia",
+      "kind": "value",
+      "declaration": "mapSanityUploadToMedia"
+    },
+    {
+      "name": "markMediaBySanityAssetId",
+      "kind": "value",
+      "declaration": "markMediaBySanityAssetId"
+    },
+    {
+      "name": "MB",
+      "kind": "value",
+      "declaration": "MB"
+    },
+    {
+      "name": "mediaSyncStatus",
+      "kind": "value",
+      "declaration": "mediaSyncStatus"
+    },
+    {
+      "name": "mergeMediaSync",
+      "kind": "value",
+      "declaration": "mergeMediaSync"
+    },
+    {
+      "name": "mergeUploadMaxSizeConfig",
+      "kind": "value",
+      "declaration": "mergeUploadMaxSizeConfig"
+    },
+    {
+      "name": "normalizeSanityStorageSyncBasePath",
+      "kind": "value",
+      "declaration": "normalizeSanityStorageSyncBasePath"
+    },
+    {
+      "name": "normalizeSyncStatus",
+      "kind": "value",
+      "declaration": "normalizeSyncStatus"
+    },
+    {
+      "name": "normalizeUploadMaxSizeConfig",
+      "kind": "value",
+      "declaration": "normalizeUploadMaxSizeConfig"
+    },
+    {
+      "name": "PayloadDocumentId",
+      "kind": "type",
+      "declaration": "PayloadDocumentId"
+    },
+    {
+      "name": "payloadDocumentIdsEqual",
+      "kind": "value",
+      "declaration": "payloadDocumentIdsEqual"
+    },
+    {
+      "name": "PayloadMediaDraft",
+      "kind": "type",
+      "declaration": "PayloadMediaDraft"
+    },
+    {
+      "name": "PayloadMediaPatch",
+      "kind": "type",
+      "declaration": "PayloadMediaPatch"
+    },
+    {
+      "name": "plainAltTextField",
+      "kind": "value",
+      "declaration": "plainAltTextField"
+    },
+    {
+      "name": "PlainAltTextFieldOptions",
+      "kind": "type",
+      "declaration": "type PlainAltTextFieldOptions"
+    },
+    {
+      "name": "PopulateFn",
+      "kind": "type",
+      "declaration": "type PopulateFn"
+    },
+    {
+      "name": "PopulateOptions",
+      "kind": "type",
+      "declaration": "type PopulateOptions"
+    },
+    {
+      "name": "PopulateSelect",
+      "kind": "type",
+      "declaration": "type PopulateSelect"
+    },
+    {
+      "name": "presetUsesDefaultPopulate",
+      "kind": "value",
+      "declaration": "presetUsesDefaultPopulate"
+    },
+    {
+      "name": "readMediaSync",
+      "kind": "value",
+      "declaration": "readMediaSync"
+    },
+    {
+      "name": "readSanityStorageContext",
+      "kind": "value",
+      "declaration": "readSanityStorageContext"
+    },
+    {
+      "name": "ReconcileHttpResponse",
+      "kind": "type",
+      "declaration": "ReconcileHttpResponse"
+    },
+    {
+      "name": "ReconcileReport",
+      "kind": "type",
+      "declaration": "ReconcileReport"
+    },
+    {
+      "name": "reconcileSanityMedia",
+      "kind": "value",
+      "declaration": "reconcileSanityMedia"
+    },
+    {
+      "name": "resolveAdminLabel",
+      "kind": "value",
+      "declaration": "resolveAdminLabel"
+    },
+    {
+      "name": "resolveAssetDocumentUrl",
+      "kind": "value",
+      "declaration": "resolveAssetDocumentUrl"
+    },
+    {
+      "name": "resolveCollectionAltOptions",
+      "kind": "value",
+      "declaration": "resolveCollectionAltOptions"
+    },
+    {
+      "name": "ResolvedCollectionAltOptions",
+      "kind": "type",
+      "declaration": "type ResolvedCollectionAltOptions"
+    },
+    {
+      "name": "ResolvedSanitySyncConfig",
+      "kind": "type",
+      "declaration": "ResolvedSanitySyncConfig"
+    },
+    {
+      "name": "ResolvedSanitySyncReconcile",
+      "kind": "type",
+      "declaration": "ResolvedSanitySyncReconcile"
+    },
+    {
+      "name": "ResolvedSanitySyncWebhook",
+      "kind": "type",
+      "declaration": "ResolvedSanitySyncWebhook"
+    },
+    {
+      "name": "resolveImageFileRef",
+      "kind": "value",
+      "declaration": "resolveImageFileRef"
+    },
+    {
+      "name": "resolveLocalizedAlt",
+      "kind": "value",
+      "declaration": "resolveLocalizedAlt"
+    },
+    {
+      "name": "resolveMediaId",
+      "kind": "value",
+      "declaration": "resolveMediaId"
+    },
+    {
+      "name": "resolvePublicUrl",
+      "kind": "value",
+      "declaration": "resolvePublicUrl"
+    },
+    {
+      "name": "resolveSanityStorageMode",
+      "kind": "value",
+      "declaration": "resolveSanityStorageMode"
+    },
+    {
+      "name": "resolveSanitySyncConfig",
+      "kind": "value",
+      "declaration": "resolveSanitySyncConfig"
+    },
+    {
+      "name": "resolveUploadMaxSizeBytes",
+      "kind": "value",
+      "declaration": "resolveUploadMaxSizeBytes"
+    },
+    {
+      "name": "sanitizeMediaDocument",
+      "kind": "value",
+      "declaration": "sanitizeMediaDocument"
+    },
+    {
+      "name": "SANITY_ASSET_DEFAULT_POPULATE_FIELDS",
+      "kind": "value",
+      "declaration": "SANITY_ASSET_DEFAULT_POPULATE_FIELDS"
+    },
+    {
+      "name": "SANITY_IMAGE_METADATA_EXTRACT",
+      "kind": "value",
+      "declaration": "SANITY_IMAGE_METADATA_EXTRACT"
+    },
+    {
+      "name": "SANITY_STORAGE_CONTEXT_KEY",
+      "kind": "value",
+      "declaration": "SANITY_STORAGE_CONTEXT_KEY"
+    },
+    {
+      "name": "SANITY_SYNC_STATUSES",
+      "kind": "value",
+      "declaration": "SANITY_SYNC_STATUSES"
+    },
+    {
+      "name": "sanityAdminThumbnail",
+      "kind": "value",
+      "declaration": "sanityAdminThumbnail"
+    },
+    {
+      "name": "SanityAsset",
+      "kind": "type",
+      "declaration": "SanityAsset"
+    },
+    {
+      "name": "sanityAssetJsonGroup",
+      "kind": "value",
+      "declaration": "sanityAssetJsonGroup"
+    },
+    {
+      "name": "SanityAssetMetadata",
+      "kind": "type",
+      "declaration": "SanityAssetMetadata"
+    },
+    {
+      "name": "SanityAssetReference",
+      "kind": "type",
+      "declaration": "SanityAssetReference"
+    },
+    {
+      "name": "SanityExif",
+      "kind": "type",
+      "declaration": "SanityExif"
+    },
+    {
+      "name": "SanityExifValue",
+      "kind": "type",
+      "declaration": "SanityExifValue"
+    },
+    {
+      "name": "SanityFileAsset",
+      "kind": "type",
+      "declaration": "SanityFileAsset"
+    },
+    {
+      "name": "SanityGeopoint",
+      "kind": "type",
+      "declaration": "SanityGeopoint"
+    },
+    {
+      "name": "SanityImageAsset",
+      "kind": "type",
+      "declaration": "SanityImageAsset"
+    },
+    {
+      "name": "SanityImageDimensions",
+      "kind": "type",
+      "declaration": "SanityImageDimensions"
+    },
+    {
+      "name": "SanityImagePalette",
+      "kind": "type",
+      "declaration": "SanityImagePalette"
+    },
+    {
+      "name": "SanityImageSource",
+      "kind": "type",
+      "declaration": "type SanityImageSource"
+    },
+    {
+      "name": "sanityMediaAdminFields",
+      "kind": "value",
+      "declaration": "sanityMediaAdminFields"
+    },
+    {
+      "name": "SanityMediaDocument",
+      "kind": "type",
+      "declaration": "type SanityMediaDocument"
+    },
+    {
+      "name": "sanityMediaSyncFields",
+      "kind": "value",
+      "declaration": "sanityMediaSyncFields"
+    },
+    {
+      "name": "SanityMediaSyncFields",
+      "kind": "type",
+      "declaration": "SanityMediaSyncFields"
+    },
+    {
+      "name": "SanityPaletteSwatch",
+      "kind": "type",
+      "declaration": "SanityPaletteSwatch"
+    },
+    {
+      "name": "SanityPersistedAssetGroup",
+      "kind": "type",
+      "declaration": "SanityPersistedAssetGroup"
+    },
+    {
+      "name": "sanityStorage",
+      "kind": "value",
+      "declaration": "sanityStorage"
+    },
+    {
+      "name": "SanityStorageMode",
+      "kind": "type",
+      "declaration": "SanityStorageMode"
+    },
+    {
+      "name": "SanityStorageOptions",
+      "kind": "type",
+      "declaration": "SanityStorageOptions"
+    },
+    {
+      "name": "SanityStoragePluginOptions",
+      "kind": "type",
+      "declaration": "SanityStoragePluginOptions"
+    },
+    {
+      "name": "SanityStorageRequestContext",
+      "kind": "type",
+      "declaration": "type SanityStorageRequestContext"
+    },
+    {
+      "name": "SanityStorageUploadMaxSizeInput",
+      "kind": "type",
+      "declaration": "SanityStorageUploadMaxSizeInput"
+    },
+    {
+      "name": "SanitySyncAccessFn",
+      "kind": "type",
+      "declaration": "SanitySyncAccessFn"
+    },
+    {
+      "name": "sanitySyncFields",
+      "kind": "value",
+      "declaration": "sanitySyncFields"
+    },
+    {
+      "name": "SanitySyncStatus",
+      "kind": "type",
+      "declaration": "SanitySyncStatus"
+    },
+    {
+      "name": "shouldApplyDefaultPopulate",
+      "kind": "value",
+      "declaration": "shouldApplyDefaultPopulate"
+    },
+    {
+      "name": "shouldForcePopulateMorph",
+      "kind": "value",
+      "declaration": "shouldForcePopulateMorph"
+    },
+    {
+      "name": "shouldMorphMediaPopulate",
+      "kind": "value",
+      "declaration": "shouldMorphMediaPopulate"
+    },
+    {
+      "name": "shouldSkipPopulateMorph",
+      "kind": "value",
+      "declaration": "shouldSkipPopulateMorph"
+    },
+    {
+      "name": "syncRoutePath",
+      "kind": "value",
+      "declaration": "syncRoutePath"
+    },
+    {
+      "name": "toPersistedSanityAssetDocument",
+      "kind": "value",
+      "declaration": "toPersistedSanityAssetDocument"
+    },
+    {
+      "name": "uploadMaxSizeConfigHasLimits",
+      "kind": "value",
+      "declaration": "uploadMaxSizeConfigHasLimits"
+    },
+    {
+      "name": "verifySanityWebhookSignature",
+      "kind": "value",
+      "declaration": "verifySanityWebhookSignature"
+    },
+    {
+      "name": "WithMediaSync",
+      "kind": "type",
+      "declaration": "WithMediaSync"
+    }
+  ],
+  "./admin": [
+    {
+      "name": "hasMediaBytesUpload",
+      "kind": "value",
+      "declaration": "hasMediaBytesUpload"
+    },
+    {
+      "name": "isMediaUploadBusy",
+      "kind": "value",
+      "declaration": "isMediaUploadBusy"
+    },
+    {
+      "name": "MEDIA_ASSET_UPLOAD_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_ASSET_UPLOAD_IMPORT"
+    },
+    {
+      "name": "MEDIA_METADATA_INSPECTOR_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_METADATA_INSPECTOR_IMPORT"
+    },
+    {
+      "name": "MEDIA_REFERENCES_INSPECTOR_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_REFERENCES_INSPECTOR_IMPORT"
+    },
+    {
+      "name": "MEDIA_TABS_CHROME_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_TABS_CHROME_IMPORT"
+    },
+    {
+      "name": "MEDIA_UPLOAD_BUSY_SHIELD_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_UPLOAD_BUSY_SHIELD_IMPORT"
+    },
+    {
+      "name": "MEDIA_UPLOAD_TOAST_ID",
+      "kind": "value",
+      "declaration": "MEDIA_UPLOAD_TOAST_ID"
+    },
+    {
+      "name": "MEDIA_USAGE_INSPECTOR_IMPORT",
+      "kind": "value",
+      "declaration": "MEDIA_USAGE_INSPECTOR_IMPORT"
+    },
+    {
+      "name": "MediaAssetUpload",
+      "kind": "value",
+      "declaration": "MediaAssetUpload"
+    },
+    {
+      "name": "MediaAssetUploadHero",
+      "kind": "value",
+      "declaration": "MediaAssetUploadHero"
+    },
+    {
+      "name": "mediaAssetUploadStyles",
+      "kind": "value",
+      "declaration": "mediaAssetUploadStyles"
+    },
+    {
+      "name": "MediaMetadataInspector",
+      "kind": "value",
+      "declaration": "MediaMetadataInspector"
+    },
+    {
+      "name": "MediaMetadataInspectorClient",
+      "kind": "value",
+      "declaration": "MediaMetadataInspectorClient"
+    },
+    {
+      "name": "mediaMetadataSwatchGridStyles",
+      "kind": "value",
+      "declaration": "mediaMetadataSwatchGridStyles"
+    },
+    {
+      "name": "mediaMetadataSwatchStyles",
+      "kind": "value",
+      "declaration": "mediaMetadataSwatchStyles"
+    },
+    {
+      "name": "MediaReferences",
+      "kind": "value",
+      "declaration": "MediaReferences"
+    },
+    {
+      "name": "MediaTabsChrome",
+      "kind": "value",
+      "declaration": "MediaTabsChrome"
+    },
+    {
+      "name": "MediaTabsFieldPlaceholder",
+      "kind": "value",
+      "declaration": "MediaTabsFieldPlaceholder"
+    },
+    {
+      "name": "MediaUploadBusyShield",
+      "kind": "value",
+      "declaration": "MediaUploadBusyShield"
+    },
+    {
+      "name": "MediaUsageInspector",
+      "kind": "value",
+      "declaration": "MediaUsageInspector"
+    },
+    {
+      "name": "MediaUsageTableClient",
+      "kind": "value",
+      "declaration": "MediaUsageTableClient"
+    },
+    {
+      "name": "resolveUploadToastAction",
+      "kind": "value",
+      "declaration": "resolveUploadToastAction"
+    },
+    {
+      "name": "sanityAdminThumbnail",
+      "kind": "value",
+      "declaration": "sanityAdminThumbnail"
+    },
+    {
+      "name": "SanityAdminThumbnailOptions",
+      "kind": "type",
+      "declaration": "type SanityAdminThumbnailOptions"
+    },
+    {
+      "name": "UnavailableAssetRecovery",
+      "kind": "value",
+      "declaration": "UnavailableAssetRecovery"
+    }
+  ],
+  "./client": [
+    {
+      "name": "createSanityClient",
+      "kind": "value",
+      "declaration": "createSanityClient"
+    },
+    {
+      "name": "fetchSanityImageAsset",
+      "kind": "value",
+      "declaration": "fetchSanityImageAsset"
+    },
+    {
+      "name": "parseSanityAsset",
+      "kind": "value",
+      "declaration": "parseSanityAsset"
+    },
+    {
+      "name": "parseSanityImageAsset",
+      "kind": "value",
+      "declaration": "parseSanityImageAsset"
+    },
+    {
+      "name": "SANITY_IMAGE_METADATA_EXTRACT",
+      "kind": "value",
+      "declaration": "SANITY_IMAGE_METADATA_EXTRACT"
+    }
+  ],
+  "./next": [
+    {
+      "name": "appendSanityCdnParams",
+      "kind": "value",
+      "declaration": "appendSanityCdnParams"
+    },
+    {
+      "name": "createSanityImage",
+      "kind": "value",
+      "declaration": "createSanityImage"
+    },
+    {
+      "name": "createSanityImageLoader",
+      "kind": "value",
+      "declaration": "createSanityImageLoader"
+    },
+    {
+      "name": "CreateSanityImageLoaderOptions",
+      "kind": "type",
+      "declaration": "type CreateSanityImageLoaderOptions"
+    },
+    {
+      "name": "CreateSanityImageOptions",
+      "kind": "type",
+      "declaration": "type CreateSanityImageOptions"
+    },
+    {
+      "name": "DefaultPopulateAsset",
+      "kind": "type",
+      "declaration": "DefaultPopulateAsset"
+    },
+    {
+      "name": "focalObjectPosition",
+      "kind": "value",
+      "declaration": "focalObjectPosition"
+    },
+    {
+      "name": "resolveAssetAlt",
+      "kind": "value",
+      "declaration": "resolveAssetAlt"
+    },
+    {
+      "name": "ResolveAssetAltOptions",
+      "kind": "type",
+      "declaration": "type ResolveAssetAltOptions"
+    },
+    {
+      "name": "resolveMappedPopulateAsset",
+      "kind": "value",
+      "declaration": "resolveMappedPopulateAsset"
+    },
+    {
+      "name": "resolvePlaceholderBlurDataUrl",
+      "kind": "value",
+      "declaration": "resolvePlaceholderBlurDataUrl"
+    },
+    {
+      "name": "ResolvePlaceholderBlurDataUrlOptions",
+      "kind": "type",
+      "declaration": "type ResolvePlaceholderBlurDataUrlOptions"
+    },
+    {
+      "name": "resolveSanityImageFallback",
+      "kind": "value",
+      "declaration": "resolveSanityImageFallback"
+    },
+    {
+      "name": "ResolveSanityImageFallbackArgs",
+      "kind": "type",
+      "declaration": "type ResolveSanityImageFallbackArgs"
+    },
+    {
+      "name": "resolveSanityImagePopulatedAsset",
+      "kind": "value",
+      "declaration": "resolveSanityImagePopulatedAsset"
+    },
+    {
+      "name": "SANITY_IMAGE_DEFAULT_BLUR_DATA_URL",
+      "kind": "value",
+      "declaration": "SANITY_IMAGE_DEFAULT_BLUR_DATA_URL"
+    },
+    {
+      "name": "sanityCdnUrl",
+      "kind": "value",
+      "declaration": "sanityCdnUrl"
+    },
+    {
+      "name": "SanityCdnUrlOptions",
+      "kind": "type",
+      "declaration": "type SanityCdnUrlOptions"
+    },
+    {
+      "name": "SanityImage",
+      "kind": "value",
+      "declaration": "SanityImage"
+    },
+    {
+      "name": "SanityImageAssetMapping",
+      "kind": "type",
+      "declaration": "SanityImageAssetMapping"
+    },
+    {
+      "name": "SanityImageAssetPath",
+      "kind": "type",
+      "declaration": "SanityImageAssetPath"
+    },
+    {
+      "name": "SanityImageClient",
+      "kind": "value",
+      "declaration": "SanityImageClient"
+    },
+    {
+      "name": "SanityImageClientProps",
+      "kind": "type",
+      "declaration": "type SanityImageClientProps"
+    },
+    {
+      "name": "SanityImageInteractive",
+      "kind": "value",
+      "declaration": "SanityImageInteractive"
+    },
+    {
+      "name": "SanityImageInteractiveProps",
+      "kind": "type",
+      "declaration": "type SanityImageInteractiveProps"
+    },
+    {
+      "name": "sanityImageLoader",
+      "kind": "value",
+      "declaration": "sanityImageLoader"
+    },
+    {
+      "name": "SanityImageProps",
+      "kind": "type",
+      "declaration": "type SanityImageProps"
+    },
+    {
+      "name": "shouldUseSanityImageFallback",
+      "kind": "value",
+      "declaration": "shouldUseSanityImageFallback"
+    },
+    {
+      "name": "toSanityImageProps",
+      "kind": "value",
+      "declaration": "toSanityImageProps"
+    },
+    {
+      "name": "ToSanityImagePropsOptions",
+      "kind": "type",
+      "declaration": "type ToSanityImagePropsOptions"
+    }
+  ],
+  "./next/loader": [
+    {
+      "name": "default",
+      "kind": "value",
+      "declaration": "export default"
+    }
+  ]
+}
