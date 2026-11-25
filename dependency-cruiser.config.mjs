@@ -79,7 +79,9 @@ const config = {
         pathNot: [
           '^src/index\\.ts$',
           '^src/plugin\\.ts$',
-          '^src/presentation/adapters/next/loader\\.ts$',
+          '^src/consumers/index\\.ts$',
+          '^src/consumers/next/index\\.ts$',
+          '^src/consumers/next/loader\\.ts$',
         ],
       },
       to: {},
@@ -147,18 +149,57 @@ const config = {
       name: 'model-no-runtime-admin-next',
       severity: 'error',
       from: { path: '/model/' },
-      to: { path: '^src/(admin|presentation/adapters)/' },
+      to: { path: '^src/(admin|consumers/next)/' },
     },
     {
       name: 'presentation-image-no-react-next',
-      comment: 'presentation/image is framework-agnostic (no React or Next runtime imports)',
+      comment: 'consumers/image is framework-agnostic (no React or Next runtime imports)',
       severity: 'error',
-      from: { path: '^src/presentation/image/' },
+      from: { path: '^src/consumers/image/' },
       to: {
         dependencyTypes: ['npm'],
         dependencyTypesNot: ['type-only'],
         path: '(^|/)node_modules/(react|react-dom|next)(/|$)',
       },
+    },
+    {
+      name: 'consumer-framework-independent-no-framework-or-node-imports',
+      comment:
+        'Framework-independent consumer exports must not import server, Node, React, or Next modules',
+      severity: 'error',
+      from: { path: '^src/consumers/(?!next/)' },
+      to: {
+        dependencyTypes: ['npm'],
+        path: '(^|/)node_modules/(next/|next$|react/|react$|react-dom/)',
+      },
+    },
+    {
+      name: 'consumer-no-payload-imports',
+      comment: 'Frontend consumers must not import Payload server packages',
+      severity: 'error',
+      from: { path: '^src/consumers/' },
+      to: {
+        dependencyTypes: ['npm'],
+        path: '(^|/)node_modules/(payload|@payloadcms/)',
+      },
+    },
+    {
+      name: 'consumer-no-node-builtins',
+      comment: 'Frontend consumers must not import Node.js built-ins',
+      severity: 'error',
+      from: { path: '^src/consumers/' },
+      to: {
+        dependencyTypes: ['core'],
+        path: '^node:',
+      },
+    },
+    {
+      name: 'consumer-no-payload-server-source',
+      comment:
+        'Frontend consumers must not depend on Payload server implementations or credentials',
+      severity: 'error',
+      from: { path: '^src/consumers/' },
+      to: { path: '^src/(plugin\\.ts$|admin/|features/|core/config/)' },
     },
     {
       name: 'server-src-no-admin',
@@ -171,14 +212,14 @@ const config = {
       to: { path: '^src/admin/' },
     },
     {
-      name: 'server-src-no-presentation-adapters',
-      comment: 'Non-presentation src must not import presentation/adapters (Next npm entry)',
+      name: 'server-src-no-next-consumers',
+      comment: 'Non-consumer src must not import Next.js consumer modules',
       severity: 'error',
       from: {
         path: '^src/',
-        pathNot: ['^src/presentation/'],
+        pathNot: ['^src/presentation/', '^src/consumers/next/'],
       },
-      to: { path: '^src/presentation/adapters/' },
+      to: { path: '^src/consumers/next/' },
     },
     ...buildMatrixForbiddenRules(),
   ],

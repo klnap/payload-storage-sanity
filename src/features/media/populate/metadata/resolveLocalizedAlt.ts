@@ -1,3 +1,5 @@
+import { normalizeAltText } from '@/consumers/image/normalizeAltText'
+
 export type ResolveLocalizedAltContext = {
   /** Request locale (`req.locale` / SDK `locale`). Required for localized `alt` objects. */
   locale?: string | null
@@ -7,12 +9,7 @@ export type ResolveLocalizedAltContext = {
  * `''` is explicitly empty (decorative). Whitespace-only text is treated as missing,
  * because Payload's `required` check accepts it and it is almost never a deliberate choice.
  */
-export function normalizeAltText(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  if (value === '') return ''
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
+export { normalizeAltText }
 
 /**
  * Alt text for the requested locale only. Another locale is never substituted.

@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '../assets'
 
 export function focalObjectPosition(
   asset: Pick<DefaultPopulateAsset, 'focalX' | 'focalY'>

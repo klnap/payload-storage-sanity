@@ -13,9 +13,8 @@ export {
 } from './explicit/fullPopulate'
 export { enrichMediaSanityMetadataForPopulate } from './metadata/enrichMetadataForPopulate'
 
-export { focalObjectPosition } from './metadata/focalObjectPosition'
 export type { ResolveLocalizedAltContext } from './metadata/resolveLocalizedAlt'
-export { normalizeAltText, resolveLocalizedAlt } from './metadata/resolveLocalizedAlt'
+export { resolveLocalizedAlt } from './metadata/resolveLocalizedAlt'
 export { resolvePopulateRequestLocale } from './metadata/resolvePopulateRequestLocale'
 export { applyPopulatePreset } from './options/applyPopulatePreset'
 export { sanityMediaForceSelect } from './options/forceSelect'

@@ -13,11 +13,12 @@ const contractPath = join(dirname(fileURLToPath(import.meta.url)), 'public-api.c
 
 const SUBPATH_TO_DIST = {
   '.': 'dist/index.js',
-  './admin': 'dist/admin/index.js',
-  './client': 'dist/sanity/client/index.js',
-  './folders': 'dist/sanity/folders/index.js',
-  './next': 'dist/presentation/adapters/next/index.js',
-  './next/loader': 'dist/presentation/adapters/next/loader.js',
+  './admin': 'dist/admin/public.js',
+  './client': 'dist/sanity/client/public.js',
+  './folders': 'dist/sanity/folders/public.js',
+  './consumers': 'dist/consumers/index.js',
+  './consumers/next': 'dist/consumers/next/index.js',
+  './consumers/next/loader': 'dist/consumers/next/loader.js',
 }
 
 function sortedUnique(arr) {
@@ -34,7 +35,14 @@ function diffSets(label, expected, actual) {
 }
 
 const contract = JSON.parse(readFileSync(contractPath, 'utf8'))
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const errors = []
+const expectedSubpaths = Object.keys(SUBPATH_TO_DIST)
+const packageSubpaths = Object.keys(packageJson.exports).filter(
+  (subpath) => subpath !== './styles/admin-tailwind.css'
+)
+errors.push(...diffSets('package exports', expectedSubpaths, packageSubpaths))
+errors.push(...diffSets('public API contract entries', expectedSubpaths, Object.keys(contract)))
 
 for (const subpath of Object.keys(SUBPATH_TO_DIST)) {
   const entry = contract[subpath]

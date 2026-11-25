@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
 
 export type SanityImageFallbackReason = 'missing' | 'error'
 

@@ -1,4 +1,7 @@
-import { createSanityImage, type SanityImageProps } from '@klnap/payload-storage-sanity/next'
+import {
+  createSanityImage,
+  type SanityImageProps,
+} from '@klnap/payload-storage-sanity/consumers/next'
 
 type HeroAsset = {
   image: string

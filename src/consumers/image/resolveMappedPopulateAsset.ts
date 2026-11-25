@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
 
 /** Dot-separated path on the consumer asset (e.g. `metadata.width`). */
 export type SanityImageAssetPath = string

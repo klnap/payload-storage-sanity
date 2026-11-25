@@ -1,5 +1,5 @@
-import { isMediaUploadBusy } from '@klnap/payload-storage-sanity/admin'
+import { SanityStorageStyles } from '@klnap/payload-storage-sanity/admin'
 
-if (typeof isMediaUploadBusy !== 'function') {
-  throw new Error('smoke: isMediaUploadBusy missing')
+if (typeof SanityStorageStyles !== 'function') {
+  throw new Error('smoke: SanityStorageStyles missing')
 }

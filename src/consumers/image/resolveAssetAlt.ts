@@ -1,5 +1,5 @@
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import { normalizeAltText } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '../assets'
+import { normalizeAltText } from './normalizeAltText'
 
 export type ResolveAssetAltOptions = {
   /**

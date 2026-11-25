@@ -4,7 +4,7 @@ import Image from 'next/image'
 import type { ComponentProps } from 'react'
 import { useState } from 'react'
 
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
 import type { ToSanityImagePropsResult } from '../toSanityImageProps'
 import {
   type ResolveSanityImageFallbackArgs,

@@ -10,8 +10,8 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "paths": {
       "@/*": ["./src/*"],
-      "@/consumers/next": ["./src/presentation/adapters/next/index.ts"],
-      "@/consumers/next/*": ["./src/presentation/adapters/next/*"]
+      "@/consumers/next": ["./src/consumers/next/index.ts"],
+      "@/consumers/next/*": ["./src/consumers/next/*"]
     },
     "types": ["bun"]
   },

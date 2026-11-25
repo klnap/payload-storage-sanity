@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { toSanityImageProps } from '@/consumers/next'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import type { SanityImageAssetMapping } from '@/presentation/image'
-import { resolveSanityImagePopulatedAsset } from '@/presentation/image'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
+import { resolveSanityImagePopulatedAsset } from '@/consumers/image'
+import type { SanityImageAssetMapping } from '@/consumers/image/resolveMappedPopulateAsset'
+import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 type HeroAsset = {
   image: string

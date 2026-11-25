@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-export const ENTRY_SUBPATHS = ['.', './admin', './client', './folders', './next', './next/loader']
+export const ENTRY_SUBPATHS = [
+  '.',
+  './admin',
+  './client',
+  './folders',
+  './consumers',
+  './consumers/next',
+  './consumers/next/loader',
+]
 
 export function distTypesPath(root, pkg, subpath) {
   const entry = pkg.exports[subpath]

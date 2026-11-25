@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import type { ReactElement } from 'react'
 
-import { resolveSanityImageFallback, shouldUseSanityImageFallback } from '@/consumers/next'
+import {
+  resolveSanityImageFallback,
+  shouldUseSanityImageFallback,
+} from '@/consumers/next/SanityImage/resolveSanityImageFallback'
 
 describe('resolveSanityImageFallback', () => {
   test('returns null when fallback is null', () => {

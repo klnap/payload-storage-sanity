@@ -11,7 +11,15 @@ export function validatePackedTarball(tgzPath) {
   })
   const packed = JSON.parse(pkgJsonRaw)
 
-  const subpaths = ['.', './admin', './client', './folders', './next', './next/loader']
+  const subpaths = [
+    '.',
+    './admin',
+    './client',
+    './folders',
+    './consumers',
+    './consumers/next',
+    './consumers/next/loader',
+  ]
   for (const subpath of subpaths) {
     const entry = packed.exports?.[subpath]
     const importPath = entry?.import

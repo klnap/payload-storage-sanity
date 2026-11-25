@@ -1,5 +1,5 @@
-import { createSanityImageLoader } from '@klnap/payload-storage-sanity/next'
-import loader from '@klnap/payload-storage-sanity/next/loader'
+import { createSanityImageLoader } from '@klnap/payload-storage-sanity/consumers/next'
+import loader from '@klnap/payload-storage-sanity/consumers/next/loader'
 
 const fromNext = createSanityImageLoader()
 const fromDefault = loader

@@ -1,7 +1,7 @@
 {
   "name": "@klnap/payload-storage-sanity",
   "version": "0.1.0",
-  "description": "Sanity storage adapter for Payload CMS media collections",
+  "description": "Sanity-powered media storage for Payload CMS.",
   "license": "MIT",
   "author": "klnap",
   "repository": {
@@ -22,24 +22,28 @@
       "import": "./dist/index.js"
     },
     "./admin": {
-      "types": "./dist/admin/index.d.ts",
-      "import": "./dist/admin/index.js"
+      "types": "./dist/admin/public.d.ts",
+      "import": "./dist/admin/public.js"
     },
     "./client": {
-      "types": "./dist/sanity/client/index.d.ts",
-      "import": "./dist/sanity/client/index.js"
+      "types": "./dist/sanity/client/public.d.ts",
+      "import": "./dist/sanity/client/public.js"
     },
     "./folders": {
-      "types": "./dist/sanity/folders/index.d.ts",
-      "import": "./dist/sanity/folders/index.js"
+      "types": "./dist/sanity/folders/public.d.ts",
+      "import": "./dist/sanity/folders/public.js"
     },
-    "./next": {
-      "types": "./dist/presentation/adapters/next/index.d.ts",
-      "import": "./dist/presentation/adapters/next/index.js"
+    "./consumers": {
+      "types": "./dist/consumers/index.d.ts",
+      "import": "./dist/consumers/index.js"
     },
-    "./next/loader": {
-      "types": "./dist/presentation/adapters/next/loader.d.ts",
-      "import": "./dist/presentation/adapters/next/loader.js"
+    "./consumers/next": {
+      "types": "./dist/consumers/next/index.d.ts",
+      "import": "./dist/consumers/next/index.js"
+    },
+    "./consumers/next/loader": {
+      "types": "./dist/consumers/next/loader.d.ts",
+      "import": "./dist/consumers/next/loader.js"
     },
     "./styles/admin-tailwind.css": "./dist/admin/tailwind/admin-tailwind.css"
   },
@@ -58,11 +62,14 @@
   "keywords": [
     "payload",
     "payloadcms",
+    "payload-plugin",
     "sanity",
     "storage",
     "media",
-    "upload",
-    "cdn"
+    "image-optimization",
+    "cdn",
+    "nextjs",
+    "localization"
   ],
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo",
@@ -72,8 +79,9 @@
     "check:dist-imports": "bun scripts/check-dist-relative-imports.mjs",
     "check:dist": "bun run build:dist && bun run check:dist-alias && bun run check:dist-imports",
     "check:exports": "bun scripts/check-exports.mjs",
-    "check:release": "bun run check:dist-alias && bun run check:dist-imports && bun run check:public-api && bun run check:public-types --use-dist && bun run check:deps && bun run check:publint && bun run check:attw --use-dist && bun run check:css-side-effects --use-dist && bun run check:release-matrix --use-dist",
+    "check:release": "bun run check:dist-alias && bun run check:dist-imports && bun run check:public-api && bun run check:public-types --use-dist && bun run check:consumer-tree-shaking && bun run check:deps && bun run check:publint && bun run check:attw --use-dist && bun run check:css-side-effects --use-dist && bun run check:release-matrix --use-dist",
     "check:public-api": "bun scripts/check-public-api.mjs",
+    "check:consumer-tree-shaking": "bun scripts/check-consumer-tree-shaking.mjs",
     "check:release-matrix": "bun scripts/run-release-matrix.mjs",
     "test:runtime": "bun scripts/run-release-matrix.mjs --fixture payload-main",
     "check:pack": "bun scripts/check-pack.mjs",
@@ -97,7 +105,6 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@payloadcms/plugin-cloud-storage": ">=3.94.1 <4",
-    "@sanity/client": "^8.14.1",
     "@sanity/image-url": "^2.1.1",
     "slugify": "^1.6.9",
     "tailwind-variants": "^4.0.2",
@@ -120,6 +127,7 @@
     "@payloadcms/richtext-lexical": "3.94.1",
     "@payloadcms/translations": "3.94.1",
     "@payloadcms/ui": "3.94.1",
+    "@sanity/client": "^8.14.1",
     "@swc/core": "1.16.22",
     "@tailwindcss/cli": "^4.3.5",
     "@types/bun": "^1.4.4",

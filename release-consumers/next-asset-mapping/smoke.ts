@@ -1,4 +1,4 @@
-import { createSanityImage } from '@klnap/payload-storage-sanity/next'
+import { createSanityImage } from '@klnap/payload-storage-sanity/consumers/next'
 
 const Mapped = createSanityImage({
   assetMapping: {

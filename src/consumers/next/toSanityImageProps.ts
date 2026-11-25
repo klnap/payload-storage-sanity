@@ -1,10 +1,10 @@
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import { focalObjectPosition } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
 import {
   type ResolveAssetAltOptions,
   resolveAssetAlt,
   resolvePlaceholderBlurDataUrl,
-} from '@/presentation/image'
+} from '@/consumers/image'
+import { focalObjectPosition } from '@/consumers/image/focalObjectPosition'
 
 export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
   fill?: boolean

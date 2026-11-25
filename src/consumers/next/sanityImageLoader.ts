@@ -1,4 +1,4 @@
-import { applyImageParams } from '@/features/media/cdn'
+import { applyImageParams } from '@/consumers/imageParams'
 import { isSanityCompatibleHost } from '@/sanity/cdn'
 
 export type CreateSanityImageLoaderOptions = {

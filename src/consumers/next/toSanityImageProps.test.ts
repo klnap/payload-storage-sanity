@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { toSanityImageProps } from '@/consumers/next'
+import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 describe('toSanityImageProps', () => {
   test('maps alt from DefaultPopulateAsset without locale opts', () => {

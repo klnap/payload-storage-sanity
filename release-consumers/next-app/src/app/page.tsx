@@ -1,4 +1,4 @@
-import { SanityImage, sanityImageLoader } from '@klnap/payload-storage-sanity/next'
+import { SanityImage, sanityImageLoader } from '@klnap/payload-storage-sanity/consumers/next'
 
 const asset = {
   id: 1,

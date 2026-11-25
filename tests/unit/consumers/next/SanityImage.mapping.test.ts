@@ -1,10 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { toSanityImageProps } from '@/consumers/next'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import {
-  resolveSanityImagePopulatedAsset,
-  type SanityImageAssetMapping,
-} from '@/presentation/image'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
+import { resolveSanityImagePopulatedAsset, type SanityImageAssetMapping } from '@/consumers/image'
+import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 function resolveSanityImageAsset<TAsset extends object>(
   asset: TAsset | null | undefined,

@@ -1,17 +1,4 @@
-/** Flat DTO for populate preset `default` (REST populated relations). */
-export type DefaultPopulateAsset = {
-  id: string | number
-  url: string
-  width?: number
-  height?: number
-  aspectRatio?: number
-  /** Always present: 50 when the asset has no focal point. */
-  focalX: number
-  focalY: number
-  /** Resolved for request locale; `null` when missing or empty (always present on preset `default`). */
-  alt: string | null
-  lqip?: string
-}
+export type { DefaultPopulateAsset } from '@/consumers/assets'
 
 export const SANITY_ASSET_DEFAULT_POPULATE_FIELDS = [
   'id',

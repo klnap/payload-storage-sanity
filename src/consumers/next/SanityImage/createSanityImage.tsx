@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import type { SanityImageAssetMapping } from '@/presentation/image'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { SanityImageAssetMapping } from '@/consumers/image/resolveMappedPopulateAsset'
 import { SanityImage, type SanityImageProps } from './SanityImage'
 
 export type CreateSanityImageOptions<TAsset extends object = DefaultPopulateAsset> = {

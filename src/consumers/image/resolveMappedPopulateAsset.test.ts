@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { toSanityImageProps } from '@/consumers/next'
-import { resolveMappedPopulateAsset } from '@/presentation/image'
+import { resolveMappedPopulateAsset } from '@/consumers/image'
+import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 const defaultAsset = {
   id: 'media-1',

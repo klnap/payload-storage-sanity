@@ -1,10 +1,7 @@
 import type Image from 'next/image'
 import type { ComponentProps, ReactNode } from 'react'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
-import {
-  resolveSanityImagePopulatedAsset,
-  type SanityImageAssetMapping,
-} from '@/presentation/image'
+import type { DefaultPopulateAsset } from '@/consumers/assets'
+import { resolveSanityImagePopulatedAsset, type SanityImageAssetMapping } from '@/consumers/image'
 import { type ToSanityImagePropsOptions, toSanityImageProps } from '../toSanityImageProps'
 import { resolveSanityImageFallback } from './resolveSanityImageFallback'
 import { SanityImageClient } from './SanityImageClient'

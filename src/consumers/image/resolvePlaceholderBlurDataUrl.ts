@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { DefaultPopulateAsset } from '../assets'
 /**
  * Tiny neutral JPEG (10×10 gray) for `next/image` blur when Sanity metadata LQIP is missing.
  * Keeps a low-quality placeholder during load without an extra network fetch.

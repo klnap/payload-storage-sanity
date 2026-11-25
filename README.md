@@ -1,33 +1,38 @@
 # @klnap/payload-storage-sanity
 
-Sanity-powered media storage, image transformations, and CDN delivery for Payload CMS.
+Sanity-powered media storage for Payload CMS.
 
-Payload keeps the media collection: documents, access control, hooks, and the admin UI. Sanity stores each original file once and serves it from its global Asset CDN. Frontends request the size they need, and Sanity produces that variant on demand. Sanity Studio is not required.
+Manage media in Payload while using Sanity for asset storage, on-demand image transformations, and global CDN delivery.
 
-## Why Sanity?
+Store originals once, manage localized alt text and focal points directly in Payload, and render frontend-ready assets without manually transforming media documents.
 
-Pre-generated image sizes multiply storage and deployment work. With this package you store the original once. Your app asks for the width it needs, and Sanity creates and caches that variant on the first request.
+Includes an enhanced media management experience and optional Next.js integration. No Sanity Studio required.
 
-- **Generous Free plan.** As of 2026-11-25 the [Sanity pricing page](https://www.sanity.io/pricing) lists 100 GB of asset storage and 100 GB of bandwidth per month on Free. The page shows no date, so confirm current limits before you plan production usage.
-- **Managed storage and a global Asset CDN** for original files and transformed images.
-- **On-demand transformations** from URL parameters, with automatic format negotiation (`auto=format`).
-- **CDN caching per variant.** Each parameter set is a distinct URL, cached separately.
-- **No Sanity Studio required.** Editors work in Payload.
+## Why Sanity
 
-> [!IMPORTANT]
-> This plugin uses Sanity's Content Lake Asset API. Assets uploaded to a dataset are publicly accessible through the Asset CDN, regardless of dataset visibility. Private asset delivery through Sanity Media Library and signed URLs is not currently supported.
+Sanity stores original assets and serves requested image variants from its global Asset CDN. Frontends can request widths, crops, and formats through URL parameters instead of maintaining Payload-generated image sizes.
 
-## Features
+Sanity assets are content-addressed, and each requested variant is cached by its URL. See [Sanity pricing](https://www.sanity.io/pricing) for current plan limits.
 
-- **Frontend optimization.** Populate presets return a flat, frontend-ready asset with CDN URL, dimensions, focal point, alt text, and LQIP.
-- **Image transformations.** One builder, `buildSanityImageUrl`, produces responsive, cropped, and thumbnail URLs.
-- **Next.js integration.** `SanityImage` renders a populated asset with `next/image`. A custom loader sends each width request to Sanity.
-- **Asset-level alt text.** Write alt text once per media document, translate it per locale, and reuse it everywhere the image appears.
-- **Media management.** Justified, grid, and list layouts, file-type cards for non-image files, a detail view with a metadata inspector, and logical folders.
-- **Automatic media fields** for `title`, `alt`, and Sanity metadata, added only where the collection lacks them.
-- **Reference-aware deletion** that blocks removing media still used by Payload content.
-- **Revalidation.** Changes to shared media refresh dependent pages through [`@klnap/revalidation`](https://github.com/klnap/revalidation).
-- **Optional** deduplication and webhook synchronization.
+## Architecture
+
+```text
+Editors                         Frontend applications
+   │                                      │
+   ▼                                      ▼
+Payload CMS ── upload original ──► Sanity Asset API
+   │                                  │
+   ├─ media documents                 ├─ original assets
+   ├─ relationships and access        ├─ global Asset CDN
+   ├─ localized editorial metadata    └─ on-demand image variants
+   └─ native admin experience                  ▲
+                                               │
+                                  normalized media response
+```
+
+Payload owns media documents, relationships, access control, alt text, focal points, and editorial workflows. Sanity stores the uploaded assets and serves CDN URLs and transformed image variants. Frontends consume populated Payload media and request the variants they need.
+
+Payload does not store Sanity's transformed variants. Sanity does not manage Payload's content relationships.
 
 ## Installation
 
@@ -35,26 +40,20 @@ Pre-generated image sizes multiply storage and deployment work. With this packag
 bun add @klnap/payload-storage-sanity
 ```
 
-or
+Required peers: Payload, `@payloadcms/ui`, and `@payloadcms/translations` `>=3.94.1 <4`; `@sanity/client >=6 <9`; and React and React DOM `^19.3.1`. Install Next.js `>=16.4.5 <17` only when using the optional `./consumers/next` entry. Node.js must match `^24.22.3 || >=26.13.1`.
 
-```bash
-npm install @klnap/payload-storage-sanity
-```
+The published package is ESM and expects a bundler to resolve its extensionless imports. Raw Node.js ESM imports are not supported.
 
-Required peers: `payload`, `@payloadcms/ui`, and `@payloadcms/translations` (`>=3.94.1 <4`), `@sanity/client` (`>=6 <9`), and React and React DOM (`^19.3.1`). Install `next` (`>=16.4.5 <17`) only for the Next.js entries.
+## Payload configuration
 
-Node `^24.22.3 || >=26.13.1`. The published ESM build expects a bundler to resolve extensionless imports. Raw Node.js ESM is not supported.
-
-## Quick start
-
-Add the plugin to your Payload configuration:
+Add `sanityStorage()` to the Payload config that already declares your upload collections:
 
 ```ts
 import { buildConfig } from 'payload'
 import { sanityStorage } from '@klnap/payload-storage-sanity'
 
 export default buildConfig({
-  collections: [{ slug: 'media', upload: true, fields: [] }],
+  collections: [Media, Documents, Pages],
   plugins: [
     sanityStorage({
       projectId: process.env.SANITY_PROJECT_ID!,
@@ -65,23 +64,24 @@ export default buildConfig({
 })
 ```
 
-Without `collections`, the plugin applies Sanity storage to every upload collection that has no other storage adapter. Regenerate the import map after adding or upgrading the plugin:
+The plugin integrates with Payload's native cloud-storage adapter. Keep each collection's existing `upload` configuration; the plugin supplies the adapter and preserves supported Payload collection options.
 
-```sh
-bun payload generate:importmap
-```
-
-Keep `token` on the server. It is a Sanity write token.
-
-To choose collections, pass a slug-keyed map. Each entry can enable or exclude a collection and set its [folder](#folders):
+Choose collections and folders explicitly when needed:
 
 ```ts
 sanityStorage({
   projectId: process.env.SANITY_PROJECT_ID!,
   dataset: process.env.SANITY_DATASET!,
   token: process.env.SANITY_API_TOKEN!,
+
   collections: {
-    media: true,
+    media: {
+      folder: 'website/images',
+      alt: {
+        required: true,
+      },
+    },
+
     documents: {
       folder: 'website/documents',
     },
@@ -89,368 +89,276 @@ sanityStorage({
 })
 ```
 
-`true`, `{}`, and an object without `enabled` enable a collection. `false` and `enabled: false` exclude it, and an excluded collection keeps its native Payload behavior. An explicit map never adds unlisted collections. The full rules are in [docs/configuration.md](./docs/configuration.md#collections).
+## Reading the configuration
 
-## Frontend optimization
+Each entry in `collections` defines how an existing Payload upload collection uses Sanity.
 
-A frontend that reads media through this package follows five steps:
+- `media` uses Sanity storage, puts new assets in `website/images`, and requires alternative text.
+- `documents` puts new assets in `website/documents`.
+- Unlisted collections stay outside the integration when you provide an explicit map.
 
-1. Payload returns the media relation, populated by the `default` preset.
-2. The preset produces a flat asset: CDN URL, dimensions, focal point, alt text, and LQIP.
-3. The component renders that asset directly. No Sanity-specific mapping is needed.
-4. A component or URL helper picks the variant: `next/image` requests each width, and `buildSanityImageUrl` takes explicit options.
-5. Sanity generates the variant, caches it on the Asset CDN, and serves later requests from cache.
+When `collections` is omitted, the plugin discovers upload collections that do not already have a storage adapter. An empty map selects none. Set an entry to `false` or `{ enabled: false }` to exclude it; `true`, `{}`, and options without `enabled: false` enable it.
 
-What this gives you:
+Explicit entries must name existing upload collections. An explicit collection that already has another adapter fails configuration. Automatic discovery skips collections with another adapter. Collection slugs use Payload's generated `UploadCollectionSlug` type when generated types are configured.
 
-- **Smaller responses.** The flat asset omits the Sanity record, sync state, and upload internals. The size difference depends on your media.
-- **Less mapping code.** Dimensions, focal point, alt text, and placeholder arrive ready to use.
-- **Resolved CDN URLs.** The app builds no URLs in the default case.
-- **Localized alt text** for the request locale, with no substitution from another language.
-- **Responsive delivery.** `next/image` requests the widths it needs, and Sanity produces each one.
-- **No pre-generated derivatives.** `upload.imageSizes` is empty, so Payload writes no image sizes.
-- **Fewer moving parts for images.** With the Sanity loader, Next.js requests Sanity URLs directly and does not run its own optimizer for those images.
+## Consumers
 
-### Frontend-ready media
+### Framework-independent usage
 
-`populate.preset` controls how media relations are returned:
+Import frontend contracts and utilities from `@klnap/payload-storage-sanity/consumers`. This entry does not import Next.js or Payload server modules.
 
-- `'default'` (default): each relation returns a flat `DefaultPopulateAsset`. Media without a resolvable CDN URL returns the full document instead, and authenticated requests always receive the full document.
-- `'full'`: each relation returns the full media document.
+#### Asset types
+
+`DefaultPopulateAsset`, `SanityAssetReference`, `SanityImageSource`, and `SanityImageAssetMapping` describe the supported consumer-side asset shapes. Import these types from `@klnap/payload-storage-sanity/consumers`.
 
 ```ts
-sanityStorage({
-  // ...
-  populate: { preset: 'default' },
-})
+import type {
+  DefaultPopulateAsset,
+  SanityAssetReference,
+  SanityImageAssetMapping,
+  SanityImageSource,
+} from '@klnap/payload-storage-sanity/consumers'
 ```
 
-A `DefaultPopulateAsset` has these fields:
+#### Populated media
 
-| Field                            | Type               | Notes                                                                           |
-| -------------------------------- | ------------------ | ------------------------------------------------------------------------------- |
-| `id`                             | `string \| number` | Payload document id.                                                            |
-| `url`                            | `string`           | Public CDN URL of the original.                                                 |
-| `width`, `height`, `aspectRatio` | `number`           | From Sanity metadata, when present.                                             |
-| `focalX`, `focalY`               | `number`           | Percentages from `0` to `100`. Defaults to `50` when unset.                     |
-| `alt`                            | `string \| null`   | Text for the request locale. See [Asset-level alt text](#asset-level-alt-text). |
-| `lqip`                           | `string`           | Low-quality placeholder, when Sanity provides one.                              |
+The default populate preset converts eligible, populated media relationships into a compact `DefaultPopulateAsset`. It includes a resolved CDN URL, image dimensions and aspect ratio when available, focal point, localized alt text, and LQIP when Sanity provides one.
 
-This is a real populated relation from the Local API, read with `depth: 1` and the `en` locale:
+Fetch the `website` page with depth `1`. Check the relationship at runtime because Payload's generated types describe the configured media document, not the plugin's populated response transformation:
+
+```ts
+import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+
+const { docs } = await payload.find({
+  collection: 'pages',
+  depth: 1,
+  locale: 'en',
+})
+
+const page = docs[0]
+const image = page?.heroImage
+
+if (isDefaultPopulateAsset(image)) {
+  // `image` is now a DefaultPopulateAsset.
+}
+```
+
+The same populated shape is available from the remote REST API:
+
+```ts
+import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+
+const response = await fetch('/api/pages?depth=1&locale=en')
+const { docs } = await response.json()
+const image = docs[0]?.heroImage
+
+if (isDefaultPopulateAsset(image)) {
+  // `image` is now a DefaultPopulateAsset.
+}
+```
+
+A successful normalized relation resembles:
 
 ```json
 {
-  "id": "1520696f-b4f0-487b-a28c-a04b023216f0",
-  "title": "With photo",
-  "hero": {
-    "id": "fc1eef57-d647-46d6-a8b8-f2a6aca34e30",
-    "url": "https://cdn.sanity.io/images/demo/production/2400937a4031dac294d4ee49461fc11ff0d4aa26-1x1.png",
-    "focalX": 50,
-    "focalY": 50,
-    "alt": "Photo caption",
-    "width": 1,
-    "height": 1,
-    "aspectRatio": 1
-  }
+  "id": "media-42",
+  "url": "https://cdn.sanity.io/images/project/production/hero-1600x900.jpg",
+  "width": 1600,
+  "height": 900,
+  "aspectRatio": 1.7778,
+  "focalX": 50,
+  "focalY": 43,
+  "alt": "The website team at work",
+  "lqip": "data:image/jpeg;base64,..."
 }
 ```
 
-The same media document read directly returns the full shape. There `alt` is an object with every locale, `focalX` and `focalY` are `null`, and the response adds `sanity`, `sync`, `sizes`, `thumbnailURL`, `filename`, `mimeType`, and `filesize`. Use `'default'` for pages and storefronts. Use `'full'` when a consumer needs the complete record.
+The guard narrows only normalized assets. Unpopulated IDs, full media documents, and unavailable assets do not pass it.
 
-Fetch with the Local API in server code. Pass `locale` and `depth` on the request:
+`DefaultPopulateAsset` describes only successfully normalized image relationships. Depth `0` returns relationship IDs. Direct media reads, authenticated requests, explicit populate selections, and the `full` preset return full media documents. If an eligible relation has no resolvable CDN URL, the plugin also keeps the full document. Set `populate.localPopulate: false` to keep Local API reads full.
 
-```ts
-import { getPayload } from 'payload'
-import config from '@payload-config'
+Dimensions, aspect ratio, and LQIP are image metadata and remain optional. General file metadata such as filename, MIME type, and size stays on the full Payload media document.
 
-const payload = await getPayload({ config })
+#### Image URL builder
 
-const home = await payload.findGlobal({
-  slug: 'home-page',
-  locale: 'pl',
-  depth: 1,
-  select: { image: true },
-})
-```
-
-`depth` controls how many relation levels are expanded. A media relation inside a group is populated at `depth: 1`, because a group adds structure, not relationship depth. Raise `depth` only when a populated document contains further relations you need.
-
-Set `populate.localPopulate: false` to keep the flat asset on REST only. The Local API then returns the full document. `GET /api/media/:id` always returns the full document for the admin editor.
-
-### Image transformations
-
-One function builds every transformed image URL: `buildSanityImageUrl`. It takes a flat populated asset, a full media document, an image URL, or a Sanity asset reference, and applies the same options to each:
+Use the framework-independent URL builder for normalized assets, media documents, URLs, and Sanity asset references:
 
 ```ts
-import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
+import { buildSanityImageUrl } from '@klnap/payload-storage-sanity/consumers'
 
 const card = buildSanityImageUrl(image, { width: 640, height: 480, fit: 'crop' })
-const thumb = buildSanityImageUrl(image, { width: 160, height: 160, fit: 'max' })
+const thumbnail = buildSanityImageUrl(image, { width: 160, height: 160, fit: 'max', quality: 70 })
+const originalFormat = buildSanityImageUrl(image, { width: 1200, autoFormat: false })
 ```
 
-A responsive `srcset`:
+The builder supports `width`, `height`, `fit` (`max`, `min`, `crop`, or `clip`), `quality`, a pixel `rect`, and `autoFormat` (enabled by default). It returns `null` when no URL can be resolved. Stored URLs need no client or network request. A bare asset reference without a URL needs a Sanity client.
+
+For custom responsive markup, request only the widths the layout needs:
 
 ```ts
 const srcSet = [480, 960, 1440]
-  .map((width) => `${buildSanityImageUrl(image, { width })} ${width}w`)
+  .flatMap((width) => {
+    const url = buildSanityImageUrl(image, { width })
+    return url ? [`${url} ${width}w`] : []
+  })
   .join(', ')
 ```
 
-Options: `width`, `height`, `fit` (`'max'`, `'min'`, `'crop'`, `'clip'`), `quality`, `rect` (a crop region in pixels), and `autoFormat` (default `true`, adds `auto=format`). Set `autoFormat: false` to turn format negotiation off.
-
-A flat asset or a full media document needs no Sanity client, because its `url` already points at the Asset CDN. Use a `client` only for a bare asset reference without a URL. Files that are not images, such as PDFs, are returned unchanged. The builder returns `null` when there is no image or URL.
-
-Sanity documents more parameters, such as `fm`, `dpr`, and `fp-x` and `fp-y`. This package does not type them. See Sanity's [image URL reference](https://www.sanity.io/docs/apis-and-sdks/image-urls).
-
-Reusable options are plain objects in your code. They are not a package feature:
-
-```ts
-export const cardImage = { width: 640, height: 480, fit: 'crop' } as const
-
-buildSanityImageUrl(image, cardImage)
-```
-
-Populate presets control what Payload returns. Transforms control the size and crop of a URL.
-
 ### Next.js
 
-Import from `@klnap/payload-storage-sanity/next`. Framework-independent code does not need this entry.
+The Next.js integration is optional and isolated at `@klnap/payload-storage-sanity/consumers/next`.
 
-Render a populated asset:
+#### SanityImage
 
 ```tsx
-import type { DefaultPopulateAsset } from '@klnap/payload-storage-sanity'
-import { SanityImage } from '@klnap/payload-storage-sanity/next'
+import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+import { SanityImage } from '@klnap/payload-storage-sanity/consumers/next'
 
-export function Hero({ image }: { image: DefaultPopulateAsset }) {
-  return (
-    <div className='relative aspect-video'>
-      <SanityImage asset={image} fill sizes='100vw' />
-    </div>
-  )
+if (isDefaultPopulateAsset(image)) {
+  return <SanityImage asset={image} sizes="100vw" />
 }
 ```
 
-With `fill`, the parent needs a size and `position: relative`. `aspect-video` gives it one. Without `fill`, `SanityImage` uses the asset's `width` and `height`. If either is missing, it switches to `fill`.
+`SanityImage` supports `DefaultPopulateAsset` by default. Pass `assetMapping` for custom populated shapes. It handles dimensions, focal positioning, placeholders, alt overrides, and missing-image fallbacks.
 
-What `SanityImage` does with an asset:
+#### Image loader
 
-- **Source and dimensions.** It passes `url` as `src`, and the native `width` and `height` when present. It also sets `objectFit: 'cover'`.
-- **Focal point.** `focalX` and `focalY` become `object-position`. Pass `disableFocal` to turn this off.
-- **Placeholder.** It uses the asset's `lqip` as `blurDataURL`. Without one, it uses a neutral blur. Pass `placeholderFallback={false}` to skip that, or `disablePlaceholder` to turn placeholders off.
-- **Responsive sizes.** `next/image` generates `srcset` and asks the loader for each width, so `sizes` matters.
-- **Alt text.** The asset's text is the default. `alt` overrides it for one image, and `fallbackAlt` applies only when the asset has none.
-- **Fallback.** `fallback` renders when the asset or URL is missing or fails to load. Without a fallback, nothing renders. `createSanityImage({ fallback })` sets a default for every image it creates.
+For a global loader, re-export the default loader from the dedicated entry:
 
-Use `toSanityImageProps` when you want the same mapping as plain `next/image` props.
-
-#### Loader and CDN hosts
-
-Set the Sanity loader globally, and each `next/image` width request becomes a Sanity URL:
+```ts
+// sanity-image-loader.ts
+export { default } from '@klnap/payload-storage-sanity/consumers/next/loader'
+```
 
 ```ts
 // next.config.ts
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
+export default {
   images: {
     loader: 'custom',
     loaderFile: './sanity-image-loader.ts',
   },
 }
-
-export default nextConfig
 ```
 
-```ts
-// sanity-image-loader.ts
-export { default } from '@klnap/payload-storage-sanity/next/loader'
+A global custom loader affects every `next/image`. It adds width, quality, and format negotiation to compatible Sanity URLs. Other URLs pass through unchanged and do not use Next.js's built-in optimizer.
+
+For mixed image providers, use the scoped loader:
+
+```tsx
+import { SanityImage, sanityImageLoader } from '@klnap/payload-storage-sanity/consumers/next'
+
+return <SanityImage asset={image} loader={sanityImageLoader} sizes="100vw" />
 ```
 
-The loader adds `w`, `q`, and `auto=format` to `cdn.sanity.io` URLs. A custom loader applies to every `next/image` in the app. Non-Sanity URLs pass through unchanged and are not optimized.
+#### Responsive images
 
-For a custom CDN host, create the loader with its base URL:
-
-```ts
-// sanity-image-loader.ts
-import { createSanityImageLoader } from '@klnap/payload-storage-sanity/next'
-
-export default createSanityImageLoader({ cdnBaseUrl: 'https://images.example.com' })
-```
-
-Component and loader references are in [docs/consumers.md](./docs/consumers.md).
+`SanityImage` requests responsive widths through `next/image`, using its configured loader. Other `next/image` instances retain Next.js's normal loader and optimization.
 
 ## Media management
 
-Editors work in the standard Payload media collection. The plugin changes the upload and list experience and keeps Payload's own controls.
+The plugin adds a media workflow to the native Payload admin:
 
-### Media gallery
+- Justified and grid gallery layouts.
+- File cards for non-image uploads.
+- A media detail view with an asset preview and metadata inspector.
+- Crop and focal-point editing, following the collection's native Payload upload settings.
+- Folder organization, upload progress feedback, and unavailable-asset recovery.
 
-The list view offers three layouts, and you switch between them with the toggle in the list header. Justified and grid come from this plugin. List is Payload's native table:
+The gallery replaces Payload's list view by default. Set `admin.gallery: false` for a collection to keep Payload's native table view. Payload remains the editing surface; uploads and delivery do not require Sanity Studio. This repository does not include documentation screenshots of the working admin UI.
 
-- **Justified** (default): rows sized from each asset's aspect ratio, so mixed orientations keep their proportions.
-- **Grid**: equal tiles for quick scanning.
-- **List**: Payload's native table.
+## Localized alt text
 
-Image cards show a thumbnail, with the LQIP as a placeholder while it loads. Non-image files show a card with a file-type icon: PDF, video, audio, archive, spreadsheet, slides, and code. The layout you choose is saved per user and collection. Set `admin.gallery: false` to keep Payload's list view everywhere.
+Define alternative text once per media document, translate it for each supported locale, and reuse it wherever the asset appears.
 
-### Media detail view
+The plugin adds an `alt` group with one text field per Payload locale, or one `alt` text field when localization is off. Existing `alt` fields are left unchanged. It follows Payload's locale configuration but remains a regular group, so Payload's localized-field fallback does not fill missing translations. The default is optional; `alt.required: true` requires a non-empty value for every configured locale.
 
-The edit view for an image shows:
+The default populate preset returns only the requested locale's text. A missing translation returns `null`; it never substitutes another locale. An explicitly empty string is preserved for decorative images. Whitespace-only values are treated as missing. Keep `required` off when editors need intentionally empty decorative alt text. `SanityImage` keeps an explicit `alt=""` override; `fallbackAlt` applies only when stored alt text is missing, not when it is intentionally empty.
 
-- A large preview of the asset, with the asset title above it.
-- A file card with the CDN URL and a copy button, the original filename, size, and MIME type.
-- A metadata inspector with dimensions, aspect ratio, asset ID, SHA-1, and path.
-- Alt text fields, one per locale when localization is enabled.
+Asset-level alt text gives every reference a useful default. It does not replace context-specific descriptions when an image's meaning changes by placement.
 
-Focal point and crop editing are enabled by default. Set `crop: false` or `focalPoint: false` in a collection's Payload `upload` config to turn either off.
+## Folders
 
-During Save, the upload area shows an "Uploading…" state and disables its controls. The preview stays visible. Set `admin.uploadBusyShield: false` to turn this off.
+Set a logical Sanity folder per Payload upload collection with `collections.<slug>.folder`. New assets use `Payload` when no folder is set. Folder paths do not change CDN URLs.
 
-### Folders
+The plugin writes `media.folder` documents and `opt.media.folder` asset metadata for the `sanity-plugin-media` model. Sanity Studio and `sanity-plugin-media` are optional; install `sanity-plugin-media` `>=6.1.0` only when editors need to browse these folders in Studio. Sanity Media Library uses a separate folder system, which this plugin does not write.
 
-Each collection uploads into a logical folder, `Payload` by default. Set another with `collections.<slug>.folder`. The package writes the same folder model that `sanity-plugin-media` uses in Sanity Studio: a `media.folder` document with a `name` and a weak `parent`, and a weak `opt.media.folder` reference on each asset. Nested paths create the missing folders.
-
-Folders are a logical grouping. They do not change URLs. Existing assets keep their folder, so a shared asset is not moved by a later upload.
-
-Sanity Studio and `sanity-plugin-media` are not needed for uploads or CDN delivery. Install the plugin when you want to browse this folder hierarchy in the Studio media browser. The folder model requires `sanity-plugin-media` 6.1.0 or later:
-
-```bash
-bun add sanity-plugin-media
-```
-
-```ts
-import { defineConfig } from 'sanity'
-import { media } from 'sanity-plugin-media'
-
-export default defineConfig({
-  // Existing configuration
-  plugins: [media()],
-})
-```
-
-Folders are not Media Library folders. Sanity's Media Library uses its own folder system, which this package does not write to. The folder rules are in [docs/configuration.md](./docs/configuration.md#folders).
-
-## Media fields
-
-The plugin adds these fields to each configured upload collection. It never replaces fields you already declare.
-
-| Field    | Type                                            | Visibility                                         | Purpose                                                      |
-| -------- | ----------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------ |
-| `title`  | text                                            | Hidden in the field list, shown in the upload area | Optional asset title. Added only if the collection has none. |
-| `alt`    | text, or a group with one text field per locale | Visible                                            | Alt text. Added only if the collection has none.             |
-| `sanity` | group with `asset` (JSON)                       | Hidden, read-only                                  | The Sanity asset record. Client requests cannot write it.    |
-| `sync`   | group with `status`, `checkedAt`, `errorAt`     | Hidden, read-only                                  | Sync diagnostics.                                            |
-
-Payload's upload support provides `filename`, `mimeType`, `filesize`, `width`, and `height`.
-
-### Asset-level alt text
-
-Write alternative text once, translate it for each language, and reuse it wherever the image appears.
-
-The alt text belongs to the Payload media document. The Sanity asset is shared, and every content document that references the media document receives the same description. Editing it in one place updates every document that references the image, and revalidation can refresh those pages (see below). The per-language layout is inspired by Sanity's Internationalized Array pattern. It is not a dependency, and the package does not use Sanity's array storage.
-
-With Payload localization enabled, the plugin adds an `alt` group with one text field per locale. Without localization, it adds one `alt` text field. Existing `alt` fields are kept unchanged.
-
-Alt options are set per collection:
-
-```ts
-sanityStorage({
-  // ...
-  collections: {
-    media: { alt: { required: true } },
-  },
-})
-```
-
-`alt.required` defaults to `false`. When `true`, every configured locale is required, and Payload rejects empty values. Whitespace-only text passes Payload's check, but the frontend reads it as missing.
-
-Editors write the alt text. The plugin does not generate descriptions and does not read them from Sanity metadata.
-
-On the frontend, `DefaultPopulateAsset.alt` holds the text for the request locale:
-
-- **Translated:** the text, trimmed.
-- **No translation for that locale:** `null`. No other language is substituted. Payload's localization fallback does not copy one in, because the alt group is not a localized field.
-- **Explicitly empty:** `''`. Use this for decorative images.
-
-A single image can override the stored text:
-
-```tsx
-<SanityImage asset={image} alt='' />             // decorative: no description
-<SanityImage asset={image} alt='Team photo' />   // this context only
-<SanityImage asset={image} fallbackAlt='Logo' /> // only when the asset has no alt text
-```
-
-An explicit `alt=""` is kept. It is never replaced by the asset description. `fallbackAlt` applies only when the asset has no alt text (`null`). It does not replace an explicitly empty value.
+For assets uploaded by another service, `@klnap/payload-storage-sanity/folders` exports `assignSanityAssetFolder(client, assetId, folderPath)` to create this same browseable hierarchy.
 
 ## Asset lifecycle
 
-Uploads, replacements, and deletions keep Sanity assets and Payload rows consistent. The package never deletes remote files.
+The plugin uploads image and file assets through Sanity's Content Lake Asset API. Replacing a file uploads a new asset and keeps the old one. Deleting a Payload media document does not delete its Sanity asset. Failed uploads or replacements can leave unreferenced assets.
 
-- **Uploads** send the file to Sanity. The media document stores the asset reference under `sanity.asset`.
-- **Replacing a file** uploads the new bytes and keeps the previous Sanity asset.
-- **Deleting a media row** removes only the Payload record. The Sanity asset and its CDN URL remain.
-- **Failed uploads** can leave orphaned Sanity assets.
+The plugin never performs remote asset cleanup. Sanity asset IDs identify content; they do not prove exclusive ownership. This avoids deleting assets shared by other media documents or Sanity content, but operators must manage orphan retention separately.
 
-With `preventDeleteWhenReferenced: true` (the default), Payload refuses to delete a media row that Payload content still references. On PostgreSQL, transaction locks serialize reference writes and deletes. On other adapters, a guarded delete returns `503`.
-
-`dedupeUploads: true` rejects a create whose bytes match an existing asset. Replacements are not affected, and the shared Sanity asset stays in place.
-
-Sanity deduplicates assets by content, so one asset can serve several documents. Payload's reference check does not see external Sanity documents, weak references, or other datasets. Check every Sanity reference before you delete a Sanity asset. The package never does that automatically.
-
-Direct SQL and external writes bypass Payload hooks, so the reference guard does not see them. Database-specific limits are in [docs/configuration.md](./docs/configuration.md#uploads-and-deduplication).
-
-Sanity's [Asset CDN](https://www.sanity.io/docs/apis-and-sdks/asset-cdn) caches files by a hash of their contents. Replacing a file creates a new URL, so the old URL keeps working until its asset is removed.
+`preventDeleteWhenReferenced` defaults to `true` and blocks deletion of a Payload media document still referenced by supported Payload relationships. PostgreSQL uses transaction-scoped locks for plugin-managed reference writes and deletes. Other database adapters fail guarded deletes with `503`. Direct SQL and external writes bypass the guard. None of these operations is transactional across Payload and Sanity.
 
 ## Integration with @klnap/revalidation
 
-[`@klnap/revalidation`](https://github.com/klnap/revalidation) can refresh the pages that show a changed media document, without republishing each page. Its Payload producer finds the documents that directly reference the media document and sends update events. Your Next.js consumer then expires the matching cache tags and paths. Only the references listed below are discovered.
+[`@klnap/revalidation`](https://www.npmjs.com/package/@klnap/revalidation) is optional. Its Payload producer can find pages that directly reference a changed media document; its consumer invalidates the cache targets configured by your frontend.
 
-A change to a file, a focal point, or alt text in one place refreshes the dependent pages. An alt change refreshes only the locale whose text changed, so editing the German alt text does not refresh English pages.
-
-This package does not call revalidation. Configure the producer in your Payload app:
+Opt pages into revalidation and configure the producer separately from storage:
 
 ```ts
+import { buildConfig, type CollectionConfig } from 'payload'
+import { sanityStorage } from '@klnap/payload-storage-sanity'
 import { http } from '@klnap/revalidation/dispatchers/http'
 import { revalidation } from '@klnap/revalidation/producers/payload'
 
-revalidation({
-  target: { url: process.env.REVALIDATION_URL!, secret: process.env.REVALIDATION_SECRET! },
-  dispatcher: http(),
-  // Needed when several upload collections exist and none is named `media`:
-  // media: mediaCollection,
+const Pages: CollectionConfig = {
+  slug: 'pages',
+  custom: { revalidation: true },
+  fields: [{ name: 'heroImage', type: 'upload', relationTo: 'media' }],
+}
+
+export default buildConfig({
+  collections: [Media, Pages],
+  plugins: [
+    sanityStorage({
+      projectId: process.env.SANITY_PROJECT_ID!,
+      dataset: process.env.SANITY_DATASET!,
+      token: process.env.SANITY_API_TOKEN!,
+    }),
+    revalidation({
+      target: {
+        url: process.env.REVALIDATION_URL!,
+        secret: process.env.REVALIDATION_SECRET!,
+      },
+      dispatcher: http(),
+    }),
+  ],
 })
 ```
 
-Add `custom: { revalidation: true }` to each content collection or global that should refresh.
+When an editor replaces an image or changes its alt text, the producer discovers supported direct references to that media document. The frontend consumer invalidates the configured cache targets for those pages. The storage plugin uploads and manages media; it does not send revalidation events.
 
-The producer follows direct references only:
+Media updates and deletes trigger discovery; creates do not. Discovery is limited to opted-in published collections and supported direct upload or relationship fields. It does not traverse through another document, blocks, rich text, JSON, or joins. Dependency-discovery failures are logged and are not retried. Dispatch is scheduled in memory about one second after the Payload hook returns; it is not durable and can outlive a rolled-back write. The built-in HTTP dispatcher retries retryable transport errors, timeouts, `429`, and `5xx` responses within its deadline. Its default is two retries after the first attempt. These retries do not provide durable delivery.
 
-- **Triggers:** updates and deletes of a media document. Creates do not trigger it.
-- **Matched fields:** `upload` and `relationship` fields to the media collection, inside groups, rows, collapsibles, tabs, and arrays. For globals, arrays and `hasMany` fields are not matched.
-- **Published documents only** in collections with drafts. Collections without drafts have no published state, so all their documents qualify.
-- **One hop only.** A page that reaches the media through another document, such as a parent that links to the page, is not revalidated. Add a direct upload field to that document type or revalidate it explicitly.
-- **Not matched:** blocks, rich text, JSON and join fields, and relations that accept several collections. These are skipped without a log entry.
-- **Failures** while reading dependents are logged and do not fail the Payload save. A failure in the locale-change check can stop dispatch for that save, so check logs after media edits.
-- **Delivery** runs in memory: events wait about one second and are not retried. Events can be lost if the process exits within that second. Delete events fire before the row is removed, so a rolled-back delete can still send events.
+Frontend cache invalidation is separate from Sanity CDN caching. Neither package purges the Sanity CDN.
 
-Read the producer guides in the [revalidation repository](https://github.com/klnap/revalidation): `docs/producers/payload.md` and `docs/producers/payload-media-dependencies.md`.
-
-Frontend cache invalidation and Sanity Asset CDN caching are separate. Revalidation expires Next.js cache entries. Neither this package nor revalidation purges the Sanity CDN. A replaced file gets a new hashed URL, so the old URL stays cached until its asset is removed.
+See the [Payload producer guide](https://github.com/klnap/revalidation/blob/v0.2.2/docs/producers/payload.md) and [media dependency guide](https://github.com/klnap/revalidation/blob/v0.2.2/docs/producers/payload-media-dependencies.md) for supported references and delivery behavior.
 
 ## Synchronization
 
-With `sync.enabled: true`, a Sanity webhook marks or deletes media rows when assets change, and reconcile routes check batches of rows. Sync needs `token` and `sync.webhook.secret`. The webhook verifies an HMAC over the raw request body. The default base path is `/sanity-storage`, under Payload's `/api`.
+Optional `sync` settings add a Sanity webhook endpoint and a reconcile endpoint. The webhook authenticates the raw request body with an HMAC secret. Sync can mark unavailable media or remove Payload media rows; it does not delete Sanity assets.
 
-Body limits, status codes, and retry behavior are in [docs/FAILURE_SEMANTICS.md](./docs/FAILURE_SEMANTICS.md).
+## Security
+
+Keep `token` on the server. It is a Sanity write token used by the integration; never expose it in browser code or public environment variables.
+
+Dataset visibility does not make uploaded Content Lake assets private. Sanity dataset assets are accessible through the Asset CDN to anyone with the URL, even when the dataset is private. Payload access control protects Payload API reads, not an already exposed CDN URL. Private Media Library assets and signed delivery URLs are not supported.
+
+The storage adapter defaults to direct CDN file URLs, bypassing Payload's file-delivery access-control proxy. Set `disablePayloadAccessControl: false` to route generated file URLs through Payload, but do not treat that as protection for an exposed Sanity CDN URL.
+
+## Compatibility
+
+See [Installation](#installation) for the verified Payload, React, Next.js, Node.js, and ESM ranges. Existing Payload upload settings remain in place unless this integration documents otherwise; Payload `imageSizes` are disabled for configured collections because resized delivery uses Sanity's CDN.
 
 ## Documentation
 
-- [Configuration and public API](./docs/configuration.md): options, defaults, collection rules, and exports.
-- [Consumer guide](./docs/consumers.md): populate shapes, Next.js components, and manual `populate`.
-- [Failure behavior](./docs/FAILURE_SEMANTICS.md): sync, webhooks, and error handling.
-- [Troubleshooting](./docs/TROUBLESHOOTING.md): common setup and runtime issues.
-- [Contributing](./CONTRIBUTING.md): development setup and releases.
+- [Configuration and options](./docs/configuration.md)
+- [Frontend consumers and type behavior](./docs/consumers.md)
+- [Failure semantics and operational limits](./docs/FAILURE_SEMANTICS.md)
+- [Troubleshooting](./docs/TROUBLESHOOTING.md)
 
 ## License
 

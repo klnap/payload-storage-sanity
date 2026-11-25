@@ -5,7 +5,15 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 
-const subpaths = ['.', './admin', './client', './folders', './next', './next/loader']
+const subpaths = [
+  '.',
+  './admin',
+  './client',
+  './folders',
+  './consumers',
+  './consumers/next',
+  './consumers/next/loader',
+]
 const cssSubpath = './styles/admin-tailwind.css'
 
 function resolveJsExportTarget(subpath) {

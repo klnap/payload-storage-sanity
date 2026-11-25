@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolveAssetAlt } from '@/presentation/image'
+import { resolveAssetAlt } from '@/consumers/image'
 
 describe('resolveAssetAlt', () => {
   test('uses asset.alt when present', () => {

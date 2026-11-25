@@ -1,0 +1,1 @@
+export { assignSanityAssetFolder } from './assignSanityAssetFolder'

@@ -1,80 +1,74 @@
-# Troubleshooting — `@klnap/payload-storage-sanity`
+# Troubleshooting
 
-Practical fixes for problems seen in configuration validation, tests, and support docs. See also [FAILURE_SEMANTICS.md](./FAILURE_SEMANTICS.md) for guarantees vs non-guarantees.
+See [failure semantics](./FAILURE_SEMANTICS.md) for lifecycle guarantees and operational limits.
 
 ## Plugin throws at startup
 
-| Symptom | Likely cause | What to do |
-| :--- | :--- | :--- |
-| `` `projectId` is required `` | Missing Sanity project id | Set `projectId` (env or config). |
-| `` `dataset` is required `` | Missing dataset name | Set `dataset` (e.g. `production`). |
-| `` `token` is required when mode is "full" `` | Uploads enabled without API token | Provide a Sanity token with write access, or use `mode: 'fields-only'` / `off` if you do not upload via Payload. |
-| `` `token` is required when sync.enabled is true `` | Sync without credentials | Add `token`, or disable `sync.enabled`. |
-| `` `sync.webhook.secret` is required `` | Sync on without webhook secret | Set `sync.webhook.secret` (server env), or disable sync. |
-| Invalid `mode` | Typo in `mode` | Use `full`, `fields-only`, or `off` only. |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `projectId` or `dataset` is required | Missing Sanity project configuration. | Set both values. |
+| `token` is required when mode is `full` | Upload storage is enabled without a write token. | Provide a server-side token or disable cloud storage. |
+| `token` is required when sync is enabled | Sync cannot query or update assets. | Add a write token or disable sync. |
+| `sync.webhook.secret` is required | Webhook sync is enabled without an HMAC secret. | Set the secret on the server or disable sync. |
+| Unknown collection or collection has no upload | Explicit `collections` map does not match Payload config. | Use existing upload collection slugs. |
+| Collection already has a storage adapter | Explicit selection conflicts with another adapter. | Select one storage adapter per collection. Automatic discovery skips existing adapters. |
 
-## Payload image sizes / `sizes` group
+## Upload fails or asset is missing
 
-Plugin-managed media collections always use **`upload.imageSizes: []`**. The plugin does not generate Payload derivative files for new uploads — use Sanity CDN query params or `@klnap/payload-storage-sanity/next` (`SanityImage`, loaders). Some media rows may still have a persisted **`sizes`** field if the collection previously used Payload `imageSizes`; that data is not updated or removed automatically.
+1. Confirm the default `mode: 'full'` and a Sanity token with asset write access.
+2. Check `uploadMaxSize` and Payload's native multipart limits.
+3. Confirm the Sanity project ID and dataset.
+4. Inspect Payload logs for `[@klnap/payload-storage-sanity]`.
 
-## Upload fails or file never appears on CDN
+A Sanity upload can succeed before Payload persistence fails, leaving an unreferenced remote asset. The plugin does not delete remote assets.
 
-1. Confirm **`mode: 'full'`** (default) and a valid **`token`** with asset write permissions.
-2. Check **`uploadMaxSize`** — oversize files fail in `beforeChange` with a plugin error (bytes, per kind).
-3. Inspect Payload logs for `[@klnap/payload-storage-sanity]` — failed writes can leave retained Sanity assets without a Payload row (see failure semantics).
-4. Verify Sanity **project id** and **dataset** match the dataset where you expect assets.
+## Payload image sizes are empty
 
-## Duplicate media rows after upload
+Configured upload collections use `upload.imageSizes: []`. Sanity CDN URLs provide resized variants. Existing `sizes` data is not removed or updated automatically.
 
-With **`dedupeUploads: true`**, identical bytes on create throw **`409`** naming the existing media id (default is **`false`**; enable explicitly when you want SHA-1 blocking before upload). If you still see admin **localized-delete** confirmation text instead, ensure the package build includes the orphan-cleanup `localizedDeleteConfirmed` context (reinstall / rebuild `@klnap/payload-storage-sanity`). Leftover rows sharing **`sanity.asset.sha1hash`** after a crash: **`POST /api/sanity-storage/reconcile`** with `dryRun: true` and inspect `duplicates`; delete the orphan manually when safe.
+## Duplicate media rows
 
-## Cannot delete media (400)
+`dedupeUploads` defaults to `false`. With `dedupeUploads: true`, a create using identical file bytes returns `409` and identifies the existing media row. PostgreSQL serializes matching uploads across processes; other adapters only serialize the lookup within one process.
 
-Reference integrity is on by default (`preventDeleteWhenReferenced`). The asset is still used on **published** or **draft** documents. Open the **References** tab on the media document or call `GET /api/{media}/:id/usage`. Disable only if you accept orphaned references: `preventDeleteWhenReferenced: false`.
+## Media deletion fails
 
-## Broken images in admin or storefront (`url` empty)
+`preventDeleteWhenReferenced` defaults to `true`.
 
-1. Check **`sync.status`** on the media document — `deleted`, `missing`, and `error` clear public URLs in API responses.
-2. Enable **`sync.enabled`** and webhooks, or run **reconcile**, to refresh metadata from Sanity.
-3. Use **Unavailable asset recovery** UI in admin when sync shows a broken state.
-4. Confirm **`sanity.asset.path`** / **`sanity.asset.url`** exist on the stored document (metadata-only saves merge from `originalDoc`).
+- `400`: a supported Payload reference still points to the media document. Check the References tab or `GET /api/{media}/:id/usage`.
+- `503`: the database adapter cannot provide the transaction lock required by the guard.
 
-## Webhook returns 401 / signature errors
+Disabling the guard permits dangling Payload references. It never deletes the Sanity asset.
 
-1. Use the **raw request body** when verifying signatures (the plugin does this on its endpoint).
-2. Match **`sync.webhook.secret`** to the secret configured in Sanity’s webhook.
-3. Check clock skew — default tolerance is **300 seconds** (`verifySanityWebhookSignature` `maxAgeSeconds`).
-4. Ensure Sanity posts to the correct URL: `POST https://<cms>/api<sync.basePath>/webhook` (default `/api/sanity-storage/webhook`).
+## Image URL is empty
 
-## Reconcile forbidden (403)
+Check the media document's `sync.status` and persisted `sanity.asset` data. `deleted`, `missing`, and `error` sync states clear hydrated `url` and `thumbnailURL` values. Webhooks or the reconcile endpoint can refresh status. The unavailable-asset recovery UI helps editors replace or unlink broken media.
 
-Default **`sync.access`** allows only users from Payload’s **admin auth collection** (`config.admin.user`, usually `users`). Pass a custom `sync.access` for automation, or call **`reconcileSanityMedia`** from a trusted server script with your own rules.
+## Webhook returns 401
 
-## Populate shape wrong on storefront
+The endpoint verifies the HMAC against the raw request body. Confirm `sync.webhook.secret` matches Sanity's webhook, then check the path. The default endpoint is `POST /api/sanity-storage/webhook`.
 
-| Expectation | Reality |
-| :--- | :--- |
-| Flat `url`, `width`, `alt` on nested relation | Use preset **`default`** (plugin default) and **`depth ≥ 1`**; do not pass explicit `populate.media` field maps unless you render with **`next/image`** yourself. |
-| Full `sanity` group on nested relation | Set `populate: { preset: 'full' }` or use **`fullPopulate()`** / manual `populate`. |
-| `SanityImage` with manual populate result | **Unsupported** — `SanityImage` expects **`DefaultPopulateAsset`** or a custom shape plus **`assetMapping`**. |
+## Reconcile returns 403
 
-Pass **`locale`** on SDK/REST fetches, not on `SanityImage`, for localized alt.
+By default, `sync.access` allows users from Payload's admin auth collection (`config.admin.user`). Configure a custom access function for trusted automation.
 
-## Next.js: images broken or unoptimized
+## Populate shape is unexpected
 
-1. Add **`transpilePackages: ['@klnap/payload-storage-sanity']`** if your bundler needs it (common with Next 16).
-2. Register the loader: `images.loader = 'custom'` and `loaderFile` re-exporting `@klnap/payload-storage-sanity/next/loader`.
-3. Allowlisted hosts: URLs must pass **`isSanityCompatibleHost`** (default `cdn.sanity.io` or your `cdnBaseUrl` host).
-4. Import from **`@klnap/payload-storage-sanity/next`**, not the main entry.
+The default preset normalizes eligible populated relationships only. Set `depth: 1` or higher and pass the requested locale. Direct media reads, authenticated requests, explicit populate selections, and depth-zero relationships keep full documents or IDs.
 
-## `assetMapping` / TypeScript errors on `SanityImage`
+Use `isDefaultPopulateAsset()` to narrow a generated Payload relationship before passing it to `SanityImage`. Use `assetMapping` for a custom populated shape.
 
-Use **`createSanityImage<YourAsset>()`** or pass **`assetMapping`** with dot paths (`metadata.width`, etc.). Mapping **`url`** is required and must resolve to a non-empty string. See [Next.js](../README.md#nextjs).
+## Next.js images are broken or unoptimized
 
-## Host / SSRF / proxy 404
+Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. For a global loader, configure `images.loader` and `loaderFile` as shown in the [README](../README.md#consumers). For mixed providers, use the scoped `sanityImageLoader` prop. A global loader affects every `next/image`; non-Sanity URLs pass through unchanged without Next.js's built-in optimization.
 
-Adapter **`staticHandler`** (when Payload proxies files) only fetches **allowlisted** CDN hosts. User-controlled `http://evil` URLs on the document are not fetched. Upstream 404 → handler 404; redirect to non-allowlisted host → 502 (see CDN tests).
+## `assetMapping` does not resolve an image
 
-## Raw Node `import` of package fails
+Use dot-separated paths such as `asset.url` or `metadata.width`. The mapped URL must resolve to a non-empty string. See [custom media shapes](./consumers.md#custom-media-shapes).
 
-Published **`dist`** is **bundler-first**. Use Payload, Next, or Bun to run the app. Raw Node ESM without a resolver does not support extensionless relative imports in `dist`. See the **Installation** section in [README.md](../README.md).
+## Payload proxy returns 404 or 502
+
+When Payload proxies file delivery, it fetches only compatible Sanity CDN hosts. An upstream 404 remains a 404. Redirects to non-allowlisted hosts return 502.
+
+## Raw Node.js import fails
+
+The published ESM build expects a bundler to resolve extensionless imports. Raw Node.js ESM imports are not supported. See [compatibility](../README.md#compatibility).
