@@ -21,7 +21,7 @@ Messages use the prefix `[@klnap/payload-storage-sanity]`.
 
 ## Upload derivatives (`imageSizes`)
 
-**Guarantee:** For every upload collection slug listed under `sanityStorage({ collections })`, the plugin sets **`upload.imageSizes: []`**. Collection-level `imageSizes` definitions are overridden. There is **no** plugin opt-in to re-enable Payload-generated derivatives.
+**Guarantee:** For every upload collection selected by `sanityStorage()` (auto-discovered or listed under `collections`), the plugin sets **`upload.imageSizes: []`**. Collection-level `imageSizes` definitions are overridden. There is **no** plugin opt-in to re-enable Payload-generated derivatives.
 
 **Non-guarantee:** Some documents may still contain a root **`sizes`** object if the collection previously defined Payload `imageSizes`; the plugin does not remove that field. Resized delivery is expected via **Sanity CDN** (not Payload `sizes` URLs).
 

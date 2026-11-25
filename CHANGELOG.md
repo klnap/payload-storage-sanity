@@ -15,5 +15,6 @@ Initial release of `@klnap/payload-storage-sanity`.
 
 ### Changed
 
-- Assign new uploads and replacements to configurable Sanity media folder paths (`folder`, default `Payload`). Export folder helpers from `/folders` for standalone uploaders.
+- Automatically discover upload collections without another storage adapter; `collections` now optionally selects explicit slugs.
+- Configure logical `sanity-plugin-media` folder paths per collection with `collections.<slug>.folder` (default `Payload`). Existing shared assets keep their folder. Export folder helpers from `/folders` for standalone uploaders.
 - **`dedupeUploads` defaults to `false`**. Set **`dedupeUploads: true`** on `sanityStorage()` to enable SHA-1 duplicate-upload protection (409 on create).
