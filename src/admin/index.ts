@@ -7,13 +7,10 @@ export {
   MEDIA_ASSET_UPLOAD_IMPORT,
   MEDIA_METADATA_INSPECTOR_IMPORT,
   MEDIA_REFERENCES_INSPECTOR_IMPORT,
-  MEDIA_TABS_CHROME_IMPORT,
   MEDIA_UPLOAD_BUSY_SHIELD_IMPORT,
   MEDIA_USAGE_INSPECTOR_IMPORT,
 } from './constants'
 export { GalleryList } from './gallery/gallery-list'
-export { MediaTabsChrome } from './MediaTabsChrome'
-export { MediaTabsFieldPlaceholder } from './MediaTabsFieldPlaceholder'
 export { MediaMetadataInspector } from './metadata/MediaMetadataInspector'
 export { MediaMetadataInspectorClient } from './metadata/MediaMetadataInspectorClient'
 export {

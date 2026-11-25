@@ -678,11 +678,6 @@
       "declaration": "MEDIA_REFERENCES_INSPECTOR_IMPORT"
     },
     {
-      "name": "MEDIA_TABS_CHROME_IMPORT",
-      "kind": "value",
-      "declaration": "MEDIA_TABS_CHROME_IMPORT"
-    },
-    {
       "name": "MEDIA_UPLOAD_BUSY_SHIELD_IMPORT",
       "kind": "value",
       "declaration": "MEDIA_UPLOAD_BUSY_SHIELD_IMPORT"
@@ -736,16 +731,6 @@
       "name": "MediaReferences",
       "kind": "value",
       "declaration": "MediaReferences"
-    },
-    {
-      "name": "MediaTabsChrome",
-      "kind": "value",
-      "declaration": "MediaTabsChrome"
-    },
-    {
-      "name": "MediaTabsFieldPlaceholder",
-      "kind": "value",
-      "declaration": "MediaTabsFieldPlaceholder"
     },
     {
       "name": "MediaUploadBusyShield",

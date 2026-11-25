@@ -987,7 +987,6 @@ describe('sanityStorage', () => {
       clientProps: { titleInput: true },
     })
     expect(media?.fields?.some((f) => 'name' in f && f.name === '_objectKey')).toBe(false)
-    expect(media?.fields?.some((f) => 'name' in f && f.name === 'sanityAssetMeta')).toBe(false)
     const rootSanityCount =
       media?.fields?.filter((f) => 'name' in f && f.name === 'sanity').length ?? 0
     expect(rootSanityCount).toBe(1)

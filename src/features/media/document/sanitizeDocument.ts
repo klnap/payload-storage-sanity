@@ -13,13 +13,9 @@ export function hasUpstreamLocators(doc: SanityMediaDocument): boolean {
   return Boolean(path || url)
 }
 
-const MEDIA_DOCUMENT_JUNK_KEYS = [
-  '_objectKey',
-  'sanityAssetMeta',
-  'mediaMetadataInspector',
-] as const
+const MEDIA_DOCUMENT_JUNK_KEYS = ['_objectKey', 'mediaMetadataInspector'] as const
 
-/** Drop cloud-storage / legacy display keys that must never leak into API or saves. */
+/** Drop cloud-storage and admin-only display keys that must never leak into API or saves. */
 export function stripMediaDocumentJunkKeys<T extends Record<string, unknown>>(doc: T): T {
   let touched = false
   for (const key of MEDIA_DOCUMENT_JUNK_KEYS) {

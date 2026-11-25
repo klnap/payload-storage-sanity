@@ -85,11 +85,8 @@ export function prioritizeUserSidebarFields(
 const PLUGIN_INJECTED_ROOT_NAMES = new Set([
   'sanity',
   'sync',
-  // Legacy slots — strip if an old build left them on the collection
   'mediaMetadataInspector',
   'mediaReferences',
-  'mediaTabsChrome', // legacy injected tab slot id (pre–field-className layout)
-  'sanityAssetMeta',
 ])
 
 /**
@@ -98,11 +95,6 @@ const PLUGIN_INJECTED_ROOT_NAMES = new Set([
  */
 function stripCloudStorageObjectKeyField(fields: Field[]): Field[] {
   return fields.filter((field) => !('name' in field && field.name === '_objectKey'))
-}
-
-/** Remove legacy mirror group if an old plugin build left it on the collection. */
-function stripLegacySanityAssetMetaField(fields: Field[]): Field[] {
-  return fields.filter((field) => !('name' in field && field.name === 'sanityAssetMeta'))
 }
 
 function wrapSanityMediaMainFieldsInTabs(assetTabFields: Field[]): Field[] {
@@ -144,7 +136,7 @@ function splitSanityMediaCollectionFields(fields: Field[]) {
   for (const field of fields) {
     const name = fieldName(field)
     if (name != null && PLUGIN_INJECTED_ROOT_NAMES.has(name)) {
-      if (name === 'sanity' || name === 'sanityAssetMeta' || name === 'mediaMetadataInspector') {
+      if (name === 'sanity' || name === 'mediaMetadataInspector') {
         continue
       }
       sidebarAndHiddenFields.push(field)
@@ -165,8 +157,7 @@ export function finalizeSanityMediaCollectionFields(
   userFieldNames: ReadonlySet<string>
 ): Field[] {
   const withoutObjectKey = stripCloudStorageObjectKeyField(fields)
-  const withoutLegacyMeta = stripLegacySanityAssetMetaField(withoutObjectKey)
-  const stripped = stripDefaultMediaEditorFields(withoutLegacyMeta, userFieldNames)
+  const stripped = stripDefaultMediaEditorFields(withoutObjectKey, userFieldNames)
   const { mainColumnFields, sidebarAndHiddenFields } = splitSanityMediaCollectionFields(stripped)
   const tabbedMain = wrapSanityMediaMainFieldsInTabs(mainColumnFields)
 

@@ -28,13 +28,13 @@ describe('resolveSanitySyncConfig', () => {
       {
         enabled: true,
         basePath: '/custom-sync',
-        webhook: { secret: 's', path: '/legacy/webhook' },
-        reconcile: { path: '/legacy/reconcile' },
+        webhook: { secret: 's', path: '/custom/webhook' },
+        reconcile: { path: '/custom/reconcile' },
       },
       'media'
     )
-    expect(resolved.webhook?.path).toBe('/legacy/webhook')
-    expect(resolved.reconcile?.path).toBe('/legacy/reconcile')
+    expect(resolved.webhook?.path).toBe('/custom/webhook')
+    expect(resolved.reconcile?.path).toBe('/custom/reconcile')
   })
 
   test('skips reconcile when reconcile is false', () => {

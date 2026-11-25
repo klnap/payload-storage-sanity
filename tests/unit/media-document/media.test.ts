@@ -78,17 +78,15 @@ describe('sanitizeMediaDocument', () => {
     expect(sanitized.sync?.checkedAt).toBe('2026-01-01T00:00:00.000Z')
   })
 
-  test('strips _objectKey and empty sanityAssetMeta from payloads', () => {
+  test('strips _objectKey from payloads', () => {
     const sanitized = sanitizeMediaDocument({
       id: 1,
       name: 'blank',
       _objectKey: null,
-      sanityAssetMeta: {},
     } as Parameters<typeof sanitizeMediaDocument>[0])
 
     expect(sanitized).toEqual({ id: 1, name: 'blank' } as typeof sanitized)
     expect('_objectKey' in sanitized).toBe(false)
-    expect('sanityAssetMeta' in sanitized).toBe(false)
   })
 })
 
@@ -270,14 +268,13 @@ describe('createSanityMediaBeforeChangeHook', () => {
     expect(result?.sync?.status).toBe('available')
   })
 
-  test('strips legacy sanityAssetMeta and _objectKey on save', async () => {
+  test('strips _objectKey on save', async () => {
     const hook = createSanityMediaBeforeChangeHook()
     const result = await hook({
       data: {
         filename: 'a.png',
         sanity: { asset: { _id: 'image-a-png' } },
         _objectKey: null,
-        sanityAssetMeta: { file: { size: 1 } },
       },
       collection: { slug: 'media' } as never,
       context: {},
@@ -286,7 +283,6 @@ describe('createSanityMediaBeforeChangeHook', () => {
     })
 
     expect('_objectKey' in (result as object)).toBe(false)
-    expect('sanityAssetMeta' in (result as object)).toBe(false)
     expect(result?.sanity).toEqual({ asset: { _id: 'image-a-png' } })
   })
 })
