@@ -6,8 +6,12 @@ import type {
   SanityPersistedAssetGroup,
 } from '@/features/media/document/sanityStorageDocument'
 import type { SanityAssetReference } from '@/sanity/assets'
+import { isSanityCompatibleHost } from '@/sanity/cdn'
 import { isMediaAssetAvailable } from './mediaAvailability'
 import { resolveImageFileRef } from './resolveAssetRef'
+import { appendTransformParams } from './resolvePublicUrl'
+
+const IMAGE_PATH = /\.(avif|gif|jpe?g|png|tiff?|webp)$/i
 
 export type SanityImageSource =
   | string
@@ -18,7 +22,8 @@ export type SanityImageSource =
   | undefined
 
 export type BuildSanityImageUrlArgs = {
-  client: SanityClient
+  /** Needed only to build a URL from an asset reference without a stored `url`. */
+  client?: SanityClient
   value: SanityImageSource
   width?: number
   height?: number
@@ -40,12 +45,21 @@ export function buildSanityImageUrl({
     }
   }
 
+  const storedUrl = !v.is(v.string(), value) && 'url' in value ? value.url?.trim() : undefined
+  if (storedUrl && isSanityCompatibleHost(storedUrl)) {
+    return withImageParams(storedUrl, { width, height })
+  }
+
   const ref = resolveImageFileRef(value)
   if (!ref) {
-    if (!v.is(v.string(), value) && 'url' in value && value.url && value.url.trim().length > 0) {
-      return value.url
-    }
+    if (storedUrl) return storedUrl
     return null
+  }
+
+  if (!client) {
+    throw new Error(
+      'buildSanityImageUrl needs a SanityClient to build a URL from an asset reference without a stored URL.'
+    )
   }
 
   let builder = createImageUrlBuilder(client).image(ref)
@@ -75,4 +89,11 @@ export function resolveAssetDocumentUrl(value: SanityImageSource): string | null
   }
 
   return null
+}
+
+/** Applies width and height to Sanity image URLs only; file URLs stay unchanged. */
+function withImageParams(url: string, size: { width?: number; height?: number }): string {
+  const path = new URL(url).pathname
+  if (!IMAGE_PATH.test(path)) return url
+  return appendTransformParams(url, size)
 }

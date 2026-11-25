@@ -91,4 +91,39 @@ describe('resolveAssetDocumentUrl', () => {
   test('returns null for bare non-url string reference', () => {
     expect(resolveAssetDocumentUrl('image-a')).toBeNull()
   })
+
+  test('applies width and height to a flat asset URL without a client', () => {
+    const url = buildSanityImageUrl({
+      value: { url: 'https://cdn.sanity.io/images/proj123/production/sample.jpg' },
+      width: 400,
+      height: 300,
+    })
+    expect(url).toContain('w=400')
+    expect(url).toContain('h=300')
+    expect(url).toContain('auto=format')
+  })
+
+  test('leaves non-image file URLs unchanged', () => {
+    expect(
+      buildSanityImageUrl({
+        value: { url: 'https://cdn.sanity.io/files/proj123/production/manual.pdf' },
+        width: 400,
+      })
+    ).toBe('https://cdn.sanity.io/files/proj123/production/manual.pdf')
+  })
+
+  test('returns non-Sanity URLs unchanged', () => {
+    expect(
+      buildSanityImageUrl({ value: { url: 'https://images.example.com/a.jpg' }, width: 400 })
+    ).toBe('https://images.example.com/a.jpg')
+  })
+
+  test('throws when an asset reference needs a client and no URL is stored', () => {
+    expect(() =>
+      buildSanityImageUrl({
+        value: 'image-abc123456789abcdef123456789abcdef12345678-800x600-jpg',
+        width: 400,
+      })
+    ).toThrow(/SanityClient/)
+  })
 })
