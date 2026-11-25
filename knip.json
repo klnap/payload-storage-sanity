@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/index.ts",
+    "src/admin/index.ts",
+    "src/presentation/adapters/next/index.ts",
+    "src/presentation/adapters/next/loader.ts",
+    "src/sanity/client/index.ts",
+    "src/sanity/folders/index.ts",
+    "src/core/config/index.ts",
+    "tests/**/*.test.ts",
+    "tests/**/*.int.test.ts",
+    "tests/types/*.ts",
+    "tests/unit/consumers/next/*.ts",
+    "scripts/**/*.mjs",
+    "scripts/**/*.cjs",
+    "scripts/**/*.js"
+  ],
+  "project": ["src/**/*.{ts,tsx,css}", "tests/**/*.{ts,tsx}"],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "ignoreDependencies": [
+    "@tailwindcss/cli",
+    "tailwindcss",
+    "tsc-alias",
+    "webpack",
+    "webpack-cli",
+    "css-loader",
+    "@payloadcms/translations",
+    "next",
+    "@payloadcms/plugin-cloud-storage"
+  ],
+  "ignoreUnresolved": ["scripts/verify-css-side-effects.mjs", "scripts/check-attw.mjs"]
+}
