@@ -9,16 +9,11 @@ import {
   trimTrailingSlash,
 } from '@/sanity/cdn'
 import { classifySanityAssetType } from './classifySanityAssetType'
+import { applyImageParams, type ImageSize } from './imageParams'
 
 const DEFAULT_CDN_ORIGIN = 'https://cdn.sanity.io'
 
-export type ResolvePublicUrlTransform = {
-  width?: number
-  height?: number
-  fit?: 'max' | 'min' | 'crop' | 'clip'
-  autoFormat?: boolean
-  rect?: { left: number; top: number; width: number; height: number }
-}
+export type ResolvePublicUrlTransform = ImageSize
 
 export type ResolvePublicUrlContext = SanityCompatibleHostContext & {
   transform?: ResolvePublicUrlTransform
@@ -36,23 +31,6 @@ function rewriteOriginIfCompatible(url: string, ctx: ResolvePublicUrlContext): s
     const parsed = new URL(url)
     const origin = trimTrailingSlash(custom)
     return joinCdnOriginAndPath(origin, parsed.pathname.replace(/^\//, '') + parsed.search)
-  } catch {
-    return url
-  }
-}
-
-export function appendTransformParams(url: string, transform: ResolvePublicUrlTransform): string {
-  try {
-    const parsed = new URL(url)
-    if (transform.width != null) parsed.searchParams.set('w', String(transform.width))
-    if (transform.height != null) parsed.searchParams.set('h', String(transform.height))
-    if (transform.fit) parsed.searchParams.set('fit', transform.fit)
-    if (transform.rect) {
-      const { left, top, width, height } = transform.rect
-      parsed.searchParams.set('rect', `${left},${top},${width},${height}`)
-    }
-    if (transform.autoFormat !== false) parsed.searchParams.set('auto', 'format')
-    return parsed.toString()
   } catch {
     return url
   }
@@ -83,7 +61,7 @@ export function resolvePublicUrl(
 
   const transform = ctx.transform
   if (transform && isSanityCompatibleHost(url, ctx) && classifySanityAssetType(doc) === 'image') {
-    url = appendTransformParams(url, transform)
+    url = applyImageParams(url, transform)
   }
 
   if (!isSanityCompatibleHost(url, ctx)) {

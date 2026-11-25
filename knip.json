@@ -24,7 +24,6 @@
   },
   "ignoreDependencies": [
     "@tailwindcss/cli",
-    "tailwindcss",
     "tsc-alias",
     "webpack",
     "webpack-cli",

@@ -26,7 +26,7 @@ import {
   type SanityStorageTranslateFn,
   sanityStorageTranslate,
 } from '@/core/i18n'
-import { appendTransformParams } from '@/features/media/cdn'
+import { applyImageParams } from '@/features/media/cdn'
 import type { SanityMediaDocument } from '@/features/media/document'
 import { resolveLocalizedAlt } from '@/features/media/populate/metadata'
 import { getSanityAssetMetadata } from '@/sanity/assets'
@@ -601,7 +601,7 @@ export function MediaAssetUpload({
       : undefined
   const previewSrc =
     original && mime !== 'image/svg+xml' && isSanityCompatibleHost(original, { cdnBaseUrl })
-      ? appendTransformParams(original, {
+      ? applyImageParams(original, {
           width: 1920,
           height: 1200,
           fit: 'max',

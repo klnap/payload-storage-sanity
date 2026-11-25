@@ -7,11 +7,9 @@ import type {
 } from '@/features/media/document/sanityStorageDocument'
 import type { SanityAssetReference } from '@/sanity/assets'
 import { isSanityCompatibleHost } from '@/sanity/cdn'
+import { applyImageParams, type ImageSize, isImagePath } from './imageParams'
 import { isMediaAssetAvailable } from './mediaAvailability'
 import { resolveImageFileRef } from './resolveAssetRef'
-import { appendTransformParams } from './resolvePublicUrl'
-
-const IMAGE_PATH = /\.(avif|gif|jpe?g|png|tiff?|webp)$/i
 
 export type SanityImageSource =
   | string
@@ -21,40 +19,36 @@ export type SanityImageSource =
   | null
   | undefined
 
-export type BuildSanityImageUrlArgs = {
-  /** Needed only to build a URL from an asset reference without a stored `url`. */
+export type BuildSanityImageUrlOptions = ImageSize & {
+  /** Needed only to build a URL from an asset reference that has no stored URL. */
   client?: SanityClient
-  value: SanityImageSource
-  width?: number
-  height?: number
+  /** Replaces `https://cdn.sanity.io` in the returned URL. */
   cdnBaseUrl?: string
 }
 
-export function buildSanityImageUrl({
-  client,
-  value,
-  width,
-  height,
-  cdnBaseUrl,
-}: BuildSanityImageUrlArgs): string | null {
+/**
+ * The one public image URL builder. Accepts a flat populated asset, a full media document,
+ * an image URL, or a Sanity asset reference. Stored URLs need no client or network request.
+ * Returns `null` when the value has no image.
+ */
+export function buildSanityImageUrl(
+  value: SanityImageSource,
+  options: BuildSanityImageUrlOptions = {}
+): string | null {
+  const { client, cdnBaseUrl, ...size } = options
   if (value == null) return null
 
-  if (!v.is(v.string(), value)) {
-    if ('sync' in value && !isMediaAssetAvailable(value)) {
-      return null
-    }
+  if (!v.is(v.string(), value) && 'sync' in value && !isMediaAssetAvailable(value)) {
+    return null
   }
 
   const storedUrl = !v.is(v.string(), value) && 'url' in value ? value.url?.trim() : undefined
   if (storedUrl && isSanityCompatibleHost(storedUrl)) {
-    return withImageParams(storedUrl, { width, height })
+    return isImagePath(storedUrl) ? applyImageParams(storedUrl, size) : storedUrl
   }
 
   const ref = resolveImageFileRef(value)
-  if (!ref) {
-    if (storedUrl) return storedUrl
-    return null
-  }
+  if (!ref) return storedUrl || null
 
   if (!client) {
     throw new Error(
@@ -63,11 +57,17 @@ export function buildSanityImageUrl({
   }
 
   let builder = createImageUrlBuilder(client).image(ref)
+  if (size.width) builder = builder.width(size.width)
+  if (size.height) builder = builder.height(size.height)
+  if (size.fit) builder = builder.fit(size.fit)
+  if (size.quality != null) builder = builder.quality(size.quality)
+  if (size.rect) {
+    const { left, top, width, height } = size.rect
+    builder = builder.rect(left, top, width, height)
+  }
+  if (size.autoFormat !== false) builder = builder.auto('format')
 
-  if (width) builder = builder.width(width)
-  if (height) builder = builder.height(height)
-
-  const url = builder.auto('format').url()
+  const url = builder.url()
   if (!url) return null
 
   if (cdnBaseUrl && cdnBaseUrl.trim().length > 0) {
@@ -89,11 +89,4 @@ export function resolveAssetDocumentUrl(value: SanityImageSource): string | null
   }
 
   return null
-}
-
-/** Applies width and height to Sanity image URLs only; file URLs stay unchanged. */
-function withImageParams(url: string, size: { width?: number; height?: number }): string {
-  const path = new URL(url).pathname
-  if (!IMAGE_PATH.test(path)) return url
-  return appendTransformParams(url, size)
 }

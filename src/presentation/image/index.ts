@@ -12,4 +12,3 @@ export {
   resolvePlaceholderBlurDataUrl,
   SANITY_IMAGE_DEFAULT_BLUR_DATA_URL,
 } from './resolvePlaceholderBlurDataUrl'
-export { type SanityCdnUrlOptions, sanityCdnUrl } from './sanityCdnUrl'

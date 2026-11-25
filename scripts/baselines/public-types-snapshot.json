@@ -16,9 +16,9 @@
       "declaration": "buildSanityImageUrl"
     },
     {
-      "name": "BuildSanityImageUrlArgs",
+      "name": "BuildSanityImageUrlOptions",
       "kind": "type",
-      "declaration": "type BuildSanityImageUrlArgs"
+      "declaration": "type BuildSanityImageUrlOptions"
     },
     {
       "name": "classifySanityAssetType",
@@ -404,11 +404,6 @@
       "name": "resolveMediaId",
       "kind": "value",
       "declaration": "resolveMediaId"
-    },
-    {
-      "name": "resolvePublicUrl",
-      "kind": "value",
-      "declaration": "resolvePublicUrl"
     },
     {
       "name": "resolveSanityStorageMode",
@@ -819,11 +814,6 @@
   ],
   "./next": [
     {
-      "name": "appendSanityCdnParams",
-      "kind": "value",
-      "declaration": "appendSanityCdnParams"
-    },
-    {
       "name": "createSanityImage",
       "kind": "value",
       "declaration": "createSanityImage"
@@ -897,16 +887,6 @@
       "name": "SANITY_IMAGE_DEFAULT_BLUR_DATA_URL",
       "kind": "value",
       "declaration": "SANITY_IMAGE_DEFAULT_BLUR_DATA_URL"
-    },
-    {
-      "name": "sanityCdnUrl",
-      "kind": "value",
-      "declaration": "sanityCdnUrl"
-    },
-    {
-      "name": "SanityCdnUrlOptions",
-      "kind": "type",
-      "declaration": "type SanityCdnUrlOptions"
     },
     {
       "name": "SanityImage",

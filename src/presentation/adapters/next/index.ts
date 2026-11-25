@@ -9,8 +9,6 @@ export {
   resolvePlaceholderBlurDataUrl,
   resolveSanityImagePopulatedAsset,
   SANITY_IMAGE_DEFAULT_BLUR_DATA_URL,
-  type SanityCdnUrlOptions,
-  sanityCdnUrl,
 } from '@/presentation/image'
 export { type CreateSanityImageOptions, createSanityImage } from './SanityImage/createSanityImage'
 export {
@@ -25,7 +23,6 @@ export {
   type SanityImageInteractiveProps,
 } from './SanityImage/SanityImageInteractive'
 export {
-  appendSanityCdnParams,
   type CreateSanityImageLoaderOptions,
   createSanityImageLoader,
   sanityImageLoader,

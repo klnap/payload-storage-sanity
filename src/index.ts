@@ -52,7 +52,7 @@ export {
   verifySanityWebhookSignature,
 } from '@/features/asset-sync'
 export {
-  type BuildSanityImageUrlArgs,
+  type BuildSanityImageUrlOptions,
   buildSanityImageUrl,
   hasResolvableMediaUrl,
   imageDimensionsFromMedia,
@@ -60,7 +60,6 @@ export {
   resolveAssetDocumentUrl,
   resolveImageFileRef,
   resolveMediaId,
-  resolvePublicUrl,
   SANITY_ADMIN_THUMBNAIL_WIDTH,
   type SanityImageSource,
   sanityAdminThumbnail,
