@@ -309,9 +309,27 @@ During Save, the upload area shows an "Uploading…" state and disables its cont
 
 ### Folders
 
-Folders group uploads in [`sanity-plugin-media`](https://www.sanity.io/plugins/sanity-plugin-media) inside Sanity Studio. Each collection defaults to the `Payload` folder. Set another with `collections.<slug>.folder`.
+Each collection uploads into a logical folder, `Payload` by default. Set another with `collections.<slug>.folder`. The package writes the same folder model that `sanity-plugin-media` uses in Sanity Studio: a `media.folder` document with a `name` and a weak `parent`, and a weak `opt.media.folder` reference on each asset. Nested paths create the missing folders.
 
-Folders are a logical grouping. They do not change URLs. Existing assets keep their folder, so a shared asset is not moved by a later upload. The folder rules are in [docs/configuration.md](./docs/configuration.md#folders).
+Folders are a logical grouping. They do not change URLs. Existing assets keep their folder, so a shared asset is not moved by a later upload.
+
+Sanity Studio and `sanity-plugin-media` are not needed for uploads or CDN delivery. Install the plugin when you want to browse this folder hierarchy in the Studio media browser. The folder model requires `sanity-plugin-media` 6.1.0 or later:
+
+```bash
+bun add sanity-plugin-media
+```
+
+```ts
+import { defineConfig } from 'sanity'
+import { media } from 'sanity-plugin-media'
+
+export default defineConfig({
+  // Existing configuration
+  plugins: [media()],
+})
+```
+
+Folders are not Media Library folders. Sanity's Media Library uses its own folder system, which this package does not write to. The folder rules are in [docs/configuration.md](./docs/configuration.md#folders).
 
 ## Media fields
 
