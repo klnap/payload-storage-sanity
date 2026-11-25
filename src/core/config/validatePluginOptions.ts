@@ -45,17 +45,25 @@ export function validateSanityStoragePluginOptions(options: SanityStoragePluginO
           '[@klnap/payload-storage-sanity] `collections` keys must be non-empty Payload collection slugs.'
         )
       }
+      if (typeof collectionOptions === 'boolean') continue
       if (
-        collectionOptions !== true &&
-        (collectionOptions == null ||
-          typeof collectionOptions !== 'object' ||
-          Array.isArray(collectionOptions))
+        collectionOptions == null ||
+        typeof collectionOptions !== 'object' ||
+        Array.isArray(collectionOptions)
       ) {
         throw new Error(
-          `[@klnap/payload-storage-sanity] \`collections.${slug}\` must be true or a collection options object.`
+          `[@klnap/payload-storage-sanity] \`collections.${slug}\` must be a boolean or a collection options object.`
         )
       }
-      if (collectionOptions !== true && collectionOptions.folder !== undefined) {
+      if (
+        collectionOptions.enabled !== undefined &&
+        typeof collectionOptions.enabled !== 'boolean'
+      ) {
+        throw new Error(
+          `[@klnap/payload-storage-sanity] \`collections.${slug}.enabled\` must be a boolean.`
+        )
+      }
+      if (collectionOptions.folder !== undefined) {
         try {
           parseSanityAssetFolderPath(collectionOptions.folder)
         } catch (error) {

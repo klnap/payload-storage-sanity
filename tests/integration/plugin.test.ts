@@ -131,6 +131,92 @@ describe('sanityStorage', () => {
     expect(config.collections?.find(({ slug }) => slug === 'products')?.upload).toBe(true)
   })
 
+  test('enabled: false and false exclude a collection without touching its upload config', () => {
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'documents', upload: true, fields: [] },
+        { slug: 'privateFiles', upload: true, fields: [] },
+      ],
+      {
+        collections: {
+          media: { enabled: true },
+          documents: { enabled: false, folder: 'ignored' },
+          privateFiles: false,
+        },
+      }
+    )
+
+    expect(config.collections?.find(({ slug }) => slug === 'media')?.upload).toMatchObject({
+      adapter: 'sanity',
+    })
+    for (const slug of ['documents', 'privateFiles']) {
+      const collection = config.collections?.find((entry) => entry.slug === slug)
+      expect(collection?.upload).toBe(true)
+      expect(collection?.fields).toEqual([])
+      expect(collection?.hooks?.afterChange ?? []).toHaveLength(0)
+    }
+  })
+
+  test('object without enabled and {} enable with defaults', () => {
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'documents', upload: true, fields: [] },
+      ],
+      { collections: { media: {}, documents: { folder: 'website/documents' } } }
+    )
+
+    for (const slug of ['media', 'documents']) {
+      expect(config.collections?.find((entry) => entry.slug === slug)?.upload).toMatchObject({
+        adapter: 'sanity',
+      })
+    }
+  })
+
+  test('excluded collection with its own storage adapter is left alone, not rejected', () => {
+    const customUpload = { staticDir: '/tmp/private', adapter: () => ({}) }
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'privateFiles', upload: customUpload, fields: [] } as unknown as CollectionConfig,
+      ],
+      { collections: { media: true, privateFiles: { enabled: false } } }
+    )
+
+    expect(config.collections?.find((entry) => entry.slug === 'privateFiles')?.upload).toBe(
+      customUpload as never
+    )
+  })
+
+  test('explicit map never includes unlisted collections, and excluded typos still fail', () => {
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'products', upload: true, fields: [] },
+      ],
+      { collections: { media: true } }
+    )
+    expect(config.collections?.find(({ slug }) => slug === 'products')?.upload).toBe(true)
+
+    expect(() =>
+      applyPluginOptions([{ slug: 'media', upload: true, fields: [] }], {
+        collections: { mediaa: false } as never,
+      })
+    ).toThrow(/does not exist/)
+  })
+
+  test('rejects a non-boolean enabled flag', () => {
+    expect(() =>
+      sanityStorage({
+        projectId: 'demo',
+        dataset: 'production',
+        token: 'token',
+        collections: { media: { enabled: 'yes' as never } },
+      })
+    ).toThrow(/enabled.*boolean/)
+  })
+
   test('treats an empty mapping and no eligible uploads as a no-op', () => {
     const incoming = {
       secret: 'test',
@@ -282,8 +368,8 @@ describe('sanityStorage', () => {
     const media = config.collections?.find((c) => c.slug === 'media')
     expect(media?.upload).toMatchObject({
       disableLocalStorage: true,
-      crop: false,
-      focalPoint: false,
+      crop: true,
+      focalPoint: true,
       hideRemoveFile: false,
     })
     const uploadConfig = media?.upload

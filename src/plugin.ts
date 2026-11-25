@@ -40,6 +40,12 @@ function hasStorageAdapter(collection: NonNullable<Config['collections']>[number
   )
 }
 
+/** `true`, `{}` and objects without `enabled: false` are enabled; `false` excludes. */
+function isCollectionEnabled(value: boolean | SanityStorageCollectionOptions | undefined): boolean {
+  if (typeof value === 'boolean') return value
+  return value?.enabled !== false
+}
+
 function resolveCollections(
   options: SanityStoragePluginOptions,
   config: Config,
@@ -52,18 +58,24 @@ function resolveCollections(
     return Object.fromEntries(
       payloadCollections
         .filter((collection) => hasUpload(collection))
-        .filter((collection) => !cloudStorageEnabled || !hasStorageAdapter(collection))
+        // Collections with their own adapter are never rewritten by discovery, in any mode.
+        .filter((collection) => !hasStorageAdapter(collection))
         .map(({ slug }) => [slug, true])
     )
   }
 
-  for (const slug of Object.keys(configured)) {
+  const enabled: SelectedCollections = {}
+
+  for (const [slug, value] of Object.entries(configured)) {
+    // Every key must name a real collection, so typos fail even for excluded entries.
     const collection = payloadCollections.find((entry) => entry.slug === slug)
     if (!collection) {
       throw new Error(
         `payload-storage-sanity: configured collection "${slug}" does not exist in Payload config`
       )
     }
+    if (!isCollectionEnabled(value)) continue
+
     if (!hasUpload(collection)) {
       throw new Error(
         `payload-storage-sanity: configured collection "${slug}" must have upload enabled`
@@ -74,9 +86,10 @@ function resolveCollections(
         `payload-storage-sanity: collection "${slug}" already has a storage adapter; refusing to replace it`
       )
     }
+    enabled[slug] = typeof value === 'object' ? value : true
   }
 
-  return configured as SelectedCollections
+  return enabled
 }
 
 export function sanityStorage(options: SanityStorageOptions): Plugin {

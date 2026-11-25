@@ -88,6 +88,11 @@ export type {
 } from './uploadMaxSizeTypes'
 
 export type SanityStorageCollectionOptions = {
+  /**
+   * `false` excludes the collection: no Sanity storage, fields, hooks, endpoints or admin changes.
+   * @default true
+   */
+  enabled?: boolean
   /** Per-collection admin UX overrides (merged with plugin-level `admin`). */
   admin?: SanityStorageAdminOptions
   /**
@@ -127,7 +132,11 @@ export type SanityStoragePluginOptions = {
    * `off` — skip cloud-storage registration; collection hooks/endpoints still apply when configured.
    */
   mode?: SanityStorageMode
-  collections?: Partial<Record<UploadCollectionSlug, true | SanityStorageCollectionOptions>>
+  /**
+   * Upload collections to enable. Omit to discover eligible upload collections automatically.
+   * `true` and `{}` enable with defaults; `false` or `enabled: false` exclude the collection.
+   */
+  collections?: Partial<Record<UploadCollectionSlug, boolean | SanityStorageCollectionOptions>>
   populate?: SanityStoragePopulateConfig
   sync?: SanityStorageSyncConfig
   /** SHA-1 deduplication on create (`mode: 'full'` only). Default `false` — set `dedupeUploads: true` to opt in. */

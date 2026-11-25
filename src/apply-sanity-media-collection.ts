@@ -1,5 +1,9 @@
 import type { CollectionConfig, Field, UploadConfig } from 'payload'
-import type { SanityStorageModeResolution, SanityStoragePluginOptions } from '@/core/config'
+import type {
+  SanityStorageCollectionOptions,
+  SanityStorageModeResolution,
+  SanityStoragePluginOptions,
+} from '@/core/config'
 import { resolveCollectionAdmin } from '@/core/config'
 import { SANITY_ADMIN_THUMBNAIL_WIDTH, sanityAdminThumbnail } from '@/features/media/cdn'
 import {
@@ -115,7 +119,8 @@ function collectionUploadConfig(collection: CollectionConfig): UploadConfig {
 
 export type ApplySanityMediaCollectionContext = {
   options: SanityStoragePluginOptions
-  collections: NonNullable<SanityStoragePluginOptions['collections']>
+  /** Enabled collections only; `false` entries are removed before this step. */
+  collections: Record<string, true | SanityStorageCollectionOptions>
   configuredMediaSlugs: Set<string>
   localizationLocales: LocaleLike[]
   pluginAdmin: SanityStoragePluginOptions['admin']
@@ -167,8 +172,8 @@ export function applySanityStorageToMediaCollection(
       ...uploadConfig,
       disableLocalStorage: collOptions === true ? true : (collOptions.disableLocalStorage ?? true),
       imageSizes: [],
-      crop: uploadConfig.crop ?? false,
-      focalPoint: uploadConfig.focalPoint ?? false,
+      crop: uploadConfig.crop ?? true,
+      focalPoint: uploadConfig.focalPoint ?? true,
       hideRemoveFile: uploadConfig.hideRemoveFile ?? false,
       displayPreview: uploadConfig.displayPreview ?? true,
       adminThumbnail:
