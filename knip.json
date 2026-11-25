@@ -14,7 +14,8 @@
     "tests/unit/consumers/next/*.ts",
     "scripts/**/*.mjs",
     "scripts/**/*.cjs",
-    "scripts/**/*.js"
+    "scripts/**/*.js",
+    "src/admin/tailwind/*.css"
   ],
   "project": ["src/**/*.{ts,tsx,css}", "tests/**/*.{ts,tsx}"],
   "ignoreExportsUsedInFile": {
