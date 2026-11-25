@@ -53,6 +53,26 @@
   ],
   "./admin": [
     {
+      "name": "GalleryList",
+      "kind": "value",
+      "declaration": "GalleryList"
+    },
+    {
+      "name": "MediaAssetUpload",
+      "kind": "value",
+      "declaration": "MediaAssetUpload"
+    },
+    {
+      "name": "MediaReferences",
+      "kind": "value",
+      "declaration": "MediaReferences"
+    },
+    {
+      "name": "MediaUploadBusyShield",
+      "kind": "value",
+      "declaration": "MediaUploadBusyShield"
+    },
+    {
       "name": "SanityStorageStyles",
       "kind": "value",
       "declaration": "SanityStorageStyles"

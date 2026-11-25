@@ -14,7 +14,13 @@
   },
   "./admin": {
     "default": false,
-    "runtime": ["SanityStorageStyles"],
+    "runtime": [
+      "GalleryList",
+      "MediaAssetUpload",
+      "MediaReferences",
+      "MediaUploadBusyShield",
+      "SanityStorageStyles"
+    ],
     "types": []
   },
   "./client": {
