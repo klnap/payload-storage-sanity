@@ -63,6 +63,11 @@
       "declaration": "MediaAssetUpload"
     },
     {
+      "name": "MediaMetadataInspector",
+      "kind": "value",
+      "declaration": "MediaMetadataInspector"
+    },
+    {
       "name": "MediaReferences",
       "kind": "value",
       "declaration": "MediaReferences"
@@ -71,6 +76,11 @@
       "name": "MediaUploadBusyShield",
       "kind": "value",
       "declaration": "MediaUploadBusyShield"
+    },
+    {
+      "name": "MediaUsageInspector",
+      "kind": "value",
+      "declaration": "MediaUsageInspector"
     },
     {
       "name": "SanityStorageStyles",

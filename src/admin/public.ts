@@ -1,5 +1,7 @@
 export { GalleryList } from './gallery/gallery-list'
+export { MediaMetadataInspector } from './metadata/MediaMetadataInspector'
 export { SanityStorageStyles } from './SanityStorageStyles'
 export { MediaAssetUpload } from './upload/MediaAssetUpload'
 export { MediaUploadBusyShield } from './upload/MediaUploadBusyShield'
 export { MediaReferences } from './usage/MediaReferences'
+export { MediaUsageInspector } from './usage/MediaUsageInspector'

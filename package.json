@@ -73,7 +73,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo",
-    "build": "bun run build:dist",
+    "build": "bun run build:dist && bun run check:public-api",
     "build:dist": "bun scripts/build-dist.mjs",
     "check:dist-alias": "bun scripts/check-dist-alias.mjs",
     "check:dist-imports": "bun scripts/check-dist-relative-imports.mjs",

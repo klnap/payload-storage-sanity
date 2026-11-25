@@ -17,8 +17,10 @@
     "runtime": [
       "GalleryList",
       "MediaAssetUpload",
+      "MediaMetadataInspector",
       "MediaReferences",
       "MediaUploadBusyShield",
+      "MediaUsageInspector",
       "SanityStorageStyles"
     ],
     "types": []

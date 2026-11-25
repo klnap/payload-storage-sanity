@@ -4,7 +4,7 @@
  * Run with Bun so extensionless dist imports resolve (bundler-first dist layout).
  */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -34,6 +34,14 @@ function diffSets(label, expected, actual) {
   return lines
 }
 
+function sourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) return sourceFiles(path)
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [path] : []
+  })
+}
+
 const contract = JSON.parse(readFileSync(contractPath, 'utf8'))
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const errors = []
@@ -43,6 +51,18 @@ const packageSubpaths = Object.keys(packageJson.exports).filter(
 )
 errors.push(...diffSets('package exports', expectedSubpaths, packageSubpaths))
 errors.push(...diffSets('public API contract entries', expectedSubpaths, Object.keys(contract)))
+
+const adminExports = new Set(contract['./admin']?.runtime ?? [])
+for (const path of sourceFiles(join(root, 'src'))) {
+  const source = readFileSync(path, 'utf8')
+  for (const [, name] of source.matchAll(/@klnap\/payload-storage-sanity\/admin#([\w$]+)/g)) {
+    if (!adminExports.has(name)) {
+      errors.push(
+        `admin import path ${name}: referenced in ${path.slice(root.length + 1)} but missing from ./admin exports`
+      )
+    }
+  }
+}
 
 for (const subpath of Object.keys(SUBPATH_TO_DIST)) {
   const entry = contract[subpath]
