@@ -132,6 +132,7 @@
     "publint": "^0.3.25",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "sharp": "0.35.5",
     "tailwindcss": "^4.3.4",
     "tsc-alias": "^1.9.10",
     "typescript": "7.0.2",
