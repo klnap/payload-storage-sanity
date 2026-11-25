@@ -123,6 +123,7 @@
       "SanityMediaDocument",
       "SanityMediaSyncFields",
       "SanityPaletteSwatch",
+      "SanityStorageCollectionOptions",
       "SanityStorageMode",
       "SanityStorageOptions",
       "SanityStoragePluginOptions",

@@ -556,6 +556,11 @@
       "declaration": "sanityStorage"
     },
     {
+      "name": "SanityStorageCollectionOptions",
+      "kind": "type",
+      "declaration": "SanityStorageCollectionOptions"
+    },
+    {
       "name": "SanityStorageMode",
       "kind": "type",
       "declaration": "SanityStorageMode"
@@ -776,6 +781,11 @@
       "name": "SanityAdminThumbnailOptions",
       "kind": "type",
       "declaration": "type SanityAdminThumbnailOptions"
+    },
+    {
+      "name": "SanityStorageStyles",
+      "kind": "value",
+      "declaration": "SanityStorageStyles"
     },
     {
       "name": "UnavailableAssetRecovery",

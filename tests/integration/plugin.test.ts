@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { CollectionConfig, Config, Field } from 'payload'
 
 import { sanityStorage } from '../../src/plugin'
@@ -39,9 +40,7 @@ function applyPlugin(collections: Config['collections']): Config {
 
 function applyPluginOptions(
   collections: Config['collections'],
-  options: Omit<Parameters<typeof sanityStorage>[0], 'collections'> & {
-    collections?: Record<string, true>
-  } = {}
+  options: Omit<Parameters<typeof sanityStorage>[0], 'projectId' | 'dataset' | 'token'> = {}
 ): Config {
   const plugin = sanityStorage({
     projectId: 'demo',
@@ -87,6 +86,156 @@ describe('sanityStorage', () => {
       './HostProvider',
       { path: '@klnap/payload-storage-sanity/admin#SanityStorageStyles' },
     ])
+  })
+
+  test('discovers upload collections with boolean and object upload config', () => {
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'documents', upload: { staticDir: '/tmp/documents' }, fields: [] },
+        { slug: 'pages', fields: [] },
+      ],
+      { collections: undefined }
+    )
+
+    expect(config.collections?.find(({ slug }) => slug === 'media')?.upload).toMatchObject({
+      adapter: 'sanity',
+    })
+    expect(config.collections?.find(({ slug }) => slug === 'documents')?.upload).toMatchObject({
+      adapter: 'sanity',
+    })
+    expect(config.collections?.find(({ slug }) => slug === 'pages')?.upload).toBeUndefined()
+  })
+
+  test('limits explicit collection selection and preserves mixed options', () => {
+    const config = applyPluginOptions(
+      [
+        { slug: 'media', upload: true, fields: [] },
+        { slug: 'documents', upload: true, fields: [] },
+        { slug: 'products', upload: true, fields: [] },
+      ],
+      {
+        collections: {
+          media: true,
+          documents: { folder: 'website/documents' },
+        },
+      }
+    )
+
+    expect(config.collections?.find(({ slug }) => slug === 'media')?.upload).toMatchObject({
+      adapter: 'sanity',
+    })
+    expect(config.collections?.find(({ slug }) => slug === 'documents')?.upload).toMatchObject({
+      adapter: 'sanity',
+    })
+    expect(config.collections?.find(({ slug }) => slug === 'products')?.upload).toBe(true)
+  })
+
+  test('treats an empty mapping and no eligible uploads as a no-op', () => {
+    const incoming = {
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config
+    expect(
+      sanityStorage({
+        projectId: 'demo',
+        dataset: 'production',
+        token: 'token',
+        collections: {},
+      })(incoming)
+    ).toBe(incoming)
+
+    const noUploads = { ...incoming, collections: [{ slug: 'pages', fields: [] }] } as Config
+    expect(
+      sanityStorage({
+        projectId: 'demo',
+        dataset: 'production',
+        token: 'token',
+      })(noUploads)
+    ).toBe(noUploads)
+
+    const externallyStored = {
+      ...incoming,
+      collections: [{ slug: 'media', upload: { adapter: 's3' }, fields: [] }],
+    } as Config
+    expect(
+      sanityStorage({
+        projectId: 'demo',
+        dataset: 'production',
+        token: 'token',
+      })(externallyStored)
+    ).toBe(externallyStored)
+  })
+
+  test('mode off keeps the Payload upload adapter unregistered', () => {
+    const config = applyPluginOptions([{ slug: 'media', upload: true, fields: [] }], {
+      mode: 'off',
+    })
+    const media = config.collections?.find(({ slug }) => slug === 'media')
+    expect(media?.upload).not.toHaveProperty('adapter')
+  })
+
+  test('rejects unknown slugs, non-upload collections, and existing adapters', () => {
+    const options = {
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    } as const
+    const plugin = sanityStorage(options)
+    const base = { secret: 'test', db: {} as Config['db'] }
+
+    expect(() => plugin({ ...base, collections: [] } as Config)).toThrow(
+      'configured collection "media" does not exist'
+    )
+    expect(() =>
+      plugin({
+        ...base,
+        collections: [{ slug: 'media', fields: [] }],
+      } as Config)
+    ).toThrow('configured collection "media" must have upload enabled')
+    expect(() =>
+      plugin({
+        ...base,
+        collections: [{ slug: 'media', upload: { adapter: 's3' }, fields: [] }],
+      } as Config)
+    ).toThrow('collection "media" already has a storage adapter')
+  })
+
+  test('does not silently replace another Payload cloud adapter in either plugin order', async () => {
+    const otherAdapter = () => ({
+      name: 'other',
+      handleUpload: async () => {},
+      handleDelete: async () => {},
+      staticHandler: async () => new Response(),
+    })
+    const otherStorage = cloudStoragePlugin({
+      collections: { media: { adapter: otherAdapter } },
+    })
+    const incoming = {
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config
+    const sanity = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    })
+
+    expect(() => sanity(otherStorage(incoming))).toThrow(
+      'collection "media" already has a storage adapter'
+    )
+
+    const reversed = otherStorage(sanity(incoming))
+    if (reversed instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+    await expect(reversed.onInit?.({ config: reversed } as never)).rejects.toThrow(
+      'another storage plugin replaced the adapter for collection "media"'
+    )
   })
 
   test('sets defaultPopulate and forceSelect on media collections for preset default', () => {
@@ -397,7 +546,7 @@ describe('sanityStorage', () => {
         db: {} as Config['db'],
         collections: [],
       } as Config)
-    ).toThrow('configured upload collection "media" must exist')
+    ).toThrow('configured collection "media" does not exist in Payload config')
   })
 
   test('rejects host endpoints that shadow Sanity sync routes', () => {

@@ -3,14 +3,28 @@ import type { SanityStoragePluginOptions } from '@/core/config'
 import { validateSanityStoragePluginOptions } from '@/core/config'
 
 describe('validateSanityStoragePluginOptions', () => {
-  test('accepts folder paths and rejects empty or invalid folder values', () => {
+  test('validates per-collection folder paths', () => {
     const base = { projectId: 'p', dataset: 'd', token: 't', collections: { media: true as const } }
     expect(() =>
-      validateSanityStoragePluginOptions({ ...base, folder: '/Payload/Blog' })
+      validateSanityStoragePluginOptions({
+        ...base,
+        collections: { media: { folder: '/Payload/Blog/' } },
+      })
     ).not.toThrow()
-    for (const folder of ['', ' / / ', null, 12]) {
+    for (const folder of [
+      '',
+      ' / / ',
+      'media//images',
+      'media/../images',
+      'media\\images',
+      null,
+      12,
+    ]) {
       expect(() =>
-        validateSanityStoragePluginOptions({ ...base, folder: folder as never })
+        validateSanityStoragePluginOptions({
+          ...base,
+          collections: { media: { folder: folder as never } },
+        })
       ).toThrow(/folder/)
     }
   })

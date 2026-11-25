@@ -1,4 +1,5 @@
 export type {
+  SanityStorageCollectionOptions,
   SanityStorageMode,
   SanityStoragePluginOptions,
   SanityStorageUploadMaxSizeInput,

@@ -10,7 +10,7 @@ export function resolvePopulateOptionsForCollection(
   pluginOptions: SanityStoragePluginOptions,
   collectionSlug: string
 ): ResolvedPopulateOptions {
-  const coll = pluginOptions.collections[collectionSlug]
+  const coll = pluginOptions.collections?.[collectionSlug]
   const collPopulate =
     coll != null && typeof coll === 'object' && 'populate' in coll
       ? (coll as { populate?: SanityStoragePluginOptions['populate'] }).populate

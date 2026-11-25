@@ -1,5 +1,5 @@
 import type { ClientConfig } from '@sanity/client'
-import type { Field } from 'payload'
+import type { Field, UploadCollectionSlug } from 'payload'
 import type { SanityStorageMode } from './storageMode'
 import type { SanitySyncAccessFn } from './syncAccess'
 import type { SanityStorageUploadMaxSizeInput } from './uploadMaxSizeTypes'
@@ -108,6 +108,11 @@ export type SanityStorageCollectionOptions = {
    * Max upload size in bytes (`default` + optional `byType`). Merged with plugin-level `uploadMaxSize`; collection fields win per key.
    */
   uploadMaxSize?: SanityStorageUploadMaxSizeInput
+  /**
+   * Logical folder path for `sanity-plugin-media` (not a Media Library directory).
+   * @default 'Payload'
+   */
+  folder?: string
 }
 
 export type SanityStoragePluginOptions = {
@@ -120,15 +125,13 @@ export type SanityStoragePluginOptions = {
   /** Custom Sanity HTTP transport, for testing or network proxy configuration. */
   resolveFetch?: ClientConfig['resolveFetch']
   cdnBaseUrl?: string
-  /** Sanity media folder path for new uploads and replacements. @default 'Payload' */
-  folder?: string
   /**
    * `full` — Sanity uploads + adapter (default).
    * `fields-only` — inject Sanity fields without the storage adapter.
    * `off` — skip cloud-storage registration; collection hooks/endpoints still apply when configured.
    */
   mode?: SanityStorageMode
-  collections: Record<string, true | SanityStorageCollectionOptions>
+  collections?: Partial<Record<UploadCollectionSlug, true | SanityStorageCollectionOptions>>
   populate?: SanityStoragePopulateConfig
   sync?: SanityStorageSyncConfig
   /** SHA-1 deduplication on create (`mode: 'full'` only). Default `false` — set `dedupeUploads: true` to opt in. */

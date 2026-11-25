@@ -30,8 +30,9 @@ export async function assignSanityAssetFolder(
   mutations.push({
     patch: {
       id: assetId,
-      setIfMissing: { opt: {}, 'opt.media': {} },
-      set: {
+      setIfMissing: {
+        opt: {},
+        'opt.media': {},
         'opt.media.folder': { _type: 'reference', _ref: folderId, _weak: true },
       },
     },

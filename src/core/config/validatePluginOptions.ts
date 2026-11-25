@@ -28,7 +28,46 @@ export function validateSanityStoragePluginOptions(options: SanityStoragePluginO
     throw new Error('[@klnap/payload-storage-sanity] `dataset` is required on sanityStorage().')
   }
 
-  parseSanityAssetFolderPath(options.folder === undefined ? 'Payload' : options.folder)
+  if (options.collections !== undefined) {
+    if (
+      options.collections == null ||
+      typeof options.collections !== 'object' ||
+      Array.isArray(options.collections)
+    ) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `collections` must be an object keyed by Payload upload collection slug.'
+      )
+    }
+
+    for (const [slug, collectionOptions] of Object.entries(options.collections)) {
+      if (!slug.trim()) {
+        throw new Error(
+          '[@klnap/payload-storage-sanity] `collections` keys must be non-empty Payload collection slugs.'
+        )
+      }
+      if (
+        collectionOptions !== true &&
+        (collectionOptions == null ||
+          typeof collectionOptions !== 'object' ||
+          Array.isArray(collectionOptions))
+      ) {
+        throw new Error(
+          `[@klnap/payload-storage-sanity] \`collections.${slug}\` must be true or a collection options object.`
+        )
+      }
+      if (collectionOptions !== true && collectionOptions.folder !== undefined) {
+        try {
+          parseSanityAssetFolderPath(collectionOptions.folder)
+        } catch (error) {
+          throw new Error(
+            `[@klnap/payload-storage-sanity] \`collections.${slug}.folder\` is invalid: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          )
+        }
+      }
+    }
+  }
 
   const storageMode = resolveSanityStorageMode({ mode: modeOption })
   if (storageMode.cloudStorageEnabled && !token?.trim()) {

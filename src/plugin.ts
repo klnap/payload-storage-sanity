@@ -1,7 +1,7 @@
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { PluginOptions as CloudStoragePluginOptions } from '@payloadcms/plugin-cloud-storage/types'
 import type { Config, Endpoint, Plugin } from 'payload'
-import type { SanityStoragePluginOptions } from '@/core/config'
+import type { SanityStorageCollectionOptions, SanityStoragePluginOptions } from '@/core/config'
 import {
   applyPayloadUploadFileSizeLimit,
   computeMaxUploadByteLimit,
@@ -26,6 +26,59 @@ import { applySanityStorageToMediaCollection } from './apply-sanity-media-collec
 
 export type SanityStorageOptions = SanityStoragePluginOptions
 
+type SelectedCollections = Record<string, true | SanityStorageCollectionOptions>
+
+function hasUpload(collection: NonNullable<Config['collections']>[number]): boolean {
+  return collection.upload === true || (collection.upload != null && collection.upload !== false)
+}
+
+function hasStorageAdapter(collection: NonNullable<Config['collections']>[number]): boolean {
+  return (
+    typeof collection.upload === 'object' &&
+    collection.upload !== null &&
+    collection.upload.adapter != null
+  )
+}
+
+function resolveCollections(
+  options: SanityStoragePluginOptions,
+  config: Config,
+  cloudStorageEnabled: boolean
+): SelectedCollections {
+  const configured = options.collections
+  const payloadCollections = config.collections ?? []
+
+  if (configured === undefined) {
+    return Object.fromEntries(
+      payloadCollections
+        .filter((collection) => hasUpload(collection))
+        .filter((collection) => !cloudStorageEnabled || !hasStorageAdapter(collection))
+        .map(({ slug }) => [slug, true])
+    )
+  }
+
+  for (const slug of Object.keys(configured)) {
+    const collection = payloadCollections.find((entry) => entry.slug === slug)
+    if (!collection) {
+      throw new Error(
+        `payload-storage-sanity: configured collection "${slug}" does not exist in Payload config`
+      )
+    }
+    if (!hasUpload(collection)) {
+      throw new Error(
+        `payload-storage-sanity: configured collection "${slug}" must have upload enabled`
+      )
+    }
+    if (cloudStorageEnabled && hasStorageAdapter(collection)) {
+      throw new Error(
+        `payload-storage-sanity: collection "${slug}" already has a storage adapter; refusing to replace it`
+      )
+    }
+  }
+
+  return configured as SelectedCollections
+}
+
 export function sanityStorage(options: SanityStorageOptions): Plugin {
   validateSanityStoragePluginOptions(options)
 
@@ -36,8 +89,6 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
     apiVersion,
     resolveFetch,
     cdnBaseUrl,
-    folder = 'Payload',
-    collections,
     mode: modeOption,
     dedupeUploads = false,
     preventDeleteWhenReferenced = true,
@@ -50,95 +101,98 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
   const storageMode = resolveSanityStorageMode({ mode: modeOption })
   const { cloudStorageEnabled, alwaysInsertFields } = storageMode
 
-  const firstCollectionSlug = Object.keys(collections)[0]
-  const resolvedSync = resolveSanitySyncConfig(sync, firstCollectionSlug)
-
-  // Type generation only needs the schema; uploads cannot run in that process.
-  if (cloudStorageEnabled && process.env.PAYLOAD_GENERATING_TYPES !== 'true') {
-    warnSanityStorageConfig({ projectId, dataset, token })
-  }
-
-  const collectionsWithAdapter = Object.fromEntries(
-    Object.entries(collections).map(([slug, collOptions]) => {
-      const base =
-        collOptions === true
-          ? {
-              disablePayloadAccessControl: true,
-            }
-          : {
-              prefix: collOptions.prefix,
-              disableLocalStorage: collOptions.disableLocalStorage,
-              disablePayloadAccessControl: collOptions.disablePayloadAccessControl ?? true,
-            }
-
-      return [
-        slug,
-        {
-          ...base,
-          adapter: cloudStorageEnabled
-            ? createSanityAdapter({
-                client,
-                cdnBaseUrl,
-                folder,
-                projectId,
-                dataset,
-                token,
-                dedupeUploads,
-              })
-            : null,
-        },
-      ]
-    })
-  )
-  const cloudCollections = collectionsWithAdapter as CloudStoragePluginOptions['collections']
-
-  const storagePlugin = cloudStoragePlugin({
-    enabled: cloudStorageEnabled,
-    alwaysInsertFields,
-    collections: cloudCollections,
-  })
-
-  const configuredMediaSlugs = new Set(Object.keys(collections))
-  const guardedMediaSlugs = Object.keys(collections).filter((slug) => {
-    const collectionOptions = collections[slug]
-    return typeof collectionOptions === 'object' &&
-      collectionOptions.preventDeleteWhenReferenced !== undefined
-      ? collectionOptions.preventDeleteWhenReferenced
-      : preventDeleteWhenReferenced
-  })
-  const endpoints: Endpoint[] = []
-
-  if (resolvedSync.webhook?.collectionSlug) {
-    endpoints.push(
-      createSanityWebhookEndpoint({
-        client,
-        collectionSlug: resolvedSync.webhook.collectionSlug,
-        webhookSecret: resolvedSync.webhook.secret,
-        projectId,
-        dataset,
-        path: resolvedSync.webhook.path,
-        onDeleted: resolvedSync.onDeleted,
-      })
-    )
-  }
-
-  if (resolvedSync.reconcile?.collectionSlug) {
-    endpoints.push(
-      createSanityReconcileEndpoint({
-        client,
-        collectionSlug: resolvedSync.reconcile.collectionSlug,
-        path: resolvedSync.reconcile.path,
-        access: resolvedSync.access,
-      })
-    )
-  }
-
   return (incomingConfig: Config): Config => {
+    const collections = resolveCollections(options, incomingConfig, cloudStorageEnabled)
+    const configuredMediaSlugs = new Set(Object.keys(collections))
+    const firstCollectionSlug = configuredMediaSlugs.values().next().value
+    const resolvedSync = resolveSanitySyncConfig(sync, firstCollectionSlug)
+
+    if (configuredMediaSlugs.size === 0 && !resolvedSync.enabled) {
+      return incomingConfig
+    }
+
+    // Type generation only needs the schema; uploads cannot run in that process.
+    if (cloudStorageEnabled && process.env.PAYLOAD_GENERATING_TYPES !== 'true') {
+      warnSanityStorageConfig({ projectId, dataset, token })
+    }
+
+    const collectionsWithAdapter = Object.fromEntries(
+      Object.entries(collections).map(([slug, collOptions]) => {
+        const base =
+          collOptions === true
+            ? {
+                disablePayloadAccessControl: true,
+              }
+            : {
+                prefix: collOptions.prefix,
+                disableLocalStorage: collOptions.disableLocalStorage,
+                disablePayloadAccessControl: collOptions.disablePayloadAccessControl ?? true,
+              }
+
+        return [
+          slug,
+          {
+            ...base,
+            adapter: cloudStorageEnabled
+              ? createSanityAdapter({
+                  client,
+                  cdnBaseUrl,
+                  folder: collOptions === true ? 'Payload' : (collOptions.folder ?? 'Payload'),
+                  projectId,
+                  dataset,
+                  token,
+                  dedupeUploads,
+                })
+              : null,
+          },
+        ]
+      })
+    )
+    const cloudCollections = collectionsWithAdapter as CloudStoragePluginOptions['collections']
+    const storagePlugin = cloudStoragePlugin({
+      enabled: cloudStorageEnabled,
+      alwaysInsertFields,
+      collections: cloudCollections,
+    })
+    const guardedMediaSlugs = Object.keys(collections).filter((slug) => {
+      const collectionOptions = collections[slug]
+      return typeof collectionOptions === 'object' &&
+        collectionOptions.preventDeleteWhenReferenced !== undefined
+        ? collectionOptions.preventDeleteWhenReferenced
+        : preventDeleteWhenReferenced
+    })
+    const endpoints: Endpoint[] = []
+
+    if (resolvedSync.webhook?.collectionSlug) {
+      endpoints.push(
+        createSanityWebhookEndpoint({
+          client,
+          collectionSlug: resolvedSync.webhook.collectionSlug,
+          webhookSecret: resolvedSync.webhook.secret,
+          projectId,
+          dataset,
+          path: resolvedSync.webhook.path,
+          onDeleted: resolvedSync.onDeleted,
+        })
+      )
+    }
+
+    if (resolvedSync.reconcile?.collectionSlug) {
+      endpoints.push(
+        createSanityReconcileEndpoint({
+          client,
+          collectionSlug: resolvedSync.reconcile.collectionSlug,
+          path: resolvedSync.reconcile.path,
+          access: resolvedSync.access,
+        })
+      )
+    }
+
     for (const slug of configuredMediaSlugs) {
       const collection = incomingConfig.collections?.find((entry) => entry.slug === slug)
-      if (!collection?.upload) {
+      if (!collection || !hasUpload(collection)) {
         throw new Error(
-          `payload-storage-sanity: configured upload collection "${slug}" must exist before sanityStorage() and have upload enabled`
+          `payload-storage-sanity: configured collection "${slug}" must exist and have upload enabled`
         )
       }
       if (collection.endpoints === false) {
@@ -171,11 +225,29 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
     }
     const config = storagePlugin(incomingConfig)
     const localizationLocales = getLocalizationLocales(config)
-
     const maxUploadBytes = computeMaxUploadByteLimit(pluginUploadMaxSize, collections)
+    const resolvedOptions: SanityStoragePluginOptions = { ...options, collections }
+    const priorOnInit = config.onInit
 
     let nextConfig: Config = {
       ...config,
+      onInit: async (payload) => {
+        if (cloudStorageEnabled) {
+          for (const slug of configuredMediaSlugs) {
+            const collection = payload.config.collections.find((entry) => entry.slug === slug)
+            if (
+              !collection ||
+              typeof collection.upload !== 'object' ||
+              collection.upload.adapter !== 'sanity'
+            ) {
+              throw new Error(
+                `payload-storage-sanity: another storage plugin replaced the adapter for collection "${slug}"; check plugin order`
+              )
+            }
+          }
+        }
+        await priorOnInit?.(payload)
+      },
       admin: {
         ...config.admin,
         components: {
@@ -192,7 +264,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
       endpoints: [...(config.endpoints ?? []), ...endpoints],
       collections: (config.collections ?? []).map((collection) =>
         applySanityStorageToMediaCollection(collection, {
-          options,
+          options: resolvedOptions,
           collections,
           configuredMediaSlugs,
           localizationLocales,

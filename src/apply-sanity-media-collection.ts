@@ -115,7 +115,7 @@ function collectionUploadConfig(collection: CollectionConfig): UploadConfig {
 
 export type ApplySanityMediaCollectionContext = {
   options: SanityStoragePluginOptions
-  collections: SanityStoragePluginOptions['collections']
+  collections: NonNullable<SanityStoragePluginOptions['collections']>
   configuredMediaSlugs: Set<string>
   localizationLocales: LocaleLike[]
   pluginAdmin: SanityStoragePluginOptions['admin']
