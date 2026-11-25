@@ -13,7 +13,7 @@ export function pngVariant(byteIndex: number): Buffer {
   return variant
 }
 
-export type FixtureAsset = {
+type FixtureAsset = {
   _id: string
   _type: 'sanity.imageAsset'
   _rev: string

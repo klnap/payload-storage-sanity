@@ -115,7 +115,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
   }
 
   it('returns locale-specific alt text without cross-language fallback and keeps explicit empties', async () => {
-    const { p, fixture } = await startPayload()
+    const { p } = await startPayload()
 
     const photo = await p.create({
       collection: 'media',
@@ -189,7 +189,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
   })
 
   it('persists focal point and returns it on the flat asset', async () => {
-    const { p, fixture } = await startPayload()
+    const { p } = await startPayload()
 
     const photo = await p.create({
       collection: 'media',
@@ -284,7 +284,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
   })
 
   it('populates a global relation with select at depth 1', async () => {
-    const { p, fixture } = await startPayload()
+    const { p } = await startPayload()
 
     const photo = await p.create({
       collection: 'media',
@@ -310,7 +310,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
   })
 
   it('returns the full media document to an authenticated request, not the flat asset', async () => {
-    const { p, fixture } = await startPayload()
+    const { p } = await startPayload()
 
     const photo = await p.create({
       collection: 'media',
