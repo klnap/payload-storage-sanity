@@ -151,15 +151,15 @@ sanityStorage({
 
 A `DefaultPopulateAsset` has these fields:
 
-| Field | Type | Use |
-| --- | --- | --- |
-| `id` | `string \| number` | Payload document id. |
-| `url` | `string` | Public CDN URL of the original. |
-| `width`, `height` | `number` | Original dimensions, from Sanity metadata. |
-| `aspectRatio` | `number` | Aspect ratio of the original. |
-| `focalX`, `focalY` | `number` | Focal point as percentages, from `0` to `100`. Used for `object-position`. |
-| `alt` | `string \| null` | Alt text for the request locale, with fallback. |
-| `lqip` | `string` | Low-quality placeholder, when present. |
+| Field              | Type               | Use                                                                        |
+| ------------------ | ------------------ | -------------------------------------------------------------------------- |
+| `id`               | `string \| number` | Payload document id.                                                       |
+| `url`              | `string`           | Public CDN URL of the original.                                            |
+| `width`, `height`  | `number`           | Original dimensions, from Sanity metadata.                                 |
+| `aspectRatio`      | `number`           | Aspect ratio of the original.                                              |
+| `focalX`, `focalY` | `number`           | Focal point as percentages, from `0` to `100`. Used for `object-position`. |
+| `alt`              | `string \| null`   | Alt text for the request locale, with fallback.                            |
+| `lqip`             | `string`           | Low-quality placeholder, when present.                                     |
 
 Compare that with a full document. A full document includes the Sanity asset record, sync diagnostics, and upload internals. The flat shape keeps only what a page needs to render an image.
 
@@ -213,12 +213,12 @@ import { SanityImage } from '@klnap/payload-storage-sanity/next'
 
 export function Hero({ image }: { image: DefaultPopulateAsset | null }) {
   return (
-    <div className="relative aspect-[16/9] w-full">
+    <div className='relative aspect-[16/9] w-full'>
       <SanityImage
         asset={image}
         fill
-        sizes="(max-width: 768px) 100vw, 1200px"
-        className="object-cover"
+        sizes='(max-width: 768px) 100vw, 1200px'
+        className='object-cover'
       />
     </div>
   )
@@ -258,12 +258,12 @@ Each `next/image` request becomes a Sanity URL with `w`, `q`, and `auto=format`.
 
 The plugin adds these fields to each configured upload collection. It does not replace fields you already declare.
 
-| Field | Type | Visibility | Purpose |
-| --- | --- | --- | --- |
-| `title` | text | Hidden in the field list, shown in the upload area | Optional asset title. Added only if the collection has none. |
-| `alt` | text, or a group with one text field per locale | Visible | Alt text. Added only if the collection has none. |
-| `sanity` | group with `asset` (JSON) | Hidden, read-only | The Sanity asset record. Client requests cannot write it. |
-| `sync` | group with `status`, `checkedAt`, `errorAt` | Hidden, read-only | Sync diagnostics. |
+| Field    | Type                                            | Visibility                                         | Purpose                                                      |
+| -------- | ----------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------ |
+| `title`  | text                                            | Hidden in the field list, shown in the upload area | Optional asset title. Added only if the collection has none. |
+| `alt`    | text, or a group with one text field per locale | Visible                                            | Alt text. Added only if the collection has none.             |
+| `sanity` | group with `asset` (JSON)                       | Hidden, read-only                                  | The Sanity asset record. Client requests cannot write it.    |
+| `sync`   | group with `status`, `checkedAt`, `errorAt`     | Hidden, read-only                                  | Sync diagnostics.                                            |
 
 Payload's upload support provides `filename`, `mimeType`, `filesize`, `width`, and `height`.
 
