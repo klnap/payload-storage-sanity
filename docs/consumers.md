@@ -103,7 +103,7 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | Field | Type | Notes |
 | :--- | :--- | :--- |
 | `id` | `string` \| `number` | Payload document id (UUID when `db` uses `idType: 'uuid'`). |
-| `url` | `string` | Public CDN URL (from `resolvePublicUrl`). |
+| `url` | `string` | Public CDN URL (hydrated from the stored Sanity asset path). |
 | `width` / `height` | `number` (optional) | From Sanity metadata. |
 | `aspectRatio` | `number` (optional) | |
 | `focalX` / `focalY` | `number` (optional) | Percentages, 0–100. |

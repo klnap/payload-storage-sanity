@@ -106,10 +106,10 @@ Folders use `media.folder` documents and `opt.media.folder` asset metadata. They
 
 | Import | Contents |
 | --- | --- |
-| `@klnap/payload-storage-sanity` | `sanityStorage`, `buildSanityImageUrl`, `resolvePublicUrl`, `resolveLocalizedAlt`, `DefaultPopulateAsset`, populate and sync helpers, types |
+| `@klnap/payload-storage-sanity` | `sanityStorage`, `buildSanityImageUrl`, `resolveLocalizedAlt`, `DefaultPopulateAsset`, populate and sync helpers, types |
 | `@klnap/payload-storage-sanity/client` | `createSanityClient`, `fetchSanityImageAsset` |
 | `@klnap/payload-storage-sanity/folders` | `assignSanityAssetFolder`, `parseSanityAssetFolderPath` |
 | `@klnap/payload-storage-sanity/admin` | Admin components |
-| `@klnap/payload-storage-sanity/next` | `SanityImage`, `createSanityImage`, `toSanityImageProps`, `sanityCdnUrl`, `focalObjectPosition`, loaders |
+| `@klnap/payload-storage-sanity/next` | `SanityImage`, `createSanityImage`, `toSanityImageProps`, `focalObjectPosition`, loaders |
 | `@klnap/payload-storage-sanity/next/loader` | Default export for `images.loaderFile` |
 | `@klnap/payload-storage-sanity/styles/admin-tailwind.css` | Admin stylesheet |

@@ -72,7 +72,7 @@ The other Payload database adapters do not provide this plugin's transaction-sco
 | `sync.status` (unavailable) | API `url` / `thumbnailURL` |
 | :--- | :--- |
 | `deleted`, `missing`, `error` (normalized) | Cleared on read (`sanitizeMediaDocument` / `afterRead`) |
-| `available` / unknown | Hydrated via `resolvePublicUrl` |
+| `available` / unknown | Hydrated to a public CDN URL |
 
 **Guarantee:** Storefront responses do not expose CDN URLs for rows marked unavailable when sanitization runs.
 

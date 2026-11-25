@@ -20,7 +20,7 @@ Pre-generated image sizes multiply storage and deployment work. With this packag
 ## Features
 
 - **Frontend optimization.** Populate presets return a flat, frontend-ready asset with CDN URL, dimensions, focal point, alt text, and LQIP.
-- **Image transformations.** Build responsive, cropped, and thumbnail URLs with `buildSanityImageUrl` and `resolvePublicUrl`.
+- **Image transformations.** One builder, `buildSanityImageUrl`, produces responsive, cropped, and thumbnail URLs.
 - **Next.js integration.** `SanityImage` renders a populated asset with `next/image`. A custom loader sends each width request to Sanity.
 - **Asset-level alt text.** Write alt text once per media document, translate it per locale, and reuse it everywhere the image appears.
 - **Media management.** Justified, grid, and list layouts, file-type cards for non-image files, a detail view with a metadata inspector, and logical folders.
@@ -98,7 +98,7 @@ A frontend that reads media through this package follows five steps:
 1. Payload returns the media relation, populated by the `default` preset.
 2. The preset produces a flat asset: CDN URL, dimensions, focal point, alt text, and LQIP.
 3. The component renders that asset directly. No Sanity-specific mapping is needed.
-4. A component or URL helper picks the variant: `next/image` requests each width, and `resolvePublicUrl` takes an explicit transform.
+4. A component or URL helper picks the variant: `next/image` requests each width, and `buildSanityImageUrl` takes explicit options.
 5. Sanity generates the variant, caches it on the Asset CDN, and serves later requests from cache.
 
 What this gives you:
@@ -179,54 +179,35 @@ Set `populate.localPopulate: false` to keep the flat asset on REST only. The Loc
 
 ### Image transformations
 
-Transformations are Sanity URL parameters. The package builds the URL, and Sanity processes the image on the first request.
-
-`resolvePublicUrl` and `buildSanityImageUrl` take the full media document, which is what `populate: { preset: 'full' }` returns and what the admin reads. A responsive `srcset` from a full document:
-
-```ts
-import { resolvePublicUrl } from '@klnap/payload-storage-sanity'
-
-const srcSet = [480, 960, 1440]
-  .map((width) => `${resolvePublicUrl(media, { transform: { width } })} ${width}w`)
-  .join(', ')
-```
-
-A card and a hero with explicit crops:
-
-```ts
-const card = resolvePublicUrl(media, {
-  transform: { width: 640, height: 480, fit: 'crop' },
-})
-
-const hero = resolvePublicUrl(media, {
-  transform: { width: 1600, height: 900, fit: 'crop' },
-})
-```
-
-A thumbnail that fits inside a box without cropping:
-
-```ts
-const thumb = resolvePublicUrl(media, {
-  transform: { width: 160, height: 160, fit: 'max' },
-})
-```
-
-`resolvePublicUrl` adds parameters only to image assets, adds `auto=format` by default, and returns `null` when the media is unavailable. Set `transform.autoFormat: false` to turn format negotiation off. `buildSanityImageUrl({ value, width })` takes a flat asset, a full media document, or an image URL, and applies the same width and height to each. It needs no Sanity client when the value has a URL. It returns `null` when there is no image or URL.
-
-With the default `'default'` preset, a relation is the flat asset, which has no Sanity record. The same builder resizes it:
+One function builds every transformed image URL: `buildSanityImageUrl`. It takes a flat populated asset, a full media document, an image URL, or a Sanity asset reference, and applies the same options to each:
 
 ```ts
 import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
 
-const thumb = buildSanityImageUrl({ value: image, width: 160, height: 160 })
+const card = buildSanityImageUrl(image, { width: 640, height: 480, fit: 'crop' })
+const thumb = buildSanityImageUrl(image, { width: 160, height: 160, fit: 'max' })
 ```
+
+A responsive `srcset`:
+
+```ts
+const srcSet = [480, 960, 1440]
+  .map((width) => `${buildSanityImageUrl(image, { width })} ${width}w`)
+  .join(', ')
+```
+
+Options: `width`, `height`, `fit` (`'max'`, `'min'`, `'crop'`, `'clip'`), `quality`, `rect` (a crop region in pixels), and `autoFormat` (default `true`, adds `auto=format`). Set `autoFormat: false` to turn format negotiation off.
+
+A flat asset or a full media document needs no Sanity client, because its `url` already points at the Asset CDN. Use a `client` only for a bare asset reference without a URL. Files that are not images, such as PDFs, are returned unchanged. The builder returns `null` when there is no image or URL.
 
 Sanity documents more parameters, such as `fm`, `dpr`, and `fp-x` and `fp-y`. This package does not type them. See Sanity's [image URL reference](https://www.sanity.io/docs/apis-and-sdks/image-urls).
 
-Reusable transforms are plain objects in your code. They are not a package feature:
+Reusable options are plain objects in your code. They are not a package feature:
 
 ```ts
 export const cardImage = { width: 640, height: 480, fit: 'crop' } as const
+
+buildSanityImageUrl(image, cardImage)
 ```
 
 Populate presets control what Payload returns. Transforms control the size and crop of a URL.
@@ -241,21 +222,16 @@ Render a populated asset:
 import type { DefaultPopulateAsset } from '@klnap/payload-storage-sanity'
 import { SanityImage } from '@klnap/payload-storage-sanity/next'
 
-export function Hero({ image }: { image: DefaultPopulateAsset | null }) {
+export function Hero({ image }: { image: DefaultPopulateAsset }) {
   return (
-    <div className='relative aspect-[16/9] w-full'>
-      <SanityImage
-        asset={image}
-        fill
-        sizes='(max-width: 768px) 100vw, 1200px'
-        className='object-cover'
-      />
+    <div className='relative aspect-video'>
+      <SanityImage asset={image} fill sizes='100vw' />
     </div>
   )
 }
 ```
 
-With `fill`, the parent needs a size and `position: relative`. Without `fill`, `SanityImage` uses the asset's `width` and `height`. If either is missing, it switches to `fill`.
+With `fill`, the parent needs a size and `position: relative`. `aspect-video` gives it one. Without `fill`, `SanityImage` uses the asset's `width` and `height`. If either is missing, it switches to `fill`.
 
 What `SanityImage` does with an asset:
 
