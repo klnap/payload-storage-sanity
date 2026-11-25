@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+### Fixed
+
+- Export all admin components referenced by Payload's import map from `/admin`.
+- Check admin import-map paths against public exports during `bun run build`.
+
 ## 0.2.0
 
 ### Breaking
