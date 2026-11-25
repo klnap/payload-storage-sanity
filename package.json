@@ -117,7 +117,6 @@
     "@payloadcms/richtext-lexical": "3.94.1",
     "@payloadcms/translations": "3.94.1",
     "@payloadcms/ui": "3.94.1",
-    "@swc/core": "1.16.22",
     "@tailwindcss/cli": "^4.3.5",
     "@types/bun": "^1.4.4",
     "@types/pg": "8.23.1",
