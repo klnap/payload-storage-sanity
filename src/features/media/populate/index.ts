@@ -12,7 +12,7 @@ export {
   type PopulateSelect,
 } from './explicit/fullPopulate'
 export { enrichMediaSanityMetadataForPopulate } from './metadata/enrichMetadataForPopulate'
-export { extractLqipFromMediaRow } from './metadata/extractLqip'
+
 export { focalObjectPosition } from './metadata/focalObjectPosition'
 export type { ResolveLocalizedAltContext } from './metadata/resolveLocalizedAlt'
 export { resolveLocalizedAlt } from './metadata/resolveLocalizedAlt'

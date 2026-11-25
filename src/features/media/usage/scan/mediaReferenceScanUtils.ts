@@ -15,27 +15,15 @@ export function readLocalesOption(config: SanitizedConfig): 'all' | undefined {
 
 type EntityWithVersions = { versions?: unknown }
 
-export function hasDraftsEnabledOnEntity(entity: EntityWithVersions | undefined): boolean {
+function hasDraftsEnabledOnEntity(entity: EntityWithVersions | undefined): boolean {
   if (!entity?.versions || typeof entity.versions !== 'object') return false
   return Boolean((entity.versions as { drafts?: unknown }).drafts)
 }
 
-export function hasLocalizeStatusOnEntity(entity: EntityWithVersions | undefined): boolean {
+function hasLocalizeStatusOnEntity(entity: EntityWithVersions | undefined): boolean {
   if (!hasDraftsEnabledOnEntity(entity)) return false
   const drafts = (entity?.versions as { drafts?: { localizeStatus?: boolean } } | undefined)?.drafts
   return Boolean(drafts && typeof drafts === 'object' && drafts.localizeStatus)
-}
-
-export function versionFieldReferenceWhere(
-  fieldPath: string,
-  mediaId: number | string,
-  hasMany: boolean
-): Where {
-  const leaf = hasMany ? { in: [mediaId] } : { equals: mediaId }
-
-  return {
-    [`version.${fieldPath}`]: leaf,
-  }
 }
 
 export function publishedVersionStatusWhere(
@@ -55,28 +43,7 @@ export function publishedVersionStatusWhere(
   return { 'version._status': { equals: 'published' } }
 }
 
-export function draftVersionStatusWhere(entity: EntityWithVersions, localeCodes: string[]): Where {
-  if (hasLocalizeStatusOnEntity(entity)) {
-    if (localeCodes.length === 0) {
-      return { 'version._status': { equals: 'draft' } }
-    }
-    return {
-      or: localeCodes.map((code) => ({
-        [`version._status.${code}`]: { equals: 'draft' },
-      })),
-    }
-  }
-  return { 'version._status': { equals: 'draft' } }
-}
-
-export function combineWhere(and: Where[]): Where {
-  const parts = and.filter((part) => Object.keys(part).length > 0)
-  if (parts.length === 0) return {}
-  if (parts.length === 1) return parts[0] ?? {}
-  return { and: parts }
-}
-
-export function extractMediaId(value: unknown): string | null {
+function extractMediaId(value: unknown): string | null {
   if (value == null) return null
   if (typeof value === 'string' || typeof value === 'number') return String(value)
   if (typeof value === 'object' && 'id' in value && value.id != null) {

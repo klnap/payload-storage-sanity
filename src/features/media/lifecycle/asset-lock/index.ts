@@ -3,4 +3,3 @@ export {
   lockSanityAssetHash,
   sanityAssetHashFromId,
 } from './sanityAssetLock'
-export { lockTransactionKey } from './transactionLock'

@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import type { JsonObject, JsonValue } from '@/core/contracts'
+import type { JsonValue } from '@/core/contracts'
 import { asJsonObject } from '@/core/contracts'
 import type {
   SanityAsset,
@@ -170,9 +170,4 @@ export function parseSanityAsset(document: JsonValue): SanityAsset | null {
 export function parseSanityImageAsset(document: JsonValue): SanityImageAsset | null {
   const asset = parseSanityAsset(document)
   return asset && asset._type === 'sanity.imageAsset' ? asset : null
-}
-
-/** Lenient entry for Sanity client `getDocument` payloads. */
-export function parseSanityImageAssetDocument(document: JsonObject): SanityAsset | null {
-  return parseSanityAsset(document)
 }

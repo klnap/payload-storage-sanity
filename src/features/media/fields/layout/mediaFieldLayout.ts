@@ -17,7 +17,7 @@ function fieldName(field: Field): string | undefined {
 }
 
 /** Drop plugin-default `name` / `description` unless the collection defines them explicitly. */
-export function stripDefaultMediaEditorFields(
+function stripDefaultMediaEditorFields(
   fields: Field[],
   userFieldNames: ReadonlySet<string>
 ): Field[] {
@@ -96,16 +96,16 @@ const PLUGIN_INJECTED_ROOT_NAMES = new Set([
  * Cloud-storage always injects `_objectKey` for S3-style folders.
  * Sanity identity lives in `sanity.asset` — drop the null key from the schema.
  */
-export function stripCloudStorageObjectKeyField(fields: Field[]): Field[] {
+function stripCloudStorageObjectKeyField(fields: Field[]): Field[] {
   return fields.filter((field) => !('name' in field && field.name === '_objectKey'))
 }
 
 /** Remove legacy mirror group if an old plugin build left it on the collection. */
-export function stripLegacySanityAssetMetaField(fields: Field[]): Field[] {
+function stripLegacySanityAssetMetaField(fields: Field[]): Field[] {
   return fields.filter((field) => !('name' in field && field.name === 'sanityAssetMeta'))
 }
 
-export function wrapSanityMediaMainFieldsInTabs(assetTabFields: Field[]): Field[] {
+function wrapSanityMediaMainFieldsInTabs(assetTabFields: Field[]): Field[] {
   return [
     {
       type: 'tabs',
@@ -137,7 +137,7 @@ export function wrapSanityMediaMainFieldsInTabs(assetTabFields: Field[]): Field[
   ]
 }
 
-export function splitSanityMediaCollectionFields(fields: Field[]) {
+function splitSanityMediaCollectionFields(fields: Field[]) {
   const mainColumnFields: Field[] = []
   const sidebarAndHiddenFields: Field[] = []
 

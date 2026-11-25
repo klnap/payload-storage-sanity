@@ -82,7 +82,6 @@ export type SanityStoragePopulateConfig = {
 }
 
 export type {
-  SanityStorageUploadMaxSizeByType,
   SanityStorageUploadMaxSizeConfig,
   SanityStorageUploadMaxSizeInput,
 } from './uploadMaxSizeTypes'

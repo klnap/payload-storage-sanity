@@ -19,7 +19,7 @@ export const SANITY_STORAGE_DEDUPE_CONTEXT_KEY = '_sanityStorageDedupe' as const
  * Soft-coupled with `@klnap/payload-hooks` localized-delete confirmation.
  * Set on internal orphan cleanup so `requireLocalizedDeleteConfirmation` does not block.
  */
-export const LOCALIZED_DELETE_CONFIRMED_CONTEXT_KEY = 'localizedDeleteConfirmed' as const
+const LOCALIZED_DELETE_CONFIRMED_CONTEXT_KEY = 'localizedDeleteConfirmed' as const
 
 export type SanityStorageDedupeContext = {
   existingId: PayloadDocumentId

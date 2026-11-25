@@ -68,7 +68,7 @@ export function getSanityAssetMetadata(
   return readAssetMetadata(getSanityAssetFromMedia(doc))
 }
 
-export function sanityAssetDocumentFromParsed(asset: SanityAsset): JsonObject {
+function sanityAssetDocumentFromParsed(asset: SanityAsset): JsonObject {
   const base: JsonObject = {
     _id: asset._id,
     _type: asset._type,
@@ -117,15 +117,4 @@ export function toPersistedSanityAssetDocument(
   }
 
   return merged
-}
-
-export function parsePersistedSanityAsset(value: unknown): PersistedSanityAsset | null {
-  if (!isJsonObject(value)) {
-    return null
-  }
-  const id = value._id
-  if (typeof id !== 'string' || id.trim().length === 0) {
-    return null
-  }
-  return value
 }

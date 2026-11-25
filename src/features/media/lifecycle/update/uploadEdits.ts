@@ -106,7 +106,7 @@ export function uploadEditsRequireBytesReupload(
   return false
 }
 
-export function resolveUploadEditsBytesContext(args: {
+function resolveUploadEditsBytesContext(args: {
   data?: { width?: unknown; height?: unknown } | null
   originalDoc?: { width?: unknown; height?: unknown } | null
   docWidth?: number | null
@@ -149,7 +149,7 @@ export function isFocalOnlyUploadEdits(
   return !uploadEditsRequireBytesReuploadFromRequest(req, args)
 }
 
-export function isAdapterSanityMetadataPatch(data: {
+function isAdapterSanityMetadataPatch(data: {
   sanity?: {
     asset?: { _id?: string | null; path?: string | null; _rev?: string | null } | null
   } | null

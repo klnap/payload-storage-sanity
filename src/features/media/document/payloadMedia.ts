@@ -1,4 +1,4 @@
-import type { JsonObject, PayloadDocumentId } from '@/core/contracts'
+import type { PayloadDocumentId } from '@/core/contracts'
 import type {
   SanityMediaDocumentSyncFields,
   SanityPersistedAssetGroup,
@@ -18,5 +18,3 @@ export type PayloadMediaDraft = Partial<PayloadMediaPatch> &
   SanityAssetIdCarrier & {
     id?: PayloadDocumentId | null
   }
-
-export type PayloadMediaMetadataPatch = JsonObject

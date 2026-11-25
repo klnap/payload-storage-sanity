@@ -7,7 +7,7 @@ export type MediaRowForDedupe = SanityMediaDocument & {
   id?: PayloadDocumentId
 }
 
-export function duplicateGroupKey(doc: MediaRowForDedupe): string | null {
+function duplicateGroupKey(doc: MediaRowForDedupe): string | null {
   const sanityId = getSanityAssetId(doc)?.trim()
   const sha1 = getSanityAssetSha1(doc)?.trim()
   if (!sanityId || !sha1) {

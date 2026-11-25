@@ -4,17 +4,14 @@ export {
   resolveAssetDocumentUrl,
   type SanityImageSource,
 } from './buildImageUrl'
-export {
-  classifySanityAssetType,
-  type SanityAssetMediaKind,
-} from './classifySanityAssetType'
+
 export {
   hasResolvableMediaUrl,
   imageDimensionsFromMedia,
   isMediaAssetAvailable,
 } from './mediaAvailability'
 export { resolveImageFileRef, resolveMediaId } from './resolveAssetRef'
-export { isPersistedHttpUrl, resolveHydratedMediaUrls } from './resolveHydratedMediaUrls'
+export { resolveHydratedMediaUrls } from './resolveHydratedMediaUrls'
 export {
   appendTransformParams,
   type ResolvePublicUrlContext,

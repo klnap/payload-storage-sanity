@@ -1,24 +1,13 @@
-export {
-  ASSET_PRESERVE_KEYS,
-  mergePersistedAsset,
-  mergeSanityGroupOnUpdate,
-} from './mergePersistedAsset'
+export { mergeSanityGroupOnUpdate } from './mergePersistedAsset'
 export type {
   PayloadMediaDraft,
   PayloadMediaPatch,
   SanityAssetIdCarrier,
 } from './payloadMedia'
-export {
-  type CreateSanityMediaAfterReadHookArgs,
-  createSanityMediaAfterReadHook,
-} from './read/afterReadHook'
+export { createSanityMediaAfterReadHook } from './read/afterReadHook'
 export { hydrateMediaOnRead } from './read/hydrateReadUrls'
 export { createSanityMediaUrlFieldAfterReadHook } from './read/urlFieldAfterRead'
-export {
-  hasUpstreamLocators,
-  sanitizeMediaDocument,
-  stripMediaDocumentJunkKeys,
-} from './sanitizeDocument'
+export { sanitizeMediaDocument } from './sanitizeDocument'
 export type {
   SanityMediaDocument,
   SanityMediaDocumentSyncFields,
@@ -29,10 +18,7 @@ export {
   hasIncomingUploadSizes,
   requestWithoutUploadEdits,
 } from './uploadContext'
-export {
-  type CreateSanityMediaBeforeChangeHookArgs,
-  createSanityMediaBeforeChangeHook,
-} from './write/beforeChangeHook'
+export { createSanityMediaBeforeChangeHook } from './write/beforeChangeHook'
 export { createSanityMediaEnsureCropSourceUrlBeforeOperationHook } from './write/cropSourceUrlHook'
 export { createSanityMediaHydrateResponseAfterChangeHook } from './write/hydrateAfterChangeHook'
 export {

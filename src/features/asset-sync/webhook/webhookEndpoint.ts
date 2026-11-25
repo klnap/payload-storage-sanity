@@ -12,9 +12,6 @@ import { verifySanityWebhookSignature } from './verifyWebhookSignature'
 
 export {
   DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES,
-  isValidWebhookMaxBodySizeBytes,
-  MAX_SANITY_WEBHOOK_BODY_BYTES,
-  normalizeWebhookMaxBodySizeBytes,
   readWebhookRawBody,
 } from './readWebhookBody'
 

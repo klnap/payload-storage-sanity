@@ -1,4 +1,3 @@
-export { isImageFileType } from '@/core/config'
 export type {
   SanityAsset,
   SanityAssetMetadata,

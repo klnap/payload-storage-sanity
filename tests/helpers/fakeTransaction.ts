@@ -20,9 +20,3 @@ export function fakeTransaction(log: string[] = []) {
     },
   }
 }
-
-/** Request for hooks and retention helpers: `payload` gets the fake transaction's db, and the request carries its id. */
-export function transactionalReq(payload: Record<string, unknown>) {
-  const { transactionID, db } = fakeTransaction()
-  return { transactionID, payload: { ...payload, db } }
-}

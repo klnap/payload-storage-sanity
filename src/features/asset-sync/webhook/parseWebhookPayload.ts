@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 
-import { type JsonObject, type JsonValue, parseJsonText } from '@/core/contracts'
+import { parseJsonText } from '@/core/contracts'
 
 const WebhookPayloadSchema = v.object({
   dataset: v.optional(v.string()),
@@ -59,5 +59,3 @@ export function webhookMatchesProject({
   if (body.dataset != null && body.dataset !== dataset) return false
   return true
 }
-
-export type { JsonObject, JsonValue }

@@ -16,7 +16,7 @@ const IMAGE_EXTENSIONS = {
 
 type ImageExtension = keyof typeof IMAGE_EXTENSIONS
 
-export function isImageExtension(ext: string): ext is ImageExtension {
+function isImageExtension(ext: string): ext is ImageExtension {
   return Object.hasOwn(IMAGE_EXTENSIONS, ext)
 }
 

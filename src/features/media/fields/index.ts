@@ -11,13 +11,8 @@ export {
 export {
   finalizeSanityMediaCollectionFields,
   prioritizeUserSidebarFields,
-  splitSanityMediaCollectionFields,
-  stripCloudStorageObjectKeyField,
-  stripDefaultMediaEditorFields,
-  stripLegacySanityAssetMetaField,
-  wrapSanityMediaMainFieldsInTabs,
 } from './layout/mediaFieldLayout'
-export { mediaTabsFieldStyles } from './layout/mediaTabsFieldStyles'
+
 export {
   collectionHasAltField,
   getLocalizationLocales,

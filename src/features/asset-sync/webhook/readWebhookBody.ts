@@ -3,9 +3,6 @@ import type { PayloadRequest } from 'payload'
 /** Default max raw JSON body for Sanity webhooks (256 KiB). */
 export const DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES = 256 * 1024
 
-/** @deprecated Use {@link DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES}. */
-export const MAX_SANITY_WEBHOOK_BODY_BYTES = DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES
-
 export type ReadWebhookBodyResult =
   | {
       ok: true
@@ -108,22 +105,4 @@ export async function readWebhookRawBody(
   }
 
   return { ok: false, reason: 'empty' }
-}
-
-/** Positive finite integer byte limit, or null when unset / invalid for caller to default. */
-export function normalizeWebhookMaxBodySizeBytes(value: unknown): number | null {
-  if (value == null) return null
-  if (
-    typeof value !== 'number' ||
-    !Number.isFinite(value) ||
-    !Number.isInteger(value) ||
-    value <= 0
-  ) {
-    return null
-  }
-  return value
-}
-
-export function isValidWebhookMaxBodySizeBytes(value: unknown): value is number {
-  return normalizeWebhookMaxBodySizeBytes(value) != null
 }

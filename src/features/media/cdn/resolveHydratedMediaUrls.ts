@@ -3,8 +3,6 @@ import { deriveBaseCdnUrlFromThumbnail, isPersistedHttpUrl } from '@/sanity/cdn'
 import { resolvePublicUrl } from './resolvePublicUrl'
 import { sanityAdminThumbnail } from './sanityAdminThumbnail'
 
-export { isPersistedHttpUrl } from '@/sanity/cdn'
-
 export type ResolveHydratedMediaUrlsResult = {
   url: string | null
   thumbnailURL: string | null

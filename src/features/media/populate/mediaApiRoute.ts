@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
 /** Payload REST segments after `/api/{collectionSlug}/` that are not document IDs. */
-export const RESERVED_MEDIA_COLLECTION_REST_SEGMENTS = new Set(['versions', 'files', 'file'])
+const RESERVED_MEDIA_COLLECTION_REST_SEGMENTS = new Set(['versions', 'files', 'file'])
 
 export function mediaApiPathSegments(
   req: PayloadRequest | undefined,

@@ -11,8 +11,6 @@ import {
 } from '@/features/media/populate'
 import { sanitizeMediaDocument } from '../sanitizeDocument'
 
-export type { SanityMediaDocument }
-
 export type CreateSanityMediaAfterReadHookArgs = {
   collectionSlug: string
   cdnBaseUrl?: string

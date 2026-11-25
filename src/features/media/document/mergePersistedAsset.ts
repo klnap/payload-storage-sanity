@@ -2,7 +2,7 @@ import type { JsonObject } from '@/core/contracts'
 import type { SanityPersistedAssetGroup } from '@/features/media/document'
 import { getSanityAssetFromMedia } from '@/sanity/assets'
 
-export const ASSET_PRESERVE_KEYS = [
+const ASSET_PRESERVE_KEYS = [
   '_id',
   '_type',
   '_rev',
@@ -16,11 +16,11 @@ export const ASSET_PRESERVE_KEYS = [
   'originalFilename',
 ] as const
 
-export function isJsonRecord(value: unknown): value is JsonObject {
+function isJsonRecord(value: unknown): value is JsonObject {
   return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
-export function mergePersistedAsset(
+function mergePersistedAsset(
   incoming: JsonObject | null | undefined,
   previous: JsonObject | null | undefined
 ): JsonObject | undefined {

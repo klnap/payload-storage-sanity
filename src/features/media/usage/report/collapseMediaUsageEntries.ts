@@ -1,7 +1,7 @@
 import type { MediaUsageEntry } from '@/features/media/usage'
 
 /** One logical place (document + field) that references media. */
-export function mediaUsageDocumentFieldKey(
+function mediaUsageDocumentFieldKey(
   entry: Pick<MediaUsageEntry, 'type' | 'collectionSlug' | 'id' | 'fieldPath'>
 ): string {
   return `${entry.type}:${entry.collectionSlug}:${String(entry.id)}:${entry.fieldPath}`

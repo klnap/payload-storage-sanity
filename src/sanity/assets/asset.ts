@@ -14,8 +14,6 @@ export const SANITY_IMAGE_METADATA_EXTRACT = [
   'palette',
 ] as const
 
-export type SanityImageMetadataExtract = (typeof SANITY_IMAGE_METADATA_EXTRACT)[number]
-
 export type SanityPaletteSwatch = {
   background: string
   foreground: string

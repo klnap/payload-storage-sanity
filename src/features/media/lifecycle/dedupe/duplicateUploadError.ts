@@ -15,7 +15,7 @@ export type MediaDuplicateUploadErrorData = {
   existingId?: PayloadDocumentId
 }
 
-export function resolveUploadFilename(req: PayloadRequest): string | null {
+function resolveUploadFilename(req: PayloadRequest): string | null {
   const name = req.file?.name
   if (typeof name !== 'string') return null
   const trimmed = name.trim()
@@ -33,7 +33,7 @@ export function formatDuplicateUploadCompactMessage(
   })
 }
 
-export function formatDuplicateUploadBlockMessage(
+function formatDuplicateUploadBlockMessage(
   t: SanityStorageTranslateFn,
   existingId: PayloadDocumentId
 ): string {

@@ -5,7 +5,6 @@ import { createHmac } from 'node:crypto'
 import {
   createSanityWebhookEndpoint,
   DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES,
-  MAX_SANITY_WEBHOOK_BODY_BYTES,
   readWebhookRawBody,
 } from '@/features/asset-sync'
 
@@ -58,7 +57,6 @@ describe('createSanityWebhookEndpoint', () => {
 
   test('uses the default body size cap', () => {
     expect(DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES).toBe(256 * 1024)
-    expect(MAX_SANITY_WEBHOOK_BODY_BYTES).toBe(DEFAULT_SANITY_WEBHOOK_MAX_BODY_BYTES)
   })
 
   test('accepts a body below a custom larger limit', async () => {
