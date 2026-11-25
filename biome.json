@@ -1,0 +1,78 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!**/.turbo",
+      "!!**/coverage",
+      "!**/*.tsbuildinfo",
+      "!!**/docs",
+      "!**/*-tailwind.css",
+      "!!**/.well-known/workflow"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
+      "trailingCommas": "es5",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always"
+    }
+  },
+  "css": { "parser": { "tailwindDirectives": true } },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": { "preset": "none" },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn",
+        "noNodejsModules": "off",
+        "noUnknownFunction": "off",
+        "useExhaustiveDependencies": "warn"
+      },
+      "security": { "noDangerouslySetInnerHtml": "off" },
+      "performance": { "noImgElement": "off" },
+      "style": {
+        "useConst": "error",
+        "useTemplate": "warn",
+        "noDefaultExport": "error",
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off"
+      },
+      "suspicious": {
+        "noConsole": "error",
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off",
+        "noDoubleEquals": "warn",
+        "noReactSpecificProps": "off",
+        "useIterableCallbackReturn": "warn",
+        "noUndeclaredEnvVars": "off",
+        "noConfusingVoidType": "off",
+        "noDocumentCookie": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["scripts/**", "**/*.test.*", "**/*.spec.*", "tests/**"],
+      "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
+    },
+    {
+      "includes": ["**/*.config.{js,ts,mjs,cjs}", "**/app/**/page.tsx", "**/app/**/layout.tsx"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    }
+  ]
+}

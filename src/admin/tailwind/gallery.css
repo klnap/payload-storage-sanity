@@ -1,0 +1,5 @@
+/* Media gallery list view: prefixed so it never collides with unprefixed admin utilities. */
+@layer kmg-theme, kmg-utilities;
+@import "tailwindcss/theme.css" layer(kmg-theme) prefix(kmg);
+@import "tailwindcss/utilities.css" layer(kmg-utilities) prefix(kmg) source(none);
+@source "../gallery";

@@ -1,0 +1,57 @@
+/**
+ * Prebuilt Tailwind utilities for `@klnap/payload-storage-sanity/admin`.
+ * Consumers import `@klnap/payload-storage-sanity/styles/admin-tailwind.css`.
+ */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@layer utilities {
+  .pss-media-tabs {
+    overflow-anchor: none;
+  }
+}
+
+@source "../**/*.{ts,tsx}";
+@source "../../features/media/fields/**/*.{ts,tsx}";
+@source not "../../**/*.css";
+
+.file-details {
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
+}
+
+.file-details__thumbnail img {
+  object-fit: contain;
+}
+
+/* Native Payload file card: our metadata and icon replace its default text and thumbnail. */
+.pss-native-file {
+  margin-bottom: 24px;
+}
+
+.pss-native-file .file-meta > :not([data-pss-file-meta]),
+.pss-native-file .file-details__thumbnail > :not([data-pss-icon]) {
+  display: none;
+}
+
+.pss-native-file .file-details__thumbnail {
+  background: var(--theme-elevation-100);
+  width: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.pss-native-file .file-details__remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+}
+
+.pss-native-file .file-details__thumbnail svg {
+  width: 64px;
+  height: 64px;
+}

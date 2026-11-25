@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "typescript/prefer-as-const": "off",
+    "unicorn/prefer-string-starts-ends-with": "off"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/coverage/**",
+    "**/docs/**",
+    "**/scripts/**",
+    "**/*.d.ts",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/tests/**"
+  ]
+}

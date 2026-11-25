@@ -1,0 +1,24 @@
+{
+  "name": "pss-release-consumer-payload-main",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "smoke": "bun run smoke.ts"
+  },
+  "dependencies": {
+    "@klnap/payload-storage-sanity": "file:__PSS_TARBALL__",
+    "@payloadcms/db-sqlite": "3.94.1",
+    "@payloadcms/plugin-cloud-storage": "3.94.1",
+    "@payloadcms/translations": "3.94.1",
+    "@payloadcms/ui": "3.94.1",
+    "@sanity/client": "^8.14.1",
+    "payload": "3.94.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "5.7.3"
+  }
+}

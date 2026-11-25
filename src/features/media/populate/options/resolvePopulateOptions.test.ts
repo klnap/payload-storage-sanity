@@ -1,0 +1,34 @@
+import { describe, expect, test } from 'bun:test'
+import type { SanityStoragePluginOptions } from '@/core/config'
+import { resolvePopulateOptionsForCollection } from '@/features/media/populate'
+
+describe('resolvePopulateOptionsForCollection', () => {
+  const baseOptions: SanityStoragePluginOptions = {
+    projectId: 'p',
+    dataset: 'd',
+    collections: { media: true },
+  }
+
+  test('defaults to default preset when populate omitted', () => {
+    const resolved = resolvePopulateOptionsForCollection(baseOptions, 'media')
+    expect(resolved.preset).toBe('default')
+    expect(resolved.localPopulate).toBe(true)
+  })
+
+  test('full preset is explicit opt-in', () => {
+    const resolved = resolvePopulateOptionsForCollection(
+      { ...baseOptions, populate: { preset: 'full' } },
+      'media'
+    )
+    expect(resolved.preset).toBe('full')
+    expect(resolved.localPopulate).toBe(false)
+  })
+
+  test('localPopulate can be disabled explicitly', () => {
+    const resolved = resolvePopulateOptionsForCollection(
+      { ...baseOptions, populate: { preset: 'default', localPopulate: false } },
+      'media'
+    )
+    expect(resolved.localPopulate).toBe(false)
+  })
+})
