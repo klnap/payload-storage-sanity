@@ -74,6 +74,8 @@ export function resolveMappedPopulateAsset<TAsset extends object>(
     id: mapping.id != null ? pickId(readPathValue(asset, mapping.id)) : '',
     url,
     alt: mapping.alt != null ? pickAlt(readPathValue(asset, mapping.alt)) : null,
+    focalX: 50,
+    focalY: 50,
   }
 
   if (mapping.width != null) {

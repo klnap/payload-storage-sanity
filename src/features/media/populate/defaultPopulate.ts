@@ -5,8 +5,9 @@ export type DefaultPopulateAsset = {
   width?: number
   height?: number
   aspectRatio?: number
-  focalX?: number
-  focalY?: number
+  /** Always present: 50 when the asset has no focal point. */
+  focalX: number
+  focalY: number
   /** Resolved for request locale; `null` when missing or empty (always present on preset `default`). */
   alt: string | null
   lqip?: string

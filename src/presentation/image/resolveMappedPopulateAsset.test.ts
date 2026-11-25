@@ -41,6 +41,8 @@ describe('resolveMappedPopulateAsset', () => {
     })
 
     expect(mapped).toEqual({
+      focalX: 50,
+      focalY: 50,
       id: 'https://cdn.example/custom.jpg',
       url: 'https://cdn.example/custom.jpg',
       alt: 'Custom alt',
@@ -67,6 +69,8 @@ describe('resolveMappedPopulateAsset', () => {
     })
 
     expect(mapped).toEqual({
+      focalX: 50,
+      focalY: 50,
       id: '',
       url: 'https://cdn.example/nested.jpg',
       alt: null,

@@ -106,7 +106,7 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | `url` | `string` | Public CDN URL (hydrated from the stored Sanity asset path). |
 | `width` / `height` | `number` (optional) | From Sanity metadata. |
 | `aspectRatio` | `number` (optional) | |
-| `focalX` / `focalY` | `number` (optional) | Percentages, 0–100. |
+| `focalX` / `focalY` | `number` | Percentages, 0–100. Always present; `50` when the asset has no focal point. |
 | `alt` | `string` \| `null` | Text for the request **`locale`**. `null` when that locale has no translation; `''` when it is explicitly empty (decorative). Omit **`locale`** → usually **`null`**. |
 | `lqip` | `string` (optional) | Low-quality image placeholder when present. |
 
