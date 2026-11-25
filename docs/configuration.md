@@ -11,7 +11,7 @@ Reference for `sanityStorage()` options, defaults, and package exports. The [REA
 | `apiVersion` | Package default | Sanity API version for the client. |
 | `cdnBaseUrl` | `https://cdn.sanity.io` | Base URL for public asset URLs. |
 | `mode` | `'full'` | `'full'` uploads to Sanity. `'fields-only'` adds fields without the storage adapter. `'off'` skips storage registration. |
-| `collections` | Auto-discovered | Omit to discover upload collections without another adapter. `{}` selects none. A slug map selects explicitly. |
+| `collections` | Auto-discovered | Omit to discover upload collections without another adapter (in `full` mode). `{}` selects none. A slug map selects explicitly. |
 | `collections.<slug>.folder` | `'Payload'` | Logical `sanity-plugin-media` folder for new uploads. |
 | `collections.<slug>.disablePayloadAccessControl` | `true` | Allows file delivery without Payload access checks. CDN URLs stay public either way. |
 | `collections.<slug>.disableLocalStorage` | `true` | Disables Payload's local file storage for the collection. |
@@ -23,9 +23,9 @@ Reference for `sanityStorage()` options, defaults, and package exports. The [REA
 | `uploadMaxSize` | None | Byte limit, globally or per collection, on top of Payload's upload limit. |
 | `preventDeleteWhenReferenced` | `true` | Refuses deletion of a media row that Payload content references. |
 | `dedupeUploads` | `false` | Rejects identical-byte creates. |
-| `alt.enabled` | `true` | Adds an alt field when the collection has none. |
-| `alt.required` | `false` | Requires every locale of the alt group. |
-| `alt.fallbackLocale` | None | Locale used when the request locale has no alt text. Applies to the localized group only. |
+| `collections.<slug>.alt.enabled` | `true` | Adds an alt field when the collection has none. Per collection only. |
+| `collections.<slug>.alt.required` | `false` | Requires every locale of the alt group. Per collection only. |
+| `collections.<slug>.alt.fallbackLocale` | None | Locale used when the request locale has no alt text. Applies to the localized group only. |
 | `admin.gallery` | `true` | Justified, grid, and list media list. `false` keeps Payload's list view. |
 | `admin.uploadBusyShield` | `true` | "Uploading…" state during Save. The preview stays visible. |
 | `sync.enabled` | `false` | Adds webhook and reconcile routes. Requires `token` and `sync.webhook.secret`. |

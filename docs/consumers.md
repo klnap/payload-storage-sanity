@@ -15,6 +15,8 @@ Direct **`GET /api/media/:id`** (admin editor) still returns the full media docu
 ```typescript
 import { PayloadSDK } from '@payloadcms/sdk'
 
+const sdk = new PayloadSDK({ baseURL: `${process.env.NEXT_PUBLIC_PAYLOAD_URL}/api` })
+
 const page = await sdk.findGlobal({
   slug: 'home-page',
   locale: 'pl',
@@ -64,7 +66,7 @@ const post = await sdk.find({
 })
 ```
 
-You receive exactly the selected shape (hydrated URLs, no flattening to `DefaultPopulateAsset`). **Do not pass this into `SanityImage`.** Render with **`next/image`** (or your own component) and declare `src`, `width`, `height`, `alt`, placeholders yourself. See harness `test-next/lib/manual-media-image.tsx`.
+You receive exactly the selected shape (hydrated URLs, no flattening to `DefaultPopulateAsset`). **Do not pass this into `SanityImage`.** Render with **`next/image`** (or your own component) and declare `src`, `width`, `height`, `alt`, placeholders yourself.
 
 When the media collection uses the injected **localized alt group**, selecting **`alt: true`** (or nested locale keys) returns an **object** (`alt.pl`, …), not a single string — use **`resolveLocalizedAlt(doc.alt, { locale: 'pl', fallbackLocale: 'en' })`** from the main package, or map a string field via **`assetMapping`**. See the root **[README — Alt text](../README.md#alt-text)**.
 
@@ -105,8 +107,8 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | :--- | :--- | :--- |
 | `id` | `string` \| `number` | Payload document id (UUID when `db` uses `idType: 'uuid'`). |
 | `url` | `string` | Public CDN URL (from `resolvePublicUrl`). |
-| `width` / `height` | `number` \| `null` | From Sanity metadata. |
-| `aspectRatio` | `number` \| `null` | |
+| `width` / `height` | `number` (optional) | From Sanity metadata. |
+| `aspectRatio` | `number` (optional) | |
 | `focalX` / `focalY` | `number` (optional) | Percentages, 0–100. |
 | `alt` | `string` \| `null` | Request **`locale`** on the parent fetch (or **`collections.*.alt.fallbackLocale`** when that locale is empty). Omit **`locale`** → usually **`null`**. |
 | `lqip` | `string` \| `null` | Low-quality image placeholder when present. |
@@ -158,7 +160,6 @@ export { default } from '@klnap/payload-storage-sanity/next/loader'
 | :--- | :--- |
 | `toSanityImageProps` | Map `DefaultPopulateAsset` → `next/image` props |
 | `focalObjectPosition` | CSS `object-position` from focal point |
-| `buildSanityImageUrl` | Server-side URL builder (also on main entry) |
 
 ---
 

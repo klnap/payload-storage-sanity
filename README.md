@@ -101,7 +101,7 @@ import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
 const url = buildSanityImageUrl({ client, value: media, width: 800 })
 ```
 
-`client` is a `SanityClient`, for example from `createSanityClient` in `@klnap/payload-storage-sanity/client`. The function returns `null` when the value has no image asset.
+`client` is a `SanityClient`, for example from `createSanityClient` in `@klnap/payload-storage-sanity/client`. The function returns `null` when the value has no image asset and no URL.
 
 For crops and fit modes, use `resolvePublicUrl`:
 
@@ -117,7 +117,7 @@ const banner = resolvePublicUrl(media, {
 })
 ```
 
-`resolvePublicUrl` adds transform parameters only to image assets and returns `null` when the media is unavailable. Automatic format negotiation is on by default: Sanity serves the best format the browser accepts. Set `autoFormat: false` to turn it off.
+`resolvePublicUrl` adds transform parameters only to image assets and returns `null` when the media is unavailable. When you pass `transform`, the URL includes `auto=format` by default, so Sanity serves the best format the browser accepts. Set `transform.autoFormat: false` to turn it off.
 
 Sanity supports more parameters, such as `fm`, `dpr`, and `fp-x`/`fp-y`. This package does not type them. Sanity's [image URL reference](https://www.sanity.io/docs/apis-and-sdks/image-urls) lists them.
 
@@ -271,10 +271,14 @@ Payload's upload support provides `filename`, `mimeType`, `filesize`, `width`, a
 
 With Payload localization enabled, the plugin adds an `alt` group with one field per locale. Editors fill in each language. The frontend receives a single string for the current locale, and `DefaultPopulateAsset.alt` falls back to the configured fallback locale when the current locale is empty.
 
+Set alt options per collection. Plain `collections: { media: true }` and auto-discovery use the defaults:
+
 ```ts
 sanityStorage({
   // ...
-  alt: { required: true, fallbackLocale: 'en' },
+  collections: {
+    media: { alt: { required: true, fallbackLocale: 'en' } },
+  },
 })
 ```
 
