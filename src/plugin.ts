@@ -176,6 +176,18 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
 
     let nextConfig: Config = {
       ...config,
+      admin: {
+        ...config.admin,
+        components: {
+          ...config.admin?.components,
+          providers: [
+            ...(config.admin?.components?.providers ?? []),
+            {
+              path: '@klnap/payload-storage-sanity/admin#SanityStorageStyles',
+            },
+          ],
+        },
+      },
       i18n: mergeSanityStorageTranslations(config.i18n),
       endpoints: [...(config.endpoints ?? []), ...endpoints],
       collections: (config.collections ?? []).map((collection) =>

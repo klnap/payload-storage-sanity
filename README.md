@@ -63,12 +63,7 @@ export default buildConfig({
 })
 ```
 
-Import the admin stylesheet once in the host's Payload admin CSS entry:
-
-```css
-@import "@klnap/payload-storage-sanity/styles/admin-tailwind.css";
-```
-
+`sanityStorage()` loads the admin styles automatically; no host CSS import is needed.
 After adding or upgrading the plugin, regenerate the import map:
 
 ```sh

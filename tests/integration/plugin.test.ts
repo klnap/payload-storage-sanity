@@ -65,6 +65,30 @@ function applyPluginOptions(
 }
 
 describe('sanityStorage', () => {
+  test('loads admin styles through a provider and preserves host providers', () => {
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+    })
+    const config = plugin({
+      secret: 'test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+      admin: { components: { providers: ['./HostProvider'] } },
+    } as Config)
+
+    if (config instanceof Promise) {
+      throw new Error('expected sync plugin result')
+    }
+
+    expect(config.admin?.components?.providers).toEqual([
+      './HostProvider',
+      { path: '@klnap/payload-storage-sanity/admin#SanityStorageStyles' },
+    ])
+  })
+
   test('sets defaultPopulate and forceSelect on media collections for preset default', () => {
     const config = applyPlugin([{ slug: 'media', upload: true, fields: [] }])
     const media = config.collections?.find((c) => c.slug === 'media')

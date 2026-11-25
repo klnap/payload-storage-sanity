@@ -20,6 +20,7 @@ export {
   mediaMetadataSwatchGridStyles,
   mediaMetadataSwatchStyles,
 } from './metadata/mediaMetadataInspector.styles'
+export { SanityStorageStyles } from './SanityStorageStyles'
 export { UnavailableAssetRecovery } from './UnavailableAssetRecovery'
 export {
   hasMediaBytesUpload,

@@ -156,6 +156,7 @@
       "MediaUsageInspector",
       "MediaUsageTableClient",
       "SANITY_ADMIN_THUMBNAIL_WIDTH",
+      "SanityStorageStyles",
       "UnavailableAssetRecovery",
       "hasMediaBytesUpload",
       "isMediaUploadBusy",
