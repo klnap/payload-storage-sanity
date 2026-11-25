@@ -19,7 +19,7 @@ const card = tv({
     action:
       'kmg:relative kmg:block kmg:size-full kmg:cursor-pointer kmg:overflow-hidden kmg:border-0 kmg:bg-transparent kmg:p-0 kmg:text-inherit kmg:no-underline kmg:focus-visible:outline-2 kmg:focus-visible:-outline-offset-2 kmg:focus-visible:outline-(--theme-elevation-700)',
     tooltip:
-      'kmg:max-w-xs kmg:rounded-sm kmg:bg-(--theme-elevation-900) kmg:px-2.5 kmg:py-1.5 kmg:text-sm kmg:wrap-break-word kmg:text-(--theme-elevation-0)',
+      'kmg:max-w-sm kmg:rounded-sm kmg:bg-(--theme-elevation-900) kmg:px-3 kmg:py-1.5 kmg:text-sm kmg:wrap-break-word kmg:text-(--theme-elevation-0)',
     footer:
       'kmg:pointer-events-none kmg:absolute kmg:inset-x-0 kmg:bottom-0 kmg:block kmg:px-2 kmg:pb-1.5 kmg:text-xs kmg:break-all kmg:font-medium kmg:text-(--theme-elevation-800)',
     checkbox: [
@@ -173,6 +173,7 @@ export function MediaCard({ media, href, layout, onActivate, selection, size }: 
     >
       <Tooltip.Root>
         <Tooltip.Trigger
+          delay={400}
           render={
             href ? (
               <Link
