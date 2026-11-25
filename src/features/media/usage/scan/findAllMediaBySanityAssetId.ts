@@ -1,10 +1,6 @@
 import type { CollectionSlug, Payload } from 'payload'
 
-import {
-  isPayloadDocumentId,
-  type PayloadDocumentId,
-  payloadDocumentIdsEqual,
-} from '@/core/contracts'
+import { isPayloadDocumentId, type PayloadDocumentId } from '@/core/contracts'
 
 const PAGE_SIZE = 100
 
@@ -84,48 +80,4 @@ export async function findAllMediaBySanityAssetId({
   }
 
   return matches
-}
-
-/** Checks ownership without retaining all matching rows; malformed matching rows keep the asset. */
-export async function hasOtherMediaBySanityAssetId({
-  payload,
-  collectionSlug,
-  collectionSlugs,
-  sanityAssetId,
-  excludingMediaId,
-  excludingMediaCollectionSlug,
-  req,
-}: FindSanityAssetReferencesArgs & {
-  excludingMediaId?: PayloadDocumentId
-  excludingMediaCollectionSlug?: string
-}): Promise<boolean> {
-  const assetId = (sanityAssetId ?? '').trim()
-  if (!assetId) return false
-  const slugs = resolveCollectionSlugs(collectionSlug, collectionSlugs)
-
-  for (const slug of slugs) {
-    let page = 1
-    let hasNextPage = true
-
-    while (hasNextPage) {
-      const result = await payload.find(assetQuery(slug, assetId, page, req))
-
-      for (const doc of result.docs) {
-        if (
-          excludingMediaId != null &&
-          slug === (excludingMediaCollectionSlug ?? collectionSlug) &&
-          isPayloadDocumentId(doc.id) &&
-          payloadDocumentIdsEqual(doc.id, excludingMediaId)
-        ) {
-          continue
-        }
-        return true
-      }
-
-      hasNextPage = result.hasNextPage === true
-      page += 1
-    }
-  }
-
-  return false
 }

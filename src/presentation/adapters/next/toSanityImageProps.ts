@@ -35,7 +35,6 @@ export function toSanityImageProps(
 
   const blurDataURL = !opts.disablePlaceholder
     ? resolvePlaceholderBlurDataUrl(asset, {
-        cdnBaseUrl: opts.cdnBaseUrl,
         fallback: opts.placeholderFallback,
       })
     : undefined

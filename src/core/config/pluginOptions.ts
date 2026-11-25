@@ -1,5 +1,5 @@
 import type { ClientConfig } from '@sanity/client'
-import type { Field, UploadCollectionSlug } from 'payload'
+import type { UploadCollectionSlug } from 'payload'
 import type { SanityStorageMode } from './storageMode'
 import type { SanitySyncAccessFn } from './syncAccess'
 import type { SanityStorageUploadMaxSizeInput } from './uploadMaxSizeTypes'
@@ -142,7 +142,6 @@ export type SanityStoragePluginOptions = {
   /** SHA-1 deduplication on create (`mode: 'full'` only). Default `false` — set `dedupeUploads: true` to opt in. */
   dedupeUploads?: boolean
   preventDeleteWhenReferenced?: boolean
-  extraFields?: Field[]
   /**
    * Max upload size in bytes for configured media collections (`default` + optional `byType` overrides).
    */

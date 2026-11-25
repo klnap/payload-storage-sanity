@@ -16,10 +16,7 @@ export {
   collectRichTextHosts,
   type MediaUploadTarget,
 } from './scan/collectMediaUploadTargets'
-export {
-  findAllMediaBySanityAssetId,
-  hasOtherMediaBySanityAssetId,
-} from './scan/findAllMediaBySanityAssetId'
+export { findAllMediaBySanityAssetId } from './scan/findAllMediaBySanityAssetId'
 export { type FindMediaUsageArgs, findMediaUsage } from './scan/findMediaUsage'
 export {
   getLocaleCodes,

@@ -73,9 +73,7 @@ async function guardRichTextReferences({
 }
 
 /** Collection write hook: attach to every collection that stores rich text. */
-export function createRichTextReferenceCollectionHook(
-  mediaSlug: string
-): CollectionBeforeChangeHook {
+function createRichTextReferenceCollectionHook(mediaSlug: string): CollectionBeforeChangeHook {
   return async ({ data, req }) => {
     await guardRichTextReferences({ data, req, mediaSlug })
     return data
@@ -83,7 +81,7 @@ export function createRichTextReferenceCollectionHook(
 }
 
 /** Global write hook: attach to every global that stores rich text. */
-export function createRichTextReferenceGlobalHook(mediaSlug: string): GlobalBeforeChangeHook {
+function createRichTextReferenceGlobalHook(mediaSlug: string): GlobalBeforeChangeHook {
   return async ({ data, req }) => {
     await guardRichTextReferences({ data, req, mediaSlug })
     return data

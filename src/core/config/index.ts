@@ -1,6 +1,5 @@
 export {
   imageMimeFromExtension,
-  isImageExtension,
   isImageFileType,
 } from './imageMime'
 export { isSanitySyncEnabled } from './isSanitySyncEnabled'

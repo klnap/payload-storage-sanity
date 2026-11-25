@@ -127,7 +127,7 @@ function lqipURL(doc: Record<string, unknown>) {
     : undefined
 }
 
-export function fileExtension(filename: string) {
+function fileExtension(filename: string) {
   return filename.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase()
 }
 

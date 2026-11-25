@@ -3,7 +3,6 @@ import { isSanityCompatibleHost } from '@/sanity/cdn'
 
 export type CreateSanityImageLoaderOptions = {
   cdnBaseUrl?: string
-  cdnHosts?: string[]
 }
 
 export function createSanityImageLoader(opts: CreateSanityImageLoaderOptions = {}) {

@@ -1,4 +1,3 @@
-export { lockMediaRow } from './mediaRowLock'
 export {
   hashUploadBytes,
   lockSanityAssetHash,
