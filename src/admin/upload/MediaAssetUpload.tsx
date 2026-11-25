@@ -175,7 +175,8 @@ function AssetPreview({
       nextImage.onerror = null
     }
   }, [displayedSrc, src])
-  const loading = Boolean(src && !loadedSrc && !failed)
+  const loading = Boolean(src && loadedSrc !== src && !failed)
+  const showBlur = !loadedSrc && lqip && shouldShowBlurPlaceholder(loading, failed)
 
   return (
     <div className='group relative isolate my-4 flex h-[min(360px,45svh)] w-full min-w-0 items-center justify-center overflow-hidden bg-[var(--theme-elevation-50)] py-4 md:h-[min(600px,60svh)]'>
@@ -189,7 +190,7 @@ function AssetPreview({
             ),
           }}
         >
-          {lqip && shouldShowBlurPlaceholder(loading, failed) ? (
+          {showBlur ? (
             <img
               alt=''
               aria-hidden='true'
@@ -199,7 +200,7 @@ function AssetPreview({
           ) : null}
           <img
             alt={alt}
-            className={`relative z-10 block h-full w-auto max-w-full object-contain ${loadedSrc === displayedSrc ? 'opacity-100' : 'opacity-0'}`}
+            className={`relative z-10 block h-full w-auto max-w-full object-contain ${!loading && loadedSrc === displayedSrc ? 'opacity-100' : 'opacity-0'}`}
             decoding='async'
             height={height}
             loading='eager'
@@ -223,16 +224,17 @@ function AssetPreview({
             width={width}
           />
         </div>
-      ) : loading && !lqip ? (
-        <span
-          aria-label='Loading image'
-          className='absolute size-8 animate-spin rounded-full border-2 border-(--theme-elevation-500) border-t-transparent'
-          role='status'
-        />
       ) : failed ? (
         <p className='m-0 px-3 py-4 text-sm text-[var(--theme-elevation-700)]'>
           Image preview unavailable.
         </p>
+      ) : null}
+      {loading && !showBlur ? (
+        <span
+          aria-label='Loading image'
+          className='absolute size-8 animate-spin rounded-full border-2 border-(--theme-elevation-500) border-t-transparent motion-reduce:animate-none'
+          role='status'
+        />
       ) : null}
       {displayedSrc && canEdit && (
         <div className='absolute right-2 top-2 z-20'>
@@ -701,14 +703,14 @@ export function MediaAssetUpload({
           <div className='mb-2 flex justify-start'>
             <Button
               aria-label='Revert replacement'
-              buttonStyle='secondary'
+              buttonStyle='icon-label'
+              icon='x'
+              iconStyle='none'
               margin={false}
               onClick={openFileReplacement}
               size='medium'
               type='button'
-            >
-              Revert
-            </Button>
+            />
           </div>
         ) : null}
         <Upload
