@@ -39,6 +39,19 @@ describe('localizedAltGroupField', () => {
     expect(field.fields?.[1]).toMatchObject({ name: 'en', type: 'text', required: false })
   })
 
+  test('required applies to every configured locale subfield', () => {
+    const field = altGroupFromRow(
+      localizedAltGroupField([{ code: 'pl' }, { code: 'en' }], { required: true })
+    )
+    expect(field.fields.map((f) => f.required)).toEqual([true, true])
+  })
+
+  test('alt group is not marked localized, so Payload fallback does not apply to it', () => {
+    const field = altGroupFromRow(localizedAltGroupField([{ code: 'pl' }, { code: 'en' }]))
+    expect(field).not.toHaveProperty('localized')
+    expect(field.fields.every((f) => !('localized' in f && f.localized))).toBe(true)
+  })
+
   test('honors required option', () => {
     const field = altGroupFromRow(localizedAltGroupField([{ code: 'pl' }], { required: true }))
     expect(field.fields[0]).toMatchObject({ required: true })

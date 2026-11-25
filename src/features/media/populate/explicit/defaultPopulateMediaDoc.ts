@@ -7,7 +7,6 @@ import { getSanityAssetMetadata } from '@/sanity/assets'
 export type DefaultPopulateMediaDocContext = {
   cdnBaseUrl?: string
   locale?: string | null
-  fallbackLocale?: string | null
 }
 
 export function defaultPopulateMediaDoc(
@@ -33,10 +32,7 @@ export function defaultPopulateMediaDoc(
     dimensions?.aspectRatio ??
     (width != null && height != null && height > 0 ? width / height : null)
 
-  const alt = resolveLocalizedAlt(doc.alt, {
-    locale: ctx.locale,
-    fallbackLocale: ctx.fallbackLocale,
-  })
+  const alt = resolveLocalizedAlt(doc.alt, { locale: ctx.locale })
 
   const result: DefaultPopulateAsset = {
     id,

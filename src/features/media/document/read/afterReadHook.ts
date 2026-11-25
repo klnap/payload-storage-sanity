@@ -17,7 +17,6 @@ export type CreateSanityMediaAfterReadHookArgs = {
   collectionSlug: string
   cdnBaseUrl?: string
   resolvedPreset: string
-  altFallbackLocale?: string
   localPopulate?: boolean
   /** When true, `alt` is the injected locale group — coerce SQL `null` to `{}` for admin form state. */
   localizedAltGroup?: boolean
@@ -73,7 +72,6 @@ export function createSanityMediaAfterReadHook(
       const populatedDoc = applyPopulatePreset(mediaDoc, args.resolvedPreset, {
         cdnBaseUrl: args.cdnBaseUrl,
         locale,
-        fallbackLocale: args.altFallbackLocale,
       })
 
       if (

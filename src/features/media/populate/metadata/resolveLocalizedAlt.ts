@@ -1,41 +1,33 @@
 export type ResolveLocalizedAltContext = {
   /** Request locale (`req.locale` / SDK `locale`). Required for localized `alt` objects. */
   locale?: string | null
-  /** When `locale` is missing or empty in the group, try this locale key. */
-  fallbackLocale?: string | null
 }
 
-function pickString(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-  return null
+/**
+ * `''` is explicitly empty (decorative). Whitespace-only text is treated as missing,
+ * because Payload's `required` check accepts it and it is almost never a deliberate choice.
+ */
+export function normalizeAltText(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  if (value === '') return ''
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
 }
 
-/** Plain string `alt`, or `alt[locale]` with optional `fallbackLocale`. */
+/**
+ * Alt text for the requested locale only. Another locale is never substituted.
+ * Returns `null` when the value is missing or has no translation for `locale`.
+ * Returns `''` when the translation exists but is explicitly empty (decorative image).
+ */
 export function resolveLocalizedAlt(
   value: unknown,
   ctx: ResolveLocalizedAltContext = {}
 ): string | null {
-  const direct = pickString(value)
-  if (direct) return direct
+  if (typeof value === 'string') return normalizeAltText(value)
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) return null
 
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
-    return null
-  }
-
-  const record = value as Record<string, unknown>
   const locale = ctx.locale?.trim()
-  if (locale) {
-    const forLocale = pickString(record[locale])
-    if (forLocale) return forLocale
-  }
+  if (!locale) return null
 
-  const fallbackLocale = ctx.fallbackLocale?.trim()
-  if (fallbackLocale && fallbackLocale !== locale) {
-    return pickString(record[fallbackLocale])
-  }
-
-  return null
+  return normalizeAltText((value as Record<string, unknown>)[locale])
 }

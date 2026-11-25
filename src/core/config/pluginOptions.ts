@@ -63,15 +63,11 @@ export type SanityStorageAltOptions = {
    */
   enabled?: boolean
   /**
-   * Require every locale subfield in the injected alt group.
+   * Require every locale subfield in the injected alt group (or the plain `alt` field
+   * when Payload has no localization). Empty values fail validation.
    * @default false
    */
   required?: boolean
-  /**
-   * When the request locale has no alt value, try this locale key in the localized group.
-   * Does not apply to plain string `alt` fields.
-   */
-  fallbackLocale?: string
 }
 
 export type SanityStoragePopulateConfig = {

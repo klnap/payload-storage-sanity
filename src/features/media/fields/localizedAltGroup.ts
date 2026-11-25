@@ -9,7 +9,6 @@ import {
 export type ResolvedCollectionAltOptions = {
   enabled: boolean
   required: boolean
-  fallbackLocale?: string
 }
 
 export function resolveCollectionAltOptions(
@@ -24,7 +23,6 @@ export function resolveCollectionAltOptions(
   return {
     enabled: alt?.enabled ?? true,
     required: alt?.required ?? false,
-    fallbackLocale: alt?.fallbackLocale,
   }
 }
 

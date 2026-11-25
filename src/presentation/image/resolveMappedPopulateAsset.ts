@@ -36,10 +36,7 @@ function pickString(value: unknown): string | undefined {
 }
 
 function pickAlt(value: unknown): string | null {
-  if (value == null) return null
-  if (typeof value !== 'string') return null
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
+  return typeof value === 'string' ? value.trim() : null
 }
 
 function pickNumber(value: unknown): number | undefined {

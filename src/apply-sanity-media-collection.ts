@@ -218,7 +218,6 @@ export function applySanityStorageToMediaCollection(
       collectionSlug: slug,
       cdnBaseUrl,
       resolvedPreset: populateResolved.preset,
-      altFallbackLocale: altOptions.fallbackLocale,
       localPopulate: populateResolved.localPopulate,
       localizedAltGroup,
     })

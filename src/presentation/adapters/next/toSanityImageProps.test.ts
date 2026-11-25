@@ -16,6 +16,33 @@ describe('toSanityImageProps', () => {
     expect(props?.src).toBe('https://cdn.example/img.jpg')
   })
 
+  test('explicit alt="" override marks the image decorative and beats the asset description', () => {
+    const props = toSanityImageProps(
+      { id: 1, url: 'https://cdn.example/img.jpg', alt: 'Hero', width: 800, height: 600 },
+      { alt: '' }
+    )
+
+    expect(props?.alt).toBe('')
+  })
+
+  test('explicitly empty asset alt stays empty and is not replaced by fallbackAlt', () => {
+    const props = toSanityImageProps(
+      { id: 1, url: 'https://cdn.example/img.jpg', alt: '', width: 800, height: 600 },
+      { fallbackAlt: 'Decorative fallback' }
+    )
+
+    expect(props?.alt).toBe('')
+  })
+
+  test('missing alt uses fallbackAlt', () => {
+    const props = toSanityImageProps(
+      { id: 1, url: 'https://cdn.example/img.jpg', alt: null, width: 800, height: 600 },
+      { fallbackAlt: 'Fallback' }
+    )
+
+    expect(props?.alt).toBe('Fallback')
+  })
+
   test('uses blur placeholder fallback when lqip is missing but url is present', () => {
     const props = toSanityImageProps({
       id: 1,

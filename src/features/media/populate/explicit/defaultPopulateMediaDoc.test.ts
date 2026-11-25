@@ -44,19 +44,21 @@ describe('defaultPopulateMediaDoc', () => {
     expect(result?.alt).toBe('Opis')
   })
 
-  test('falls back when locale missing in group', () => {
-    const result = defaultPopulateMediaDoc(
-      { ...baseDoc, alt: { en: 'Caption' } },
-      { locale: 'pl', fallbackLocale: 'en' }
-    )
-    expect(result?.alt).toBe('Caption')
+  test('missing translation returns null alt, not the other locale', () => {
+    const result = defaultPopulateMediaDoc({ ...baseDoc, alt: { en: 'Caption' } }, { locale: 'pl' })
+    expect(result?.alt).toBeNull()
   })
 
-  test('null alt when empty', () => {
-    const result = defaultPopulateMediaDoc({
-      ...baseDoc,
-      alt: '',
-    })
+  test('explicitly empty translation returns empty alt', () => {
+    const result = defaultPopulateMediaDoc(
+      { ...baseDoc, alt: { pl: '', en: 'Caption' } },
+      { locale: 'pl' }
+    )
+    expect(result?.alt).toBe('')
+  })
+
+  test('missing plain alt returns null', () => {
+    const result = defaultPopulateMediaDoc({ ...baseDoc, alt: undefined })
     expect(result?.alt).toBeNull()
   })
 })
