@@ -15,7 +15,7 @@ export { enrichMediaSanityMetadataForPopulate } from './metadata/enrichMetadataF
 
 export { focalObjectPosition } from './metadata/focalObjectPosition'
 export type { ResolveLocalizedAltContext } from './metadata/resolveLocalizedAlt'
-export { resolveLocalizedAlt } from './metadata/resolveLocalizedAlt'
+export { normalizeAltText, resolveLocalizedAlt } from './metadata/resolveLocalizedAlt'
 export { resolvePopulateRequestLocale } from './metadata/resolvePopulateRequestLocale'
 export { applyPopulatePreset } from './options/applyPopulatePreset'
 export { sanityMediaForceSelect } from './options/forceSelect'
