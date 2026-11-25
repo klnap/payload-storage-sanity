@@ -2,6 +2,7 @@
 
 import {
   DefaultListView,
+  Spinner,
   toast,
   useAuth,
   useConfig,
@@ -36,6 +37,13 @@ function subscribeToToolbarSize(update: () => void) {
   const query = smallToolbar()
   query.addEventListener('change', update)
   return () => query.removeEventListener('change', update)
+}
+
+export function isGalleryQueryReady(
+  querySlug: string | undefined,
+  collectionSlug: string
+): boolean {
+  return querySlug === collectionSlug
 }
 
 function useGalleryView(collectionSlug: string, enabled: boolean) {
@@ -131,7 +139,12 @@ function GalleryResults({
     [items, layout, width]
   )
 
-  if (!data || querySlug !== collectionSlug) return <p role='status'>Loading media…</p>
+  if (!data || !isGalleryQueryReady(querySlug, collectionSlug))
+    return (
+      <div aria-label='Loading media' role='status'>
+        <Spinner loadingText={null} size='lg' />
+      </div>
+    )
 
   return (
     <ul
