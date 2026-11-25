@@ -1,13 +1,13 @@
 /**
- * v3 domain dependency matrix (ADR-0007).
+ * Layer dependency matrix (ADR-0007).
  * Top-level folders under src/: core, sanity, features, presentation, admin.
  * Used to generate dependency-cruiser forbidden rules.
  */
 
-export const V3_TOP_LEVEL = ['core', 'sanity', 'features', 'presentation', 'admin']
+export const LAYER_DIRECTORIES = ['core', 'sanity', 'features', 'presentation', 'admin']
 
 /** @type {Record<string, string[]>} */
-export const V3_ALLOWED = {
+export const LAYER_ALLOWED_IMPORTS = {
   core: [],
   sanity: ['core'],
   features: ['core', 'sanity'],
@@ -20,14 +20,14 @@ export const V3_ALLOWED = {
 export function buildMatrixForbiddenRules() {
   const rules = []
 
-  for (const from of V3_TOP_LEVEL) {
-    const allowed = new Set(V3_ALLOWED[from] ?? [])
-    for (const to of V3_TOP_LEVEL) {
+  for (const from of LAYER_DIRECTORIES) {
+    const allowed = new Set(LAYER_ALLOWED_IMPORTS[from] ?? [])
+    for (const to of LAYER_DIRECTORIES) {
       if (from === to) continue
       if (allowed.has(to)) continue
       rules.push({
-        name: `matrix-v3-${from}-not-${to}`,
-        comment: `v3 layout: ${from}/ must not import ${to}/`,
+        name: `matrix-layer-${from}-not-${to}`,
+        comment: `layer: ${from}/ must not import ${to}/`,
         severity: 'error',
         from: { path: `^src/${from}/` },
         to: { path: `^src/${to}/` },
@@ -39,11 +39,11 @@ export function buildMatrixForbiddenRules() {
     ['plugin.ts', 'plugin'],
     ['index.ts', 'index'],
   ]) {
-    const allowed = new Set(V3_ALLOWED[key] ?? [])
-    for (const to of V3_TOP_LEVEL) {
+    const allowed = new Set(LAYER_ALLOWED_IMPORTS[key] ?? [])
+    for (const to of LAYER_DIRECTORIES) {
       if (allowed.has(to)) continue
       rules.push({
-        name: `matrix-v3-${key}-not-${to}`,
+        name: `matrix-layer-${key}-not-${to}`,
         comment: `${file} must not import ${to}/`,
         severity: 'error',
         from: { path: `^src/${file.replace('.', '\\.')}$` },
@@ -53,13 +53,4 @@ export function buildMatrixForbiddenRules() {
   }
 
   return rules
-}
-
-/** @deprecated v2 domain list — kept for scripts that still import TARGET_DOMAINS */
-export const TARGET_DOMAINS = V3_TOP_LEVEL
-
-export const TARGET_ALLOWED = V3_ALLOWED
-
-export function buildMatrixForbiddenRulesLegacy() {
-  return buildMatrixForbiddenRules()
 }
