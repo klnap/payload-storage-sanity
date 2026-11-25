@@ -27,20 +27,17 @@ const page = await sdk.findGlobal({
 // page.image → DefaultPopulateAsset
 ```
 
-Globals with nested groups need **`depth ≥ 2`**:
+Relations inside groups, in collections or globals, are populated at **`depth: 1`**. Raise `depth` only for relations of relations:
 
 ```typescript
 const home = await sdk.findGlobal({
   slug: 'home-page',
   locale: 'pl',
-  depth: 2,
+  depth: 1,
   select: {
     image: true,
     socialMedia: {
-      image: {
-        asset: true,
-        alt: true,
-      },
+      image: true,
     },
   },
 })
@@ -111,7 +108,7 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | `aspectRatio` | `number` (optional) | |
 | `focalX` / `focalY` | `number` (optional) | Percentages, 0–100. |
 | `alt` | `string` \| `null` | Text for the request **`locale`**. `null` when that locale has no translation; `''` when it is explicitly empty (decorative). Omit **`locale`** → usually **`null`**. |
-| `lqip` | `string` \| `null` | Low-quality image placeholder when present. |
+| `lqip` | `string` (optional) | Low-quality image placeholder when present. |
 
 No `path`, `sanity`, or upload binary fields — safe to pass to the client when the relation was morphed to this DTO. If **`url`** is missing (unavailable asset), morph may fall back to a full media document instead — guard **`asset?.url`** (see README [Frontend-ready media](../README.md#frontend-ready-media)).
 
@@ -129,7 +126,7 @@ import { SanityImage } from '@klnap/payload-storage-sanity/next'
 <SanityImage asset={page.hero} sizes="(max-width: 768px) 100vw, 1200px" />
 ```
 
-`createSanityImage` returns a component with a default `fallback` for broken URLs.
+Without a `fallback`, `SanityImage` renders nothing for a missing or broken asset. `createSanityImage({ fallback })` sets a default for every image it creates.
 
 `asset.alt` is already resolved for the request locale during default populate on the CMS — pass **`locale` on SDK/REST fetches**, not on `SanityImage`. Use the **`alt`** prop to override the CMS value for one image. `alt=""` marks it decorative and is kept as-is. **`fallbackAlt`** applies only when the asset has no alt text (`null`).
 

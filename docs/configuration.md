@@ -11,7 +11,9 @@ Reference for `sanityStorage()` options, defaults, and package exports. The [REA
 | `apiVersion` | Package default | Sanity API version for the client. |
 | `cdnBaseUrl` | `https://cdn.sanity.io` | Base URL for public asset URLs. |
 | `mode` | `'full'` | `'full'` uploads to Sanity. `'fields-only'` adds fields without the storage adapter. `'off'` skips storage registration. |
-| `collections` | Auto-discovered | Omit to discover upload collections without another adapter (in `full` mode). `{}` selects none. A slug map selects explicitly. |
+| `collections` | Auto-discovered | See [Collections](#collections). Omit to discover, `{}` selects none, a slug map selects explicitly. |
+| `collections.<slug>.enabled` | `true` | `false` excludes the collection. See [Collections](#collections). |
+| `crop`, `focalPoint` (Payload `upload` config) | `true` | Crop and focal point controls for an enabled collection. Set them in the collection's own Payload `upload` config to turn either off. Not plugin options. |
 | `collections.<slug>.folder` | `'Payload'` | Logical `sanity-plugin-media` folder for new uploads. |
 | `collections.<slug>.disablePayloadAccessControl` | `true` | Allows file delivery without Payload access checks. CDN URLs stay public either way. |
 | `collections.<slug>.disableLocalStorage` | `true` | Disables Payload's local file storage for the collection. |
@@ -36,6 +38,40 @@ Reference for `sanityStorage()` options, defaults, and package exports. The [REA
 Admin options can be set plugin-wide under `admin` and overridden per collection under `collections.<slug>.admin`.
 
 Plugins apply in order. The plugin does not replace an existing storage adapter silently. An explicit conflict fails during config build. A later cloud-storage plugin that replaces Sanity is detected at initialization when it keeps Payload's `onInit` chain.
+
+## Collections
+
+Each key in `collections` is a Payload collection slug. The value decides whether the collection joins the integration:
+
+| Value | Result |
+| --- | --- |
+| omitted (`collections` not set) | Every upload collection without another storage adapter is enabled (discovery, `full` mode). |
+| `{}` (`collections: {}`) | No collections are enabled. |
+| `true` or `{}` | Enabled with defaults. |
+| object without `enabled` | Enabled with the given options. |
+| `false` or `enabled: false` | Excluded. |
+
+Rules:
+
+- An explicit map never adds unlisted collections.
+- Every key must name an existing Payload collection, including excluded ones. Typos in slugs fail at config build. Unknown option keys inside a collection object are not checked.
+- Enabled collections must have `upload` set and must not already have a storage adapter. Excluded collections are not checked for either, and they keep their native Payload upload config and adapter.
+- Excluded collections receive no Sanity storage registration, fields, endpoints, populate changes, or admin overrides.
+- Two plugin-wide effects still apply to excluded collections. Rich-text reference checks run on every collection with rich-text fields, because they guard the enabled media collections. Upload size limits raised by `uploadMaxSize` apply to the global Payload upload limit, so they reach excluded collections too.
+- Consumers do not repeat the Payload collection config. The plugin merges its options into the existing collection.
+
+```ts
+sanityStorage({
+  projectId: process.env.SANITY_PROJECT_ID!,
+  dataset: process.env.SANITY_DATASET!,
+  token: process.env.SANITY_API_TOKEN!,
+  collections: {
+    media: true,
+    documents: { folder: 'website/documents' },
+    privateFiles: false,
+  },
+})
+```
 
 ## Folders
 
