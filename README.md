@@ -15,7 +15,7 @@ Pre-generated image sizes multiply storage and deployment work. With this packag
 - **No Sanity Studio required.** Editors work in Payload.
 
 > [!IMPORTANT]
-> Sanity CDN URLs are public. Anyone with the URL can download the file, whether or not Payload still lists it. Payload access control protects Payload API operations, not CDN URLs. Do not use this package for private media.
+> This plugin uses Sanity's Content Lake Asset API. Assets uploaded to a dataset are publicly accessible through the Asset CDN, regardless of dataset visibility. Private asset delivery through Sanity Media Library and signed URLs is not currently supported.
 
 ## Features
 
@@ -82,8 +82,9 @@ sanityStorage({
   token: process.env.SANITY_API_TOKEN!,
   collections: {
     media: true,
-    documents: { folder: 'website/documents' },
-    privateFiles: false,
+    documents: {
+      folder: 'website/documents',
+    },
   },
 })
 ```
@@ -210,14 +211,14 @@ const thumb = resolvePublicUrl(media, {
 })
 ```
 
-`resolvePublicUrl` adds parameters only to image assets, adds `auto=format` by default, and returns `null` when the media is unavailable. Set `transform.autoFormat: false` to turn format negotiation off. `buildSanityImageUrl({ client, value, width })` returns `null` when there is no image or URL, and it returns a flat asset's raw `url` without resizing.
+`resolvePublicUrl` adds parameters only to image assets, adds `auto=format` by default, and returns `null` when the media is unavailable. Set `transform.autoFormat: false` to turn format negotiation off. `buildSanityImageUrl({ value, width })` takes a flat asset, a full media document, or an image URL, and applies the same width and height to each. It needs no Sanity client when the value has a URL. It returns `null` when there is no image or URL.
 
-With the default `'default'` preset, a relation is the flat asset, which has no Sanity record. Build variants from its `url` with `sanityCdnUrl` from `@klnap/payload-storage-sanity/next`:
+With the default `'default'` preset, a relation is the flat asset, which has no Sanity record. The same builder resizes it:
 
 ```ts
-import { sanityCdnUrl } from '@klnap/payload-storage-sanity/next'
+import { buildSanityImageUrl } from '@klnap/payload-storage-sanity'
 
-const thumb = sanityCdnUrl(image.url, { width: 160, height: 160 })
+const thumb = buildSanityImageUrl({ value: image, width: 160, height: 160 })
 ```
 
 Sanity documents more parameters, such as `fm`, `dpr`, and `fp-x` and `fp-y`. This package does not type them. See Sanity's [image URL reference](https://www.sanity.io/docs/apis-and-sdks/image-urls).

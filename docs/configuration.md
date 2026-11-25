@@ -68,7 +68,6 @@ sanityStorage({
   collections: {
     media: true,
     documents: { folder: 'website/documents' },
-    privateFiles: false,
   },
 })
 ```
