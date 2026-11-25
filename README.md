@@ -20,10 +20,10 @@ Asset storage is the total size of stored originals. Bandwidth is the data deliv
 
 - **Uploads to Sanity** from Payload's native upload UI, with Payload as the source of truth for each media document.
 - **On-demand image transformations** with `buildSanityImageUrl` and `resolvePublicUrl`. Resize, crop, and let Sanity negotiate the format.
-- **Frontend-ready media** with a flat response shape, dimensions, focal points, localized alt text, and LQIP placeholders.
+- **Frontend-ready media** with a flat response shape, dimensions, focal points, locale-specific alt text, and LQIP placeholders.
 - **Next.js components** with `SanityImage` and a custom loader for `next/image`.
 - **Automatic media fields** for `title`, `alt`, and Sanity metadata. The plugin adds only what the collection lacks.
-- **Localized alt text** that adds one field per locale when Payload localization is enabled.
+- **Asset-level alt text**, written once, translated per locale, and shared by every reference to the media.
 - **Media management** with justified, grid, and list layouts, per-user preferences, previews, metadata, and logical folders.
 - **Reference-aware deletion** that stops you from deleting media still used by Payload content.
 - **Optional deduplication** for identical uploads.
@@ -151,15 +151,15 @@ sanityStorage({
 
 A `DefaultPopulateAsset` has these fields:
 
-| Field              | Type               | Use                                                                        |
-| ------------------ | ------------------ | -------------------------------------------------------------------------- |
-| `id`               | `string \| number` | Payload document id.                                                       |
-| `url`              | `string`           | Public CDN URL of the original.                                            |
-| `width`, `height`  | `number`           | Original dimensions, from Sanity metadata.                                 |
-| `aspectRatio`      | `number`           | Aspect ratio of the original.                                              |
-| `focalX`, `focalY` | `number`           | Focal point as percentages, from `0` to `100`. Used for `object-position`. |
-| `alt`              | `string \| null`   | Alt text for the request locale, with fallback.                            |
-| `lqip`             | `string`           | Low-quality placeholder, when present.                                     |
+| Field              | Type               | Use                                                                                |
+| ------------------ | ------------------ | ---------------------------------------------------------------------------------- |
+| `id`               | `string \| number` | Payload document id.                                                               |
+| `url`              | `string`           | Public CDN URL of the original.                                                    |
+| `width`, `height`  | `number`           | Original dimensions, from Sanity metadata.                                         |
+| `aspectRatio`      | `number`           | Aspect ratio of the original.                                                      |
+| `focalX`, `focalY` | `number`           | Focal point as percentages, from `0` to `100`. Used for `object-position`.         |
+| `alt`              | `string \| null`   | Alt text for the request locale. `null` if untranslated, `''` if explicitly empty. |
+| `lqip`             | `string`           | Low-quality placeholder, when present.                                             |
 
 Compare that with a full document. A full document includes the Sanity asset record, sync diagnostics, and upload internals. The flat shape keeps only what a page needs to render an image.
 
@@ -227,7 +227,7 @@ export function Hero({ image }: { image: DefaultPopulateAsset | null }) {
 
 With `fill`, the parent must have a size and `position: relative`. The example uses an aspect ratio for that. Without `fill`, the component uses the asset's `width` and `height`. If either dimension is missing, it switches to `fill` and the parent sizing rule applies.
 
-`alt` comes from the populated asset. Pass `alt` to override it, or `fallbackAlt` when the asset has none.
+`alt` comes from the populated asset. Pass `alt` to override it for one image; `alt=""` marks it decorative. `fallbackAlt` applies only when the asset has no alt text. See [Asset-level alt text](#asset-level-alt-text).
 
 ### Using Sanity as the image loader
 
@@ -267,22 +267,48 @@ The plugin adds these fields to each configured upload collection. It does not r
 
 Payload's upload support provides `filename`, `mimeType`, `filesize`, `width`, and `height`.
 
-### Alt text
+## Asset-level alt text
 
-With Payload localization enabled, the plugin adds an `alt` group with one field per locale. Editors fill in each language. The frontend receives a single string for the current locale, and `DefaultPopulateAsset.alt` falls back to the configured fallback locale when the current locale is empty.
+Write alternative text once, translate it for each language, and reuse it wherever the image appears.
 
-Set alt options per collection. Plain `collections: { media: true }` and auto-discovery use the defaults:
+The alt text belongs to the Payload media document. The Sanity asset is shared, and every content document that references the media document receives the same description. Editing it in one place updates every page that shows the image. The per-language layout is inspired by Sanity's Internationalized Array pattern. It is not a dependency, and the package does not use Sanity's array storage.
+
+With Payload localization enabled, the plugin adds an `alt` group with one text field per locale. Without localization, it adds one `alt` text field. Existing `alt` fields are kept unchanged.
+
+Alt options are set per collection:
 
 ```ts
 sanityStorage({
   // ...
   collections: {
-    media: { alt: { required: true, fallbackLocale: 'en' } },
+    media: { alt: { required: true } },
   },
 })
 ```
 
-The plugin creates the fields. Editors write alt text. The plugin neither generates nor reads it from Sanity. Set `alt.required` to require every locale.
+`alt.required` defaults to `false`. When `true`, every configured locale is required, and Payload rejects empty values. Whitespace-only text passes Payload's check, but the frontend reads it as missing.
+
+Editors write the alt text. The plugin does not generate descriptions and does not read them from Sanity metadata.
+
+### Frontend values
+
+`DefaultPopulateAsset.alt` holds the text for the request locale:
+
+- **Translated:** the text, trimmed.
+- **No translation for that locale:** `null`. No other language is substituted, and Payload's localization fallback does not copy one in, because the alt group is not a localized field.
+- **Explicitly empty:** `''`. Use this for decorative images.
+
+### Contextual overrides
+
+A single image can override the stored text:
+
+```tsx
+<SanityImage asset={image} alt="" />            // decorative: no description
+<SanityImage asset={image} alt="Team photo" />  // this context only
+<SanityImage asset={image} fallbackAlt="Logo" /> // only when the asset has no alt text
+```
+
+An explicit `alt=""` is kept. It is never replaced by the asset description. `fallbackAlt` applies only when the asset has no alt text (`null`). It does not replace an explicitly empty value.
 
 ## Uploads, replacements, and deletion
 
@@ -349,7 +375,7 @@ Media tracking covers:
 
 - **Updates and deletes** of a media document. Creates do not trigger it.
 - **Direct references** through `upload` and `relationship` fields to the media collection, inside groups, rows, collapsibles, tabs, and arrays. For globals, arrays and `hasMany` fields are not matched.
-- **Locales.** A change to a shared field, such as the file or focal point, revalidates every locale. A change to `alt` revalidates only the locale whose alt text changed.
+- **Locales.** A change to a shared field, such as the file or focal point, revalidates every locale. A change to `alt` revalidates only the locale whose alt text changed, so one central edit refreshes the pages that show the image in that language.
 - **Published documents only**, for updates and deletes alike.
 
 Limits to plan around:

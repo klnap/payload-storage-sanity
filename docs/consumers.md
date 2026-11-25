@@ -68,7 +68,7 @@ const post = await sdk.find({
 
 You receive exactly the selected shape (hydrated URLs, no flattening to `DefaultPopulateAsset`). **Do not pass this into `SanityImage`.** Render with **`next/image`** (or your own component) and declare `src`, `width`, `height`, `alt`, placeholders yourself.
 
-When the media collection uses the injected **localized alt group**, selecting **`alt: true`** (or nested locale keys) returns an **object** (`alt.pl`, …), not a single string — use **`resolveLocalizedAlt(doc.alt, { locale: 'pl', fallbackLocale: 'en' })`** from the main package, or map a string field via **`assetMapping`**. See the root **[README — Alt text](../README.md#alt-text)**.
+When the media collection uses the injected **localized alt group**, selecting **`alt: true`** (or nested locale keys) returns an **object** (`alt.pl`, …), not a single string — use **`resolveLocalizedAlt(doc.alt, { locale: 'pl' })`** from the main package, or map a string field via **`assetMapping`**. Each locale stands alone: a missing translation returns `null`, never another language. See **[README — Asset-level alt text](../README.md#asset-level-alt-text)**.
 
 ### `fullPopulate` / `createPopulate`
 
@@ -110,7 +110,7 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | `width` / `height` | `number` (optional) | From Sanity metadata. |
 | `aspectRatio` | `number` (optional) | |
 | `focalX` / `focalY` | `number` (optional) | Percentages, 0–100. |
-| `alt` | `string` \| `null` | Request **`locale`** on the parent fetch (or **`collections.*.alt.fallbackLocale`** when that locale is empty). Omit **`locale`** → usually **`null`**. |
+| `alt` | `string` \| `null` | Text for the request **`locale`**. `null` when that locale has no translation; `''` when it is explicitly empty (decorative). Omit **`locale`** → usually **`null`**. |
 | `lqip` | `string` \| `null` | Low-quality image placeholder when present. |
 
 No `path`, `sanity`, or upload binary fields — safe to pass to the client when the relation was morphed to this DTO. If **`url`** is missing (unavailable asset), morph may fall back to a full media document instead — guard **`asset?.url`** (see README [Frontend-ready media](../README.md#frontend-ready-media)).
@@ -126,12 +126,12 @@ Optional Next.js entry (peer `next` is optional on the main package).
 ```tsx
 import { SanityImage } from '@klnap/payload-storage-sanity/next'
 
-<SanityImage asset={page.hero} alt={page.hero?.alt ?? ''} sizes="(max-width: 768px) 100vw, 1200px" />
+<SanityImage asset={page.hero} sizes="(max-width: 768px) 100vw, 1200px" />
 ```
 
 `createSanityImage` returns a component with a default `fallback` for broken URLs.
 
-`asset.alt` is already resolved for the request locale during default populate on the CMS — pass **`locale` on SDK/REST fetches**, not on `SanityImage`. Use the **`alt`** prop to override the CMS value, or **`fallbackAlt`** when you need a non-empty decorative default.
+`asset.alt` is already resolved for the request locale during default populate on the CMS — pass **`locale` on SDK/REST fetches**, not on `SanityImage`. Use the **`alt`** prop to override the CMS value for one image. `alt=""` marks it decorative and is kept as-is. **`fallbackAlt`** applies only when the asset has no alt text (`null`).
 
 ### `next.config` image loader
 

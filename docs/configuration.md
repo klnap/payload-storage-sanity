@@ -24,8 +24,7 @@ Reference for `sanityStorage()` options, defaults, and package exports. The [REA
 | `preventDeleteWhenReferenced` | `true` | Refuses deletion of a media row that Payload content references. |
 | `dedupeUploads` | `false` | Rejects identical-byte creates. |
 | `collections.<slug>.alt.enabled` | `true` | Adds an alt field when the collection has none. Per collection only. |
-| `collections.<slug>.alt.required` | `false` | Requires every locale of the alt group. Per collection only. |
-| `collections.<slug>.alt.fallbackLocale` | None | Locale used when the request locale has no alt text. Applies to the localized group only. |
+| `collections.<slug>.alt.required` | `false` | Requires every configured locale (or the plain `alt` field). Empty values fail validation. Per collection only. |
 | `admin.gallery` | `true` | Justified, grid, and list media list. `false` keeps Payload's list view. |
 | `admin.uploadBusyShield` | `true` | "Uploading…" state during Save. The preview stays visible. |
 | `sync.enabled` | `false` | Adds webhook and reconcile routes. Requires `token` and `sync.webhook.secret`. |
