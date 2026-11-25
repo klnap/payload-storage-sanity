@@ -40,10 +40,11 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
+      - run: bun run knip
+      - run: bun run check:boundaries
       - run: bun test src tests
       - run: bun run build
-      - run: bun run check:publint
-      - run: bun run check:attw
+      - run: bun run check:package
       - run: bun audit --audit-level=high
       - uses: zizmorcore/zizmor-action@bd12b495c90993a4301c73398142281a61499af3 # v0.9.0
         with:

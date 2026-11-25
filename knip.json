@@ -30,7 +30,8 @@
     "css-loader",
     "@payloadcms/translations",
     "next",
-    "@payloadcms/plugin-cloud-storage"
+    "@payloadcms/plugin-cloud-storage",
+    "@swc/core"
   ],
   "ignoreUnresolved": ["scripts/verify-css-side-effects.mjs", "scripts/check-attw.mjs"]
 }

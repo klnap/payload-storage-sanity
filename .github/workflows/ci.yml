@@ -29,10 +29,11 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
+      - run: bun run knip
+      - run: bun run check:boundaries
       - run: bun test src tests
       - run: bun run build
-      - run: bun run check:publint
-      - run: bun run check:attw
+      - run: bun run check:package
       - run: npm pack --silent
       - name: Smoke-test the packed package
         run: bash scripts/consumer-smoke.sh klnap-payload-storage-sanity-*.tgz
