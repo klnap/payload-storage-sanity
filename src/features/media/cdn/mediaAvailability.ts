@@ -3,13 +3,6 @@ import type { SanityMediaDocument } from '@/features/media/document/sanityStorag
 import type { SanityImageDimensions } from '@/sanity/assets'
 import { getSanityAssetMetadata, getSanityAssetPath, getSanityAssetUrl } from '@/sanity/assets'
 
-export function hasResolvableMediaUrl(
-  media: Partial<SanityMediaDocument> | null | undefined
-): boolean {
-  if (media == null) return false
-  return Boolean(media.url && media.url.trim().length > 0)
-}
-
 export function isMediaAssetAvailable(
   media: Partial<SanityMediaDocument> | null | undefined
 ): boolean {

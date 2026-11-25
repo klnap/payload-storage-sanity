@@ -25,7 +25,7 @@ export const sanityAssetJsonGroup = (): Field => ({
 })
 
 /** Sync diagnostics — always hidden in admin; kept for persistence / reconcile. */
-export const sanitySyncFields = (): Field[] => [
+const sanitySyncFields = (): Field[] => [
   {
     name: 'status',
     type: 'text',

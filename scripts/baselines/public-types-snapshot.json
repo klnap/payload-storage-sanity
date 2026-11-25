@@ -65,6 +65,11 @@
       "declaration": "createSanityClient"
     },
     {
+      "name": "SANITY_IMAGE_METADATA_EXTRACT",
+      "kind": "value",
+      "declaration": "SANITY_IMAGE_METADATA_EXTRACT"
+    },
+    {
       "name": "SanityClientConfig",
       "kind": "type",
       "declaration": "SanityClientConfig"

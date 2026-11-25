@@ -1,6 +1,4 @@
-export { classifySanityAssetType } from '../cdn/classifySanityAssetType'
 export type { DefaultPopulateAsset } from './defaultPopulate'
-export { SANITY_ASSET_DEFAULT_POPULATE_FIELDS } from './defaultPopulate'
 export { defaultPopulateMediaDoc } from './explicit/defaultPopulateMediaDoc'
 export { hasExplicitMediaPopulateSelect } from './explicit/explicitMediaPopulate'
 export {
@@ -21,13 +19,11 @@ export { sanityMediaForceSelect } from './options/forceSelect'
 export { sanityMediaDefaultPopulateSelect } from './options/mediaDefaultPopulateSelect'
 export { resolvePopulateOptionsForCollection } from './options/resolvePopulateOptions'
 export { shouldApplyDefaultPopulate } from './options/shouldApplyDefaultPopulate'
-export { isBuiltinPopulatePreset, presetUsesDefaultPopulate } from './presets'
+export { presetUsesDefaultPopulate } from './presets'
 export {
   mergeSanityStorageContext,
   readSanityStorageContext,
   SANITY_STORAGE_CONTEXT_KEY,
   type SanityStorageRequestContext,
-  shouldForcePopulateMorph,
   shouldMorphMediaPopulate,
-  shouldSkipPopulateMorph,
 } from './requestContext'

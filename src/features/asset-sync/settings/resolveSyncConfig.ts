@@ -23,9 +23,9 @@ export type ResolvedSanitySyncConfig = {
   reconcile: ResolvedSanitySyncReconcile | null
 }
 
-export const DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH = '/sanity-storage'
+const DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH = '/sanity-storage'
 
-export function normalizeSanityStorageSyncBasePath(basePath?: string): string {
+function normalizeSanityStorageSyncBasePath(basePath?: string): string {
   const raw = (basePath ?? DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH).trim()
   if (!raw) {
     return DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH
@@ -34,7 +34,7 @@ export function normalizeSanityStorageSyncBasePath(basePath?: string): string {
   return withLeading.replace(/\/+$/, '') || DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH
 }
 
-export function syncRoutePath(basePath: string, segment: 'webhook' | 'reconcile'): string {
+function syncRoutePath(basePath: string, segment: 'webhook' | 'reconcile'): string {
   const base = normalizeSanityStorageSyncBasePath(basePath)
   return `${base}/${segment}`
 }

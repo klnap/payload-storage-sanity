@@ -9,8 +9,6 @@ export type ResolveLocalizedAltContext = {
  * `''` is explicitly empty (decorative). Whitespace-only text is treated as missing,
  * because Payload's `required` check accepts it and it is almost never a deliberate choice.
  */
-export { normalizeAltText }
-
 /**
  * Alt text for the requested locale only. Another locale is never substituted.
  * Returns `null` when the value is missing or has no translation for `locale`.

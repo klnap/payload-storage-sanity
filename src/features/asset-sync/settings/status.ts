@@ -1,5 +1,5 @@
 /** Upstream Sanity asset availability tracked on Payload media rows. */
-export const SANITY_SYNC_STATUSES = ['available', 'missing', 'deleted', 'error', 'unknown'] as const
+const SANITY_SYNC_STATUSES = ['available', 'missing', 'deleted', 'error', 'unknown'] as const
 
 export type SanitySyncStatus = (typeof SANITY_SYNC_STATUSES)[number]
 

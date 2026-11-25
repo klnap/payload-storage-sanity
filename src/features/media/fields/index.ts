@@ -16,11 +16,8 @@ export {
   collectionHasAltField,
   getLocalizationLocales,
   type LocaleLike,
-  type LocalizedAltGroupFieldOptions,
   localizedAltGroupField,
-  type PlainAltTextFieldOptions,
   plainAltTextField,
-  type ResolvedCollectionAltOptions,
   resolveCollectionAltOptions,
 } from './localizedAltGroup'
 export {
@@ -28,8 +25,6 @@ export {
   SANITY_UPSTREAM_WRITE_CONTEXT_KEY,
   sanityAssetJsonGroup,
   sanityMediaAdminFields,
-  sanityMediaSyncFields,
-  sanitySyncFields,
 } from './mediaFields'
 export { normalizeLocalizedAltGroup } from './normalizeMediaAlt'
 export { sanityHiddenPersistenceFields } from './sanityPersistenceFields'

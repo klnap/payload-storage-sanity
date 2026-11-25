@@ -19,7 +19,7 @@
   },
   "./client": {
     "default": false,
-    "runtime": ["createSanityClient"],
+    "runtime": ["createSanityClient", "SANITY_IMAGE_METADATA_EXTRACT"],
     "types": ["SanityClientConfig"]
   },
   "./folders": {

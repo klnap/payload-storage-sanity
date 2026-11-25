@@ -1,12 +1,9 @@
 export {
-  type BuildSanityImageUrlOptions,
   buildSanityImageUrl,
   resolveAssetDocumentUrl,
-  type SanityImageSource,
 } from './buildImageUrl'
 export { applyImageParams } from './imageParams'
 export {
-  hasResolvableMediaUrl,
   imageDimensionsFromMedia,
   isMediaAssetAvailable,
 } from './mediaAvailability'

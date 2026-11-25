@@ -2,14 +2,9 @@ export type {
   SanityAsset,
   SanityAssetMetadata,
   SanityAssetReference,
-  SanityExif,
-  SanityExifValue,
   SanityFileAsset,
-  SanityGeopoint,
   SanityImageAsset,
   SanityImageDimensions,
-  SanityImagePalette,
-  SanityPaletteSwatch,
 } from './asset'
 export { SANITY_IMAGE_METADATA_EXTRACT } from './asset'
 export {

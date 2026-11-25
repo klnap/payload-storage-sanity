@@ -5,7 +5,7 @@ export {
   SanityAssetFetchCache,
 } from './fetch/sanityAssetCache'
 export { markMediaBySanityAssetId } from './markMedia'
-export type { SanityMediaSyncFields, WithMediaSync } from './mediaSync'
+export type { WithMediaSync } from './mediaSync'
 export {
   mediaSyncStatus,
   mergeMediaSync,
@@ -18,24 +18,13 @@ export {
   recordMediaRowForDuplicateCount,
 } from './reconcile/countDuplicateMediaRows'
 export { createSanityReconcileEndpoint } from './reconcile/reconcileEndpoint'
-export type { ReconcileHttpResponse, ReconcileReport } from './reconcile/reconcileSanityMedia'
 export {
   formatReconcileHttpResponse,
   reconcileSanityMedia,
 } from './reconcile/reconcileSanityMedia'
 export { defaultSanitySyncAccess } from './settings/defaultSyncAccess'
 export { isSanitySyncEnabled } from './settings/enabled'
-export type {
-  ResolvedSanitySyncConfig,
-  ResolvedSanitySyncReconcile,
-  ResolvedSanitySyncWebhook,
-} from './settings/resolveSyncConfig'
-export {
-  DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH,
-  normalizeSanityStorageSyncBasePath,
-  resolveSanitySyncConfig,
-  syncRoutePath,
-} from './settings/resolveSyncConfig'
+export { resolveSanitySyncConfig } from './settings/resolveSyncConfig'
 export type { SanitySyncAccessFn } from './settings/sanitySyncAccess'
 export type { SanitySyncStatus } from './settings/status'
 export {
@@ -43,7 +32,6 @@ export {
   isUnsetSyncStatus,
   normalizeSyncStatus,
   resolveMediaSyncStatus,
-  SANITY_SYNC_STATUSES,
 } from './settings/status'
 export { handleSanityWebhookEvent } from './webhook/handleWebhookEvent'
 export {

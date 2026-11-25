@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+### Breaking
+
+- Move frontend consumer utilities to `/consumers` and Next.js integrations to `/consumers/next`; remove the superseded root and `/next` exports.
+
+### Added
+
+- Add framework-independent asset contracts and image URL utilities, with tree-shaking and dependency-isolation checks.
+
 ## 0.1.0
 
 Initial release of `@klnap/payload-storage-sanity`.
