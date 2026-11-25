@@ -28,4 +28,8 @@ After the first commit, run `GRAPHIFY_BACKEND=none graphify update .`. If a dele
 
 ## Releases
 
-Follow the release instructions in the README. Only maintainers publish releases.
+Only maintainers publish releases.
+
+Releases use a version tag matching `package.json`, such as `v0.1.0`. The GitHub Actions release workflow validates the package and its packed artifact before publishing through npm trusted publishing. The npm trusted publisher must allow `npm publish` and match the `release.yml` workflow and `npm` environment.
+
+For a new npm package, publish a temporary `0.0.0-stage` version with the `stage` dist-tag before configuring trusted publishing. It is a bootstrap version, not npm's separate staged-publishing approval flow. Do not publish it with the `latest` tag.

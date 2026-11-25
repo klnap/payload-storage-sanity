@@ -69,7 +69,7 @@ Pass **`locale`** on SDK/REST fetches, not on `SanityImage`, for localized alt.
 
 ## `assetMapping` / TypeScript errors on `SanityImage`
 
-Use **`createSanityImage<YourAsset>()`** or pass **`assetMapping`** with dot paths (`metadata.width`, etc.). Mapping **`url`** is required and must resolve to a non-empty string. See README **assetMapping** section.
+Use **`createSanityImage<YourAsset>()`** or pass **`assetMapping`** with dot paths (`metadata.width`, etc.). Mapping **`url`** is required and must resolve to a non-empty string. See [Next.js](../README.md#nextjs).
 
 ## Host / SSRF / proxy 404
 
@@ -77,4 +77,4 @@ Adapter **`staticHandler`** (when Payload proxies files) only fetches **allowlis
 
 ## Raw Node `import` of package fails
 
-Published **`dist`** is **bundler-first**. Use Payload, Next, or Bun to run the app. Raw Node ESM without a resolver does not support extensionless relative imports in `dist`. See the **Requirements** section in [README.md](../README.md).
+Published **`dist`** is **bundler-first**. Use Payload, Next, or Bun to run the app. Raw Node ESM without a resolver does not support extensionless relative imports in `dist`. See the **Installation** section in [README.md](../README.md).

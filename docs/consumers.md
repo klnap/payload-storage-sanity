@@ -66,7 +66,7 @@ const post = await sdk.find({
 
 You receive exactly the selected shape (hydrated URLs, no flattening to `DefaultPopulateAsset`). **Do not pass this into `SanityImage`.** Render with **`next/image`** (or your own component) and declare `src`, `width`, `height`, `alt`, placeholders yourself. See harness `test-next/lib/manual-media-image.tsx`.
 
-When the media collection uses the injected **localized alt group**, selecting **`alt: true`** (or nested locale keys) returns an **object** (`alt.pl`, …), not a single string — use **`resolveLocalizedAlt(doc.alt, { locale: 'pl', fallbackLocale: 'en' })`** from the main package, or map a string field via **`assetMapping`**. See the root **[README — Localization and alt text](../README.md#localization-and-alt-text)**.
+When the media collection uses the injected **localized alt group**, selecting **`alt: true`** (or nested locale keys) returns an **object** (`alt.pl`, …), not a single string — use **`resolveLocalizedAlt(doc.alt, { locale: 'pl', fallbackLocale: 'en' })`** from the main package, or map a string field via **`assetMapping`**. See the root **[README — Localization and alt text](../README.md#alt-text)**.
 
 ### `fullPopulate` / `createPopulate`
 
@@ -111,7 +111,7 @@ Opt out of Local API DTO morph only: `sanityStorage({ populate: { preset: 'defau
 | `alt` | `string` \| `null` | Request **`locale`** on the parent fetch (or **`collections.*.alt.fallbackLocale`** when that locale is empty). Omit **`locale`** → usually **`null`**. |
 | `lqip` | `string` \| `null` | Low-quality image placeholder when present. |
 
-No `path`, `sanity`, or upload binary fields — safe to pass to the client when the relation was morphed to this DTO. If **`url`** is missing (unavailable asset), morph may fall back to a full media document instead — guard **`asset?.url`** (see README [Example response](../README.md#example-response)).
+No `path`, `sanity`, or upload binary fields — safe to pass to the client when the relation was morphed to this DTO. If **`url`** is missing (unavailable asset), morph may fall back to a full media document instead — guard **`asset?.url`** (see README [Reading media on the frontend](../README.md#reading-media-on-the-frontend)).
 
 ---
 
@@ -179,7 +179,7 @@ Types erase at compile time — zero runtime cost.
 | Shallow relation, **no** explicit `populate.media` → `DefaultPopulateAsset` | **`SanityImage`** with `asset={relation}` |
 | Explicit `populate.media` (manual, `fullPopulate`, `createPopulate`, …) | **`next/image`** (native props) — not `SanityImage` |
 
-`SanityImage` accepts **`DefaultPopulateAsset`** or a **custom asset** when you supply **`assetMapping`** (see README **assetMapping**). Default morph produces `DefaultPopulateAsset` only on the shallow preset path.
+`SanityImage` accepts **`DefaultPopulateAsset`** or a **custom asset** when you supply **`assetMapping`** (see [Next.js](../README.md#nextjs)). Default morph produces `DefaultPopulateAsset` only on the shallow preset path.
 
 Optional: `toSanityImageProps` when you already have a `DefaultPopulateAsset` and want raw `next/image` with the same focal/LQIP mapping.
 
