@@ -2,13 +2,15 @@
   "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "ignoreUnknown": true,
+    "ignoreUnknown": false,
     "includes": [
       "**",
       "!!**/node_modules",
       "!!**/dist",
       "!!**/.turbo",
       "!!**/coverage",
+      "!**/bun.lock",
+      "!!**/.changeset/*.md",
       "!**/*.tsbuildinfo",
       "!!**/docs",
       "!**/*-tailwind.css",
@@ -16,6 +18,7 @@
     ]
   },
   "formatter": {
+    "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100,

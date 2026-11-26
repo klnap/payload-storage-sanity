@@ -40,7 +40,7 @@ Payload does not store Sanity's transformed variants. Sanity does not manage Pay
 bun add @klnap/payload-storage-sanity
 ```
 
-Required peers: Payload, `@payloadcms/ui`, and `@payloadcms/translations` `>=3.94.1 <4`; `@sanity/client >=6 <9`; and React and React DOM `^19.3.1`. Install Next.js `>=16.4.5 <17` only when using the optional `./consumers/next` entry. Node.js must match `^24.22.3 || >=26.13.1`.
+Required peers: Payload, `@payloadcms/ui`, and `@payloadcms/translations` `>=3.94.1 <4`; `@sanity/client >=6 <9`; and React and React DOM `^19.3.1`. Install Next.js `>=16.4.5 <17` only when using the optional `./consumers/next` entry. Node.js must match `^22.23.5 || ^24.22.3 || >=26.13.1`.
 
 The published package is ESM and expects a bundler to resolve its extensionless imports. Raw Node.js ESM imports are not supported.
 

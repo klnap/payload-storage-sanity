@@ -5,13 +5,12 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validatePackedTarball } from './validate-packed-artifact.mjs'
 
@@ -29,6 +28,8 @@ const FIXTURES = [
 ]
 const fixtureArg = process.argv.indexOf('--fixture')
 const requestedFixture = fixtureArg === -1 ? undefined : process.argv[fixtureArg + 1]
+const tarballArg = process.argv.indexOf('--tarball')
+const requestedTarball = tarballArg === -1 ? undefined : process.argv[tarballArg + 1]
 const postgresURL = process.env.PSS_POSTGRES_CONSUMER_DATABASE_URL?.trim()
 const requirePostgres = process.env.PSS_REQUIRE_POSTGRES_CONSUMER === '1'
 if (requirePostgres && !postgresURL) {
@@ -37,6 +38,9 @@ if (requirePostgres && !postgresURL) {
 const requestedDefinition = FIXTURES.find(({ id }) => id === requestedFixture)
 if (requestedFixture && !requestedDefinition) {
   throw new Error(`Unknown release consumer fixture: ${requestedFixture}`)
+}
+if (tarballArg !== -1 && !requestedTarball) {
+  throw new Error('--tarball requires a tarball path')
 }
 if (requestedDefinition?.requiresPostgres && !postgresURL) {
   throw new Error(`${requestedFixture} requires PSS_POSTGRES_CONSUMER_DATABASE_URL`)
@@ -58,12 +62,15 @@ function installFixture(cwd) {
 }
 
 function packTarball(destDir) {
-  run(['pm', 'pack', '--destination', destDir], root)
-  const tgzName = readdirSync(destDir).find((line) => line.endsWith('.tgz'))
-  if (!tgzName) {
-    throw new Error('bun pm pack did not produce a tarball')
-  }
-  return join(destDir, tgzName)
+  const output = execFileSync('npm', ['pack', '--pack-destination', destDir, '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+  })
+  const result = JSON.parse(output)
+  const pack = Array.isArray(result) ? result[0] : Object.values(result)[0]
+  if (!pack?.filename) throw new Error('npm pack did not produce a tarball')
+  return join(destDir, pack.filename)
 }
 
 function persistVerifiedArtifact(tgzPath) {
@@ -107,15 +114,19 @@ function prepareFixtureWorkdir(fixtureId, tgzPath) {
   return workDir
 }
 
-if (!process.argv.includes('--use-dist')) {
+if (!requestedTarball && !process.argv.includes('--use-dist')) {
   console.log('release matrix: build dist')
   run(['run', 'build:dist'], root)
 }
 
-const packDir = mkdtempSync(join(tmpdir(), 'pss-matrix-pack-'))
+const packDir = requestedTarball ? undefined : mkdtempSync(join(tmpdir(), 'pss-matrix-pack-'))
 let tgzPath
 try {
-  tgzPath = packTarball(packDir)
+  tgzPath = requestedTarball
+    ? isAbsolute(requestedTarball)
+      ? requestedTarball
+      : resolve(root, requestedTarball)
+    : packTarball(packDir)
   const packErrors = validatePackedTarball(tgzPath)
   if (packErrors.length > 0) {
     throw new Error(packErrors.join('\n'))
@@ -139,7 +150,7 @@ try {
   }
   persistVerifiedArtifact(tgzPath)
 } finally {
-  rmSync(packDir, { recursive: true, force: true })
+  if (packDir) rmSync(packDir, { recursive: true, force: true })
 }
 
 console.log('\nrelease matrix: all fixtures passed')

@@ -3,16 +3,8 @@
  * Set PSS_CSS_WEBPACK=1 for the production webpack bundle (CI: `bun run check:css-side-effects`).
  */
 import { execFileSync } from 'node:child_process'
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-} from 'node:fs'
-import { dirname, join } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validatePackedTarball } from './validate-packed-artifact.mjs'
 
@@ -43,7 +35,7 @@ function runWebpackCssRetentionCheck(tgzPath, fixtureDir) {
     copyFileSync(join(fixtureSource, file), join(fixtureDir, file))
   }
   copyFileSync(tgzPath, join(fixtureDir, 'package.tgz'))
-  execFileSync('bun', ['install', '--ignore-scripts'], {
+  execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], {
     cwd: fixtureDir,
     stdio: 'inherit',
   })
@@ -68,14 +60,24 @@ function runWebpackCssRetentionCheck(tgzPath, fixtureDir) {
 mkdirSync(generatedRoot, { recursive: true })
 const workDir = mkdtempSync(join(generatedRoot, 'pss-css-'))
 try {
-  const packArgs = process.argv.includes('--use-dist') ? ['--ignore-scripts'] : []
-  execFileSync('bun', ['pm', 'pack', ...packArgs, '--destination', workDir, '--quiet'], {
-    cwd: packageRoot,
-    stdio: 'ignore',
-  })
-  const filename = readdirSync(workDir).find((entry) => entry.endsWith('.tgz'))
-  if (!filename) throw new Error('bun pm pack did not produce a tarball')
-  const tgzPath = join(workDir, filename)
+  const tarballArg = process.argv.indexOf('--tarball')
+  const requestedTarball = tarballArg === -1 ? undefined : process.argv[tarballArg + 1]
+  if (tarballArg !== -1 && !requestedTarball) throw new Error('--tarball requires a tarball path')
+  const tgzPath = requestedTarball
+    ? isAbsolute(requestedTarball)
+      ? requestedTarball
+      : resolve(packageRoot, requestedTarball)
+    : (() => {
+        const output = execFileSync('npm', ['pack', '--pack-destination', workDir, '--json'], {
+          cwd: packageRoot,
+          encoding: 'utf8',
+        })
+        const result = JSON.parse(output)
+        const pack = Array.isArray(result) ? result[0] : Object.values(result)[0]
+        if (!pack?.filename) throw new Error('npm pack did not produce a tarball')
+        return join(workDir, pack.filename)
+      })()
+  if (!existsSync(tgzPath)) throw new Error(`Packed tarball does not exist: ${tgzPath}`)
   const packErrors = validatePackedTarball(tgzPath)
   if (packErrors.length) throw new Error(packErrors.join('\n'))
 
