@@ -124,14 +124,24 @@
       "declaration": "type BuildSanityImageUrlOptions"
     },
     {
-      "name": "DefaultPopulateAsset",
-      "kind": "type",
-      "declaration": "DefaultPopulateAsset"
+      "name": "isMediaAsset",
+      "kind": "value",
+      "declaration": "isMediaAsset"
     },
     {
-      "name": "isDefaultPopulateAsset",
+      "name": "isMediaImageAsset",
       "kind": "value",
-      "declaration": "isDefaultPopulateAsset"
+      "declaration": "isMediaImageAsset"
+    },
+    {
+      "name": "MediaAsset",
+      "kind": "type",
+      "declaration": "MediaAsset"
+    },
+    {
+      "name": "MediaImageAsset",
+      "kind": "type",
+      "declaration": "MediaImageAsset"
     },
     {
       "name": "SanityAssetReference",
@@ -176,9 +186,14 @@
       "declaration": "type CreateSanityImageOptions"
     },
     {
-      "name": "DefaultPopulateAsset",
+      "name": "MediaAsset",
       "kind": "type",
-      "declaration": "DefaultPopulateAsset"
+      "declaration": "MediaAsset"
+    },
+    {
+      "name": "MediaImageAsset",
+      "kind": "type",
+      "declaration": "MediaImageAsset"
     },
     {
       "name": "SanityImage",

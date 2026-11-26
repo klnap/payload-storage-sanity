@@ -1,7 +1,7 @@
 import type { SanityStorageCollectionOptions, SanityStorageOptions } from '../../src'
 import { sanityStorage } from '../../src'
-import type { DefaultPopulateAsset } from '../../src/consumers'
-import { isDefaultPopulateAsset } from '../../src/consumers'
+import type { MediaAsset } from '../../src/consumers'
+import { isMediaAsset } from '../../src/consumers'
 
 const credentials = {
   projectId: 'project',
@@ -29,8 +29,8 @@ type GeneratedMedia = {
   alt?: { en?: string | null }
 }
 const relationship: GeneratedMedia | number | null = null
-if (isDefaultPopulateAsset(relationship)) {
-  const normalized: DefaultPopulateAsset = relationship
+if (isMediaAsset(relationship)) {
+  const normalized: MediaAsset = relationship
   void normalized
 }
 

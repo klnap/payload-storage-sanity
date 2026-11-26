@@ -1,9 +1,10 @@
 import type {
-  DefaultPopulateAsset,
+  MediaAsset,
+  MediaImageAsset,
   SanityAssetReference,
   SanityImageSource,
 } from '../../src/consumers'
-import { buildSanityImageUrl, isDefaultPopulateAsset } from '../../src/consumers'
+import { buildSanityImageUrl, isMediaAsset, isMediaImageAsset } from '../../src/consumers'
 import type { SanityImageProps } from '../../src/consumers/next'
 
 type GeneratedMedia = {
@@ -18,12 +19,19 @@ type Hero = {
 
 declare const page: Hero
 
-if (isDefaultPopulateAsset(page.heroImage)) {
-  const asset: DefaultPopulateAsset = page.heroImage
-  const props: SanityImageProps = { asset, sizes: '100vw' }
+if (isMediaAsset(page.heroImage)) {
+  const asset: MediaAsset = page.heroImage
   const url: string | null = buildSanityImageUrl(asset, { width: 960 })
-  void props
+  // @ts-expect-error A general media asset may be a file; narrow it before using SanityImage.
+  const unsafeProps: SanityImageProps = { asset, sizes: '100vw' }
   void url
+  void unsafeProps
+}
+
+if (isMediaImageAsset(page.heroImage)) {
+  const image: MediaImageAsset = page.heroImage
+  const props: SanityImageProps = { asset: image, sizes: '100vw' }
+  void props
 }
 
 type ApiImage = {

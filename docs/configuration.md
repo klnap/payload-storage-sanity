@@ -84,7 +84,7 @@ For assets uploaded outside this Payload adapter, `@klnap/payload-storage-sanity
 
 ## Populate behavior
 
-The default preset normalizes eligible populated media relationships to `DefaultPopulateAsset`. It does not transform direct media document reads, authenticated requests, explicit populate selections, or depth-zero IDs. Missing CDN URLs stay full media documents. Set `preset: 'full'` to always keep full media documents.
+The default preset normalizes eligible populated media relationships to `MediaAsset`. It does not transform direct media document reads, authenticated requests, explicit populate selections, or depth-zero IDs. Missing CDN URLs stay full media documents. Set `preset: 'full'` to always keep full media documents.
 
 For Local API reads, `localPopulate: false` disables normalization. Direct `/api/{collection}/:id` media reads keep the full document for the admin editor. The consumer guide documents runtime narrowing and typed consumption.
 

@@ -1,6 +1,6 @@
 import { resolveHydratedMediaUrls } from '@/features/media/cdn'
 import type { SanityMediaDocument } from '@/features/media/document'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
+import type { MediaAsset } from '@/features/media/populate'
 import { resolveLocalizedAlt } from '@/features/media/populate'
 import { getSanityAssetMetadata } from '@/sanity/assets'
 
@@ -12,7 +12,7 @@ export type DefaultPopulateMediaDocContext = {
 export function defaultPopulateMediaDoc(
   doc: SanityMediaDocument,
   ctx: DefaultPopulateMediaDocContext = {}
-): DefaultPopulateAsset | null {
+): MediaAsset | null {
   const id = doc.id
   if (id == null || id === '') {
     return null
@@ -34,7 +34,7 @@ export function defaultPopulateMediaDoc(
 
   const alt = resolveLocalizedAlt(doc.alt, { locale: ctx.locale })
 
-  const result: DefaultPopulateAsset = {
+  const result: MediaAsset = {
     id,
     url,
     focalX: doc.focalX ?? 50,

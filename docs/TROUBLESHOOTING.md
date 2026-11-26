@@ -55,7 +55,7 @@ By default, `sync.access` allows users from Payload's admin auth collection (`co
 
 The default preset normalizes eligible populated relationships only. Set `depth: 1` or higher and pass the requested locale. Direct media reads, authenticated requests, explicit populate selections, and depth-zero relationships keep full documents or IDs.
 
-Use `isDefaultPopulateAsset()` to narrow a generated Payload relationship before passing it to `SanityImage`. Use `assetMapping` for a custom populated shape.
+Use `isMediaImageAsset()` to narrow a generated Payload relationship before passing it to `SanityImage`; `isMediaAsset()` also accepts files. Use `assetMapping` for a custom shape whose URL resolves to a Sanity image CDN path.
 
 ## Next.js images are broken or unoptimized
 
@@ -63,7 +63,7 @@ Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. For a 
 
 ## `assetMapping` does not resolve an image
 
-Use dot-separated paths such as `asset.url` or `metadata.width`. The mapped URL must resolve to a non-empty string. See [custom media shapes](./consumers.md#custom-media-shapes).
+Use dot-separated paths such as `asset.url` or `metadata.width`. The mapped URL must resolve to a Sanity `images/` CDN path. See [custom media shapes](./consumers.md#custom-media-shapes).
 
 ## Payload proxy returns 404 or 502
 

@@ -3,7 +3,7 @@ import { createImageUrlBuilder } from '@sanity/image-url'
 import * as v from 'valibot'
 import type { SanityAssetReference } from '@/sanity/assets/asset'
 import { isSanityCompatibleHost } from '@/sanity/cdn/availability/isSanityCompatibleHost'
-import type { DefaultPopulateAsset } from './assets'
+import type { MediaAsset } from './assets'
 import { applyImageParams, type ImageSize, isImagePath } from './imageParams'
 
 type SanityMediaConsumerSource = {
@@ -21,7 +21,7 @@ type SanityMediaConsumerSource = {
 
 export type SanityImageSource =
   | string
-  | DefaultPopulateAsset
+  | MediaAsset
   | SanityAssetReference
   | SanityMediaConsumerSource
   | null

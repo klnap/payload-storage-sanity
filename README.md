@@ -3,15 +3,17 @@
 Store Payload uploads in Sanity, manage media in Payload, and deliver Sanity CDN images to your frontend.
 
 ```tsx
-import type { DefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+import type { MediaAsset } from '@klnap/payload-storage-sanity/consumers'
+import { isMediaImageAsset } from '@klnap/payload-storage-sanity/consumers'
 import { SanityImage } from '@klnap/payload-storage-sanity/consumers/next'
 
-export function Hero({ image }: { image: DefaultPopulateAsset | null }) {
-  return image ? <SanityImage asset={image} sizes='100vw' /> : null
+export function Hero({ image }: { image: MediaAsset }) {
+  if (!isMediaImageAsset(image)) return null
+  return <SanityImage asset={image} sizes='100vw' />
 }
 ```
 
-Use `SanityImage` only for image assets. `DefaultPopulateAsset` is the normalized shape for populated media relationships; it can also represent files.
+`MediaAsset` represents normalized image or file relationships. `isMediaAsset()` checks that shape; `isMediaImageAsset()` narrows it for `SanityImage`.
 
 ## Why?
 
@@ -99,11 +101,11 @@ Folder grouping uses the `sanity-plugin-media` model. Install `sanity-plugin-med
 Fetch the containing document with `depth: 1`, then narrow the relationship before rendering it:
 
 ```tsx
-import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+import { isMediaImageAsset } from '@klnap/payload-storage-sanity/consumers'
 import { SanityImage } from '@klnap/payload-storage-sanity/consumers/next'
 
 export function Hero({ page }: { page: { heroImage: unknown } }) {
-  if (isDefaultPopulateAsset(page.heroImage)) {
+  if (isMediaImageAsset(page.heroImage)) {
     return <SanityImage asset={page.heroImage} sizes='(max-width: 768px) 100vw, 50vw' />
   }
 
@@ -111,7 +113,7 @@ export function Hero({ page }: { page: { heroImage: unknown } }) {
 }
 ```
 
-The guard checks the normalized media shape, not whether the asset is an image. Use `SanityImage` only when the relationship is known to contain an image.
+`isMediaImageAsset()` accepts only normalized Sanity image CDN URLs. `isMediaAsset()` also accepts file assets.
 
 Without Next.js, use `buildSanityImageUrl()` from `@klnap/payload-storage-sanity/consumers`. It accepts normalized assets, full media documents, supported image URLs, and Sanity asset references. A bare asset reference without a stored URL requires a Sanity client.
 

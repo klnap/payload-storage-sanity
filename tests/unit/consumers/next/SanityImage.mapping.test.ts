@@ -1,20 +1,22 @@
 import { describe, expect, test } from 'bun:test'
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 import { resolveSanityImagePopulatedAsset, type SanityImageAssetMapping } from '@/consumers/image'
 import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 function resolveSanityImageAsset<TAsset extends object>(
   asset: TAsset | null | undefined,
   assetMapping?: SanityImageAssetMapping<TAsset>
-): DefaultPopulateAsset | null | undefined {
+): MediaAsset | null | undefined {
   return resolveSanityImagePopulatedAsset(asset, assetMapping)
 }
 
 describe('SanityImage asset resolution', () => {
-  const defaultAsset: DefaultPopulateAsset = {
+  const defaultAsset: MediaAsset = {
     id: '1',
-    url: 'https://cdn.example/img.jpg',
+    url: 'https://cdn.sanity.io/images/demo/production/img.jpg',
     alt: 'Hero',
+    focalX: 50,
+    focalY: 50,
     width: 800,
     height: 600,
   }

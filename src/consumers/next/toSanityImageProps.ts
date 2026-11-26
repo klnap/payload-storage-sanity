@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import { isMediaImageAsset, type MediaAsset } from '@/consumers/assets'
 import {
   type ResolveAssetAltOptions,
   resolveAssetAlt,
@@ -18,12 +18,10 @@ export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
 export type ToSanityImagePropsResult = NonNullable<ReturnType<typeof toSanityImageProps>>
 
 export function toSanityImageProps(
-  asset: DefaultPopulateAsset | null | undefined,
+  asset: MediaAsset | null | undefined,
   opts: ToSanityImagePropsOptions = {}
 ) {
-  if (asset == null || !asset.url || typeof asset.url !== 'string') {
-    return null
-  }
+  if (!isMediaImageAsset(asset)) return null
 
   const alt = resolveAssetAlt(asset, opts)
   const style: Record<string, string | number> = {}

@@ -19,7 +19,7 @@ const HeroSanityImage = createSanityImage<HeroAsset>({
 })
 
 const hero: HeroAsset = {
-  image: 'https://cdn.example/hero.jpg',
+  image: 'https://cdn.sanity.io/images/demo/production/hero.jpg',
   metadata: { width: 1200, height: 800 },
 }
 

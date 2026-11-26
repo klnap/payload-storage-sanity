@@ -1,5 +1,5 @@
 /** Flat DTO for successfully normalized populated media relationships. */
-export type DefaultPopulateAsset = {
+export type MediaAsset = {
   id: string | number
   url: string
   /** Image metadata, present when the Sanity asset provides it. */
@@ -14,12 +14,17 @@ export type DefaultPopulateAsset = {
   lqip?: string
 }
 
+/** A normalized media asset whose Sanity CDN URL identifies an image asset. */
+export type MediaImageAsset = Omit<MediaAsset, 'url'> & {
+  url: `${string}/images/${string}`
+}
+
 function isFiniteOptionalNumber(value: unknown): boolean {
   return value === undefined || (typeof value === 'number' && Number.isFinite(value))
 }
 
 /** Narrows an API relationship to a normalized asset returned by populate preset `default`. */
-export function isDefaultPopulateAsset(value: unknown): value is DefaultPopulateAsset {
+export function isMediaAsset(value: unknown): value is MediaAsset {
   if (value == null || typeof value !== 'object') return false
   const asset = value as Record<string, unknown>
   return (
@@ -36,4 +41,16 @@ export function isDefaultPopulateAsset(value: unknown): value is DefaultPopulate
     isFiniteOptionalNumber(asset.aspectRatio) &&
     (asset.lqip === undefined || typeof asset.lqip === 'string')
   )
+}
+
+/** Narrows a normalized media asset to a Sanity image CDN URL, not a file asset URL. */
+export function isMediaImageAsset(value: unknown): value is MediaImageAsset {
+  if (!isMediaAsset(value)) return false
+
+  try {
+    const segments = new URL(value.url).pathname.split('/').filter(Boolean)
+    return segments.includes('images') && !segments.includes('files')
+  } catch {
+    return false
+  }
 }

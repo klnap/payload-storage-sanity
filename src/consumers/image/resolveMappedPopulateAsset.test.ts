@@ -4,7 +4,7 @@ import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
 
 const defaultAsset = {
   id: 'media-1',
-  url: 'https://cdn.example/hero.jpg',
+  url: 'https://cdn.sanity.io/images/demo/production/hero.jpg',
   alt: 'Hero',
   width: 1200,
   height: 800,
@@ -122,5 +122,14 @@ describe('resolveMappedPopulateAsset', () => {
     const fromDefault = toSanityImageProps(defaultAsset)
 
     expect(fromMapped).toEqual(fromDefault)
+  })
+
+  test('does not derive image props for a mapped Sanity file URL', () => {
+    const mapped = resolveMappedPopulateAsset(
+      { file: 'https://cdn.sanity.io/files/demo/production/photo.jpg' },
+      { url: 'file' }
+    )
+
+    expect(toSanityImageProps(mapped)).toBeNull()
   })
 })

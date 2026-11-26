@@ -1,18 +1,18 @@
 import type { ReactNode } from 'react'
 
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 
 export type SanityImageFallbackReason = 'missing' | 'error'
 
 export type SanityImageFallbackProps = {
   reason: SanityImageFallbackReason
-  asset?: DefaultPopulateAsset | null
+  asset?: MediaAsset | null
 }
 
 export type ResolveSanityImageFallbackArgs = {
   fallback?: ReactNode | null
   renderFallback?: (props: SanityImageFallbackProps) => ReactNode
-  asset?: DefaultPopulateAsset | null
+  asset?: MediaAsset | null
 }
 
 /** `fallback={null}` disables fallback; `undefined` means no fallback UI. */

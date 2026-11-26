@@ -43,7 +43,7 @@ const workDir = mkdtempSync(join(generatedRoot, 'pss-consumer-tree-shaking-'))
 try {
   writeFileSync(
     join(workDir, 'guard.js'),
-    `import { isDefaultPopulateAsset } from ${JSON.stringify(distEntry)};\nvoid isDefaultPopulateAsset;\n`
+    `import { isMediaAsset, isMediaImageAsset } from ${JSON.stringify(distEntry)};\nvoid isMediaAsset; void isMediaImageAsset;\n`
   )
   const guardBundle = await bundle('./guard.js', workDir, 'guard')
   if (/cdn\.sanity\.io|createImageUrlBuilder|sanity-image-url/.test(guardBundle)) {
