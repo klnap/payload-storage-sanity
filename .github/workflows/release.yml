@@ -1,123 +1,211 @@
 name: Release
+
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+
 permissions: {}
-cache-mode: none
+
 concurrency:
-  group: release
+  group: release-${{ github.repository }}
   cancel-in-progress: false
+
 jobs:
-  validate:
+  prepare:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
-      version: ${{ steps.meta.outputs.version }}
-      sha256: ${{ steps.pack.outputs.sha256 }}
+      mode: ${{ steps.mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.mode.outputs.publish-plan-artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
+
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.4
-          no-cache: true
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.22.3
-          package-manager-cache: false
-      - name: Check tag and branch
-        id: meta
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          version="$(node -p "require('./package.json').version")"
-          test "v$version" = "$TAG" || { echo "Tag does not match package version"; exit 1; }
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "Tag commit is not on main"; exit 1; }
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          bun-version: 1.4.5
+
       - run: bun install --frozen-lockfile
-      - run: bun run lint
-      - run: bun run typecheck
-      - run: bun run knip
-      - run: bun run check:boundaries
-      - run: bun test src tests
-      - run: bun run build
-      - run: bun run check:package
-      - run: bun audit --audit-level=high
-      - uses: zizmorcore/zizmor-action@bd12b495c90993a4301c73398142281a61499af3 # v0.9.0
-        with:
-          advanced-security: false
-      - name: Pack the release tarball
-        id: pack
-        run: |
-          mkdir -p release
-          npm pack --silent --pack-destination release
-          cd release
-          echo "sha256=$(sha256sum ./*.tgz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-      - name: Smoke-test the exact tarball
-        run: bash scripts/consumer-smoke.sh release/*.tgz
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: release-tarball
-          path: release/*.tgz
-          if-no-files-found: error
-  publish:
-    needs: validate
-    runs-on: ubuntu-24.04
-    environment: npm
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.22.3
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: release-tarball
-      - name: Publish the qualified tarball
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
-          EXPECTED_SHA256: ${{ needs.validate.outputs.sha256 }}
-        run: |
-          tgz="klnap-payload-storage-sanity-$VERSION.tgz"
-          echo "$EXPECTED_SHA256  $tgz" | sha256sum --check
-          if npm view "@klnap/payload-storage-sanity@$VERSION" version >/dev/null 2>&1; then
-            echo "Version already exists; verifying integrity before creating a release."
-          else
-            npm publish "./$tgz" --provenance --access public
-          fi
-  github-release:
-    needs: [validate, publish]
+
+      - uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        id: mode
+
+  version:
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'version'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      pull-requests: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.5
+
+      - run: bun install --frozen-lockfile
+
+      - uses: changesets/action/version@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          github-token: ${{ github.token }}
+          script: bun run changeset:version-check
+          pr-title: "chore(release): version packages"
+          commit-message: "chore(release): version packages"
+          pr-base-branch: main
+
+  pack:
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'publish'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: payload_storage_sanity
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d payload_storage_sanity"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+      source-sha: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.5
+
+      - run: bun install --frozen-lockfile
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Use the pinned npm CLI
+        run: |
+          echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+          test "$(./node_modules/.bin/npm --version)" = "12.2.3"
+
+      - name: Check release identity before packing
+        env:
+          EXPECTED_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}.git
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+          if (pkg.private === true) throw new Error("Remove private: true only after finalizing the package identity.");
+          if (!pkg.name || pkg.name.endsWith("/package-name")) throw new Error("Set the final npm package name.");
+          if (pkg.repository?.url !== `git+${process.env.EXPECTED_REPOSITORY}`) throw new Error("package.json repository.url must match this GitHub repository.");
+          if (pkg.publishConfig?.access !== "public" || pkg.publishConfig?.registry !== "https://registry.npmjs.org/") throw new Error("Publishing must target the public npm registry.");
+          NODE
+
+      - run: bun run check
+
+      - uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        id: pack
+        with:
+          publish-plan-artifact-id: ${{ needs.prepare.outputs.publish-plan-artifact-id }}
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-tarball
-      - name: Create GitHub release after npm integrity verification
+          artifact-ids: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+          path: ${{ runner.temp }}/changesets-pack
+
+      - name: Verify the exact packed release artifact
+        env:
+          PACK_DIR: ${{ runner.temp }}/changesets-pack
+          EXPECTED_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}.git
+          PSS_POSTGRES_CONSUMER_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/payload_storage_sanity
+        run: bun run verify:release-artifact
+
+  publish:
+    needs: [prepare, pack]
+    if: needs.prepare.outputs.mode == 'publish'
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify artifact belongs to this source commit
+        env:
+          PACK_SOURCE_SHA: ${{ needs.pack.outputs.source-sha }}
+        run: test "$PACK_SOURCE_SHA" = "$GITHUB_SHA"
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.5
+
+      - run: bun install --frozen-lockfile --ignore-scripts
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Use the pinned npm CLI
+        run: |
+          echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+          test "$(./node_modules/.bin/npm --version)" = "12.2.3"
+
+      - uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        id: publish
+        with:
+          github-token: ${{ github.token }}
+          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+          create-github-releases: false
+          push-git-tags: true
+
+      - name: Verify release tag and create GitHub Release
+        if: steps.publish.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate.outputs.version }}
-          TAG: ${{ github.ref_name }}
+          PUBLISHED_PACKAGES: ${{ steps.publish.outputs.published-packages }}
+          RELEASE_SOURCE_SHA: ${{ github.sha }}
         run: |
-          tgz="klnap-payload-storage-sanity-$VERSION.tgz"
-          local_integrity="sha512-$(openssl dgst -sha512 -binary "$tgz" | base64 -w0)"
-          npm_integrity=""
-          for attempt in {1..12}; do
-            npm_integrity="$(npm view "@klnap/payload-storage-sanity@$VERSION" dist.integrity 2>/dev/null)" && break
-            sleep 10
-          done
-          test "$local_integrity" = "$npm_integrity" || { echo "npm tarball differs from the qualified tarball"; exit 1; }
-          tar -xzOf "$tgz" package/CHANGELOG.md | awk -v v="$VERSION" '$0 ~ "^## \\[?"v"\\]?" {f=1; next} /^## / {f=0} f' > notes.md
-          test -s notes.md || { echo "No CHANGELOG section for $VERSION"; exit 1; }
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$tgz" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$TAG" "$tgz" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --notes-file notes.md
+          TAG="$(node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const published = JSON.parse(process.env.PUBLISHED_PACKAGES);
+          const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+          if (published.length !== 1) throw new Error(`Expected one published package, found ${published.length}.`);
+          if (published[0].name !== pkg.name || published[0].version !== pkg.version) throw new Error("Published package does not match package.json.");
+          process.stdout.write(`v${pkg.version}`);
+          NODE
+          )"
+          TAG_SHA="$(TAG="$TAG" node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+          const base = `repos/${process.env.GITHUB_REPOSITORY}/git`;
+          const ref = JSON.parse(execFileSync("gh", ["api", `${base}/ref/tags/${process.env.TAG}`], { encoding: "utf8" }));
+          const object = ref.object.type === "tag"
+            ? JSON.parse(execFileSync("gh", ["api", `${base}/tags/${ref.object.sha}`], { encoding: "utf8" })).object
+            : ref.object;
+          process.stdout.write(object.sha);
+          NODE
+          )"
+          if [ "$TAG_SHA" != "$RELEASE_SOURCE_SHA" ]; then
+            echo "Release tag $TAG points to ${TAG_SHA:-no commit}, expected $RELEASE_SOURCE_SHA." >&2
+            exit 1
           fi
+          gh release create "$TAG" --verify-tag --generate-notes

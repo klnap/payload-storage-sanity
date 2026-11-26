@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/index.ts",
     "src/consumers/index.ts",
@@ -34,7 +34,12 @@
     "@payloadcms/translations",
     "next",
     "@payloadcms/plugin-cloud-storage",
-    "@swc/core"
+    "@swc/core",
+    "npm"
   ],
-  "ignoreUnresolved": ["scripts/verify-css-side-effects.mjs", "scripts/check-attw.mjs"]
+  "ignoreUnresolved": [
+    "scripts/verify-css-side-effects.mjs",
+    "scripts/check-pack.mjs",
+    "scripts/run-release-matrix.mjs"
+  ]
 }

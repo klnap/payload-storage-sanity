@@ -119,12 +119,35 @@ function mediaURL(value: unknown) {
   }
 }
 
-function lqipURL(doc: Record<string, unknown>) {
+function lqipURL(doc: Record<string, unknown>, imageURL?: string) {
   const value = text(doc.lqip) || getSanityLqip(doc)
 
-  return /^data:image\/(?:avif|gif|jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(value)
-    ? value
-    : undefined
+  if (/^data:image\/(?:avif|gif|jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(value)) return value
+
+  const thumbnail = mediaURL(imageURL)
+  if (!thumbnail) return undefined
+
+  try {
+    const url = new URL(thumbnail)
+    if (
+      url.protocol !== 'https:' ||
+      url.hostname !== 'cdn.sanity.io' ||
+      !url.pathname.startsWith('/images/')
+    ) {
+      return undefined
+    }
+
+    url.searchParams.delete('w')
+    url.searchParams.delete('h')
+    url.searchParams.delete('q')
+    url.searchParams.delete('blur')
+    url.searchParams.set('w', '24')
+    url.searchParams.set('q', '20')
+    url.searchParams.set('blur', '40')
+    return url.toString()
+  } catch {
+    return undefined
+  }
 }
 
 function fileExtension(filename: string) {
@@ -207,7 +230,7 @@ export function presentMedia(doc: Record<string, unknown>, locale?: string) {
     urlFilename(original),
   ].find((value) => value && !uuid.test(value))
   const isSVG = mime === 'image/svg+xml' || /\.svg(?:\s|$)/i.test(candidate)
-  const lqip = kind === 'image' && !isSVG ? lqipURL(doc) : undefined
+  const lqip = kind === 'image' && !isSVG ? lqipURL(doc, thumbnail ?? original) : undefined
   const size = kind === 'image' ? undefined : fileSize(doc.filesize)
   const extension = fileExtension(filename || originalName || urlFilename(original))
 
