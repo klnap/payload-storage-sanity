@@ -104,6 +104,30 @@ test('uses direct or Sanity-persisted LQIP for raster images but not SVGs', () =
   ).toBeUndefined()
 })
 
+test('derives a blurred Sanity thumbnail when an image record has no stored LQIP', () => {
+  const media = presentMedia({
+    filename: 'photo.jpg',
+    mimeType: 'image/jpeg',
+    thumbnailURL: 'https://cdn.sanity.io/images/demo/photo.jpg?w=300&fit=max',
+  })
+
+  expect(media.lqip).toBe('https://cdn.sanity.io/images/demo/photo.jpg?fit=max&w=24&q=20&blur=40')
+  expect(
+    presentMedia({
+      filename: 'photo.jpg',
+      mimeType: 'image/jpeg',
+      url: 'https://cdn.sanity.io/images/demo/photo.jpg',
+    }).lqip
+  ).toBe('https://cdn.sanity.io/images/demo/photo.jpg?w=24&q=20&blur=40')
+  expect(
+    presentMedia({
+      filename: 'photo.jpg',
+      mimeType: 'image/jpeg',
+      url: 'https://cdn.example.test/photo.jpg',
+    }).lqip
+  ).toBeUndefined()
+})
+
 test('falls back to a safe original when thumbnail metadata is absent or unsafe', () => {
   const doc = { filename: 'image.jpg', mimeType: 'bad metadata', url: '/api/media/file/image.jpg' }
   for (const thumbnailURL of [
