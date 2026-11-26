@@ -1,6 +1,6 @@
 # `@klnap/payload-storage-sanity`
 
-Store Payload uploads in Sanity and deliver transformed images from Sanity’s CDN while keeping media records and editorial workflows in Payload.
+Store Payload uploads in Sanity, manage media in Payload, and deliver Sanity CDN images to your frontend.
 
 ```tsx
 import type { DefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
@@ -11,51 +11,56 @@ export function Hero({ image }: { image: DefaultPopulateAsset | null }) {
 }
 ```
 
-`image` is a populated Payload media relationship normalized by the plugin. `SanityImage` uses the asset URL, dimensions, focal point, localized alt text, and placeholder when available.
+Use `SanityImage` only for image assets. `DefaultPopulateAsset` is the normalized shape for populated media relationships; it can also represent files.
 
 ## Why?
 
-Payload’s upload collections provide media records, relationships, access rules, and editorial workflows. Sanity stores the original files and its Asset CDN creates and serves requested image variants on demand. This package connects the two: editors keep working in Payload, while frontends request the image sizes they need without storing Payload-generated derivatives.
-
-Payload remains the source of media metadata and relationships. Sanity stores the files and serves their CDN URLs. The package uses Payload’s cloud-storage adapter rather than replacing Payload’s media model.
+Payload keeps media records, relationships, access rules, and editorial workflows. Sanity stores the files and serves transformed image variants. This package connects the two without replacing Payload’s media model or storing new Payload image-size copies.
 
 ## Features
 
+### Storage and delivery
+
 - Store image and file uploads in Sanity while keeping media documents and relationships in Payload.
-- Serve transformed image variants from Sanity’s CDN instead of maintaining Payload image-size copies.
-- Use a Payload admin gallery with image previews, metadata, focal-point editing, and upload feedback.
-- Normalize populated media relationships for framework-independent consumers or the optional Next.js image component.
-- Add localized alt text, Sanity Studio folder grouping, duplicate-upload checks, and webhook synchronization when needed.
+- Serve transformed image variants from Sanity’s CDN on demand.
+- Keep Payload’s existing upload settings. By default, the plugin disables local file copies and sets `imageSizes` to `[]` for configured collections.
+- Retain replaced and deleted files in Sanity; the plugin does not delete remote assets.
+
+### Media management
+
+- Browse media in a Payload gallery with justified, grid, and list layouts, image previews, file-type cards, and selectable rows.
+- Edit crop and focal point with Payload’s upload controls. Cropping uploads the edited bytes as a new Sanity asset; focal-point-only edits update media metadata without re-uploading the file.
+- Add alt text (localized when Payload localization is configured) and titles, group new Sanity assets into `sanity-plugin-media` folders, and optionally reject duplicate uploads or deletion of referenced Payload media.
+
+The gallery replaces a collection’s list view by default when no custom list view exists. Set `admin.gallery: false` to keep Payload’s native table.
+
+### Frontend delivery
+
+- Normalize eligible populated media relationships to a flat object with a CDN URL, dimensions, focal point, localized alt text, and optional LQIP.
+- Use the framework-independent URL builder or the optional Next.js `SanityImage` component and loader.
+- Keep full Payload media documents available for direct media reads and explicit full population.
+
+The default populate preset applies to eligible populated relationships, not every media read. The [consumer guide](./docs/consumers.md) describes when normalization applies and how to narrow runtime responses.
 
 ## Installation
 
-Install the package and its required peer dependencies:
+Install the package:
 
 ```bash
-bun add @klnap/payload-storage-sanity payload @payloadcms/ui @payloadcms/translations @sanity/client react react-dom
+bun add @klnap/payload-storage-sanity
 ```
 
 ```bash
-npm install @klnap/payload-storage-sanity payload @payloadcms/ui @payloadcms/translations @sanity/client react react-dom
+npm install @klnap/payload-storage-sanity
 ```
 
-The Next.js consumer also requires Next.js. See [Compatibility](#compatibility) for supported versions.
-
-If you use the optional Next.js consumer, install its peer dependency too:
-
-```bash
-bun add next
-```
-
-```bash
-npm install next
-```
+Both commands install the package’s required peer dependencies when they are absent. The `next` peer is optional and is needed only for the Next.js consumer.
 
 ## Usage
 
-### Basic Payload setup
+### Configure Payload storage
 
-Add `sanityStorage()` to the `plugins` array in the Payload config that contains your upload collections. Keep your existing collection definitions and upload settings.
+Add `sanityStorage()` to the `plugins` array in your existing Payload config. The plugin discovers upload collections without another storage adapter by default.
 
 ```ts
 import { sanityStorage } from '@klnap/payload-storage-sanity'
@@ -69,47 +74,9 @@ export const plugins = [
 ]
 ```
 
-Use `plugins` in your existing `buildConfig()`. The collection must already exist and have Payload uploads enabled. Set a server-side Sanity token for the dataset; never expose it to browser code. By default, the plugin discovers upload collections without an existing storage adapter. See [Configuration](#configuration) to select collections explicitly.
+Use `plugins` in `buildConfig()`. The upload collections must already exist. Keep the Sanity write token server-side; do not expose it to browser code.
 
-### Render populated media in Next.js
-
-The default populate preset normalizes eligible populated media relationships. Fetch the containing document with depth at least `1`, then narrow the relationship with `isDefaultPopulateAsset()` before rendering it.
-
-```tsx
-import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
-import { SanityImage } from '@klnap/payload-storage-sanity/consumers/next'
-
-// `page` was fetched from Payload with depth: 1.
-const image = page.heroImage
-
-if (isDefaultPopulateAsset(image)) {
-  return <SanityImage asset={image} sizes="(max-width: 768px) 100vw, 50vw" />
-}
-
-return null
-```
-
-`SanityImage` uses Next.js `Image` and the Sanity CDN. The Next.js entry is optional; framework-independent consumers can use the normalized asset directly.
-
-### Build image URLs without Next.js
-
-Use the framework-independent consumer entry to transform a stored Sanity URL:
-
-```ts
-import { buildSanityImageUrl } from '@klnap/payload-storage-sanity/consumers'
-
-const cardUrl = buildSanityImageUrl(image, {
-  width: 640,
-  height: 480,
-  fit: 'crop',
-})
-```
-
-The builder returns `null` when it cannot resolve an image URL. It supports populated assets, media documents, URLs, and Sanity asset references. A bare asset reference needs a Sanity client; stored URLs do not.
-
-### Organize assets into Sanity Studio folders
-
-Set `collections.<slug>.folder` to group new uploads, or call `assignSanityAssetFolder()` for assets uploaded elsewhere. Folder grouping uses the `sanity-plugin-media` model; it does not create Sanity Media Library folders or change CDN URLs. Install `sanity-plugin-media >=6.1.0` and use Sanity Studio only if editors need to browse these folders.
+Select collections and configure editorial fields as needed:
 
 ```ts
 sanityStorage({
@@ -117,49 +84,72 @@ sanityStorage({
   dataset: process.env.SANITY_DATASET!,
   token: process.env.SANITY_API_TOKEN!,
   collections: {
-    media: { folder: 'website/images' },
+    media: {
+      folder: 'website/images',
+      alt: { required: true },
+    },
   },
 })
 ```
 
-See [Configuration and public API](./docs/configuration.md) for standalone folder assignment and optional synchronization.
+Folder grouping uses the `sanity-plugin-media` model. Install `sanity-plugin-media >=6.1.0` only if editors need to browse those folders in Sanity Studio.
+
+### Render a populated image
+
+Fetch the containing document with `depth: 1`, then narrow the relationship before rendering it:
+
+```tsx
+import { isDefaultPopulateAsset } from '@klnap/payload-storage-sanity/consumers'
+import { SanityImage } from '@klnap/payload-storage-sanity/consumers/next'
+
+export function Hero({ page }: { page: { heroImage: unknown } }) {
+  if (isDefaultPopulateAsset(page.heroImage)) {
+    return <SanityImage asset={page.heroImage} sizes='(max-width: 768px) 100vw, 50vw' />
+  }
+
+  return null
+}
+```
+
+The guard checks the normalized media shape, not whether the asset is an image. Use `SanityImage` only when the relationship is known to contain an image.
+
+Without Next.js, use `buildSanityImageUrl()` from `@klnap/payload-storage-sanity/consumers`. It accepts normalized assets, full media documents, supported image URLs, and Sanity asset references. A bare asset reference without a stored URL requires a Sanity client.
 
 ## Configuration
 
-`sanityStorage()` requires a Sanity project ID and dataset. In the default `full` mode, it also requires a server-side write token.
+| Option                                         | Default             | Behavior                                                                                                      |
+| ---------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `collections`                                  | Automatic discovery | Select upload collections without another storage adapter. An explicit map selects only its enabled entries.  |
+| `mode`                                         | `'full'`            | `'full'` registers storage; `'fields-only'` adds Sanity fields and hooks; `'off'` skips storage registration. |
+| `admin.gallery`                                | `true`              | Use the gallery unless the collection already defines a custom list view.                                     |
+| `collections.<slug>.folder`                    | `'Payload'`         | Assign new assets to a logical `sanity-plugin-media` folder. Changing it does not move existing assets.       |
+| `populate.preset`                              | `'default'`         | Normalize eligible populated media relationships; use `'full'` to return full documents.                      |
+| `collections.<slug>.alt.enabled` / `.required` | `true` / `false`    | Add localized alt text unless the collection already defines `alt`; optionally require text for each locale.  |
+| `dedupeUploads`                                | `false`             | Reject duplicate media creates by SHA-1.                                                                      |
+| `preventDeleteWhenReferenced`                  | `true`              | Block deletion of Payload media referenced by supported Payload relationships.                                |
+| `sync.enabled`                                 | `false`             | Add authenticated webhook and reconcile endpoints for Sanity asset changes.                                   |
 
-| Option                                                               | Default             | Behavior                                                                                                                                                |
-| -------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `collections`                                                        | Automatic discovery | Select upload collections without another storage adapter. An explicit map selects only its enabled entries.                                            |
-| `mode`                                                               | `'full'`            | `'full'` uploads to Sanity and registers the adapter; `'fields-only'` adds Sanity fields and hooks without storage; `'off'` skips adapter registration. |
-| `collections.<slug>.folder`                                          | `'Payload'`         | Assign new assets to a logical `sanity-plugin-media` folder. Does not move existing assets.                                                             |
-| `populate.preset`                                                    | `'default'`         | Normalize eligible populated media relationships; use `'full'` to return full media documents.                                                          |
-| `admin.gallery`                                                      | `true`              | Use the media gallery instead of the collection list view when no custom list view exists.                                                              |
-| `collections.<slug>.alt.enabled` / `collections.<slug>.alt.required` | `true` / `false`    | Add localized alt text unless the collection already defines `alt`; optionally require non-empty text for each locale.                                  |
-| `dedupeUploads`                                                      | `false`             | Reject duplicate media creates by SHA-1 when using `full` mode.                                                                                         |
-| `preventDeleteWhenReferenced`                                        | `true`              | Block deletion of media documents referenced by supported Payload relationships.                                                                        |
-| `sync.enabled`                                                       | `false`             | Add authenticated webhook and reconcile endpoints for Sanity asset changes.                                                                             |
+For all options, precedence, limits, and endpoint behavior, see [Configuration and public API](./docs/configuration.md).
 
-For configured collections, the adapter sets Payload `imageSizes` to `[]`; Sanity supplies transformed image variants. It keeps other supported Payload upload settings. Replacing a Payload media record does not delete its previous Sanity asset, and deleting a Payload record does not delete the Sanity asset.
+## Asset access and lifecycle
 
-**Asset URLs are public.** Sanity CDN URLs are accessible to anyone who has the URL, even when the dataset is private. By default, generated file URLs use the CDN directly and bypass Payload’s file-delivery access-control proxy. Setting `disablePayloadAccessControl: false` routes generated URLs through Payload, but does not make an exposed CDN URL private. See the [security policy](./SECURITY.md) and [failure semantics](./docs/FAILURE_SEMANTICS.md).
+Sanity CDN asset URLs are public, including when the dataset is private. By default, generated file URLs use the CDN directly and bypass Payload’s file-delivery access-control proxy. Setting `disablePayloadAccessControl: false` routes generated URLs through Payload, but does not make an exposed CDN URL private.
 
-For all options, precedence rules, and endpoint behavior, see [Configuration and public API](./docs/configuration.md).
+Replacing or deleting a Payload media record does not delete its Sanity asset. Cropping creates a replacement asset and retains the previous one. Plan remote asset cleanup separately, accounting for shared assets and references.
+
+See [Failure semantics](./docs/FAILURE_SEMANTICS.md) and the [security policy](./SECURITY.md) before using this package for sensitive media.
 
 ## Compatibility
 
-Published version: **0.2.2**.
+| Requirement                                               | Supported versions                      |
+| --------------------------------------------------------- | --------------------------------------- |
+| Payload, `@payloadcms/ui`, and `@payloadcms/translations` | `>=3.94.1 <4`                           |
+| React and React DOM                                       | `^19.3.1`                               |
+| `@sanity/client`                                          | `>=6 <9`                                |
+| Next.js consumer                                          | `>=16.4.5 <17`                          |
+| Node.js                                                   | `^22.23.5 \|\| ^24.22.3 \|\| >=26.13.1` |
 
-| Requirement                                               | Supported versions |
-| --------------------------------------------------------- | ------------------ |
-| Payload, `@payloadcms/ui`, and `@payloadcms/translations` | `>=3.94.1 <4`      |
-| React and React DOM                                       | `^19.3.1`          |
-| `@sanity/client`                                          | `>=6 <9`           |
-| Next.js consumer                                          | `>=16.4.5 <17`     |
-
-Node.js must be `^22.23.5`, `^24.22.3`, or `>=26.13.1`.
-
-The package publishes ESM with extensionless internal imports and expects a bundler to resolve them. Raw Node.js ESM imports are not supported. Next.js is needed only for the `./consumers/next` entry.
+The Next.js consumer is optional and requires an application using Next.js.
 
 ## Documentation
 
