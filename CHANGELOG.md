@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+### Patch Changes
+
+- 4302f7b: Derive blurred Sanity thumbnails when image records have no stored LQIP.
+
 ## 0.2.1
 
 ### Fixed
