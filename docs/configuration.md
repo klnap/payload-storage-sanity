@@ -48,7 +48,7 @@ Omit `collections` to discover all upload collections that have no existing stor
 
 When you pass `collections`, only its enabled entries are selected. `true`, `{}`, and an options object without `enabled: false` enable a collection. `false` and `{ enabled: false }` exclude it. An empty map selects no collections. Every key must name an existing Payload collection, including disabled entries.
 
-An explicitly enabled collection must have `upload` enabled. If it already has an adapter, configuration fails rather than replacing it. A later plugin that replaces Sanity's adapter also fails during Payload initialization. Preserve the order and avoid configuring multiple storage plugins for the same collection.
+An explicitly enabled collection must have `upload` enabled. In `full` mode, an enabled collection with an existing adapter fails configuration rather than replacing it. A later plugin that replaces Sanity's adapter also fails during Payload initialization. Preserve the order and avoid configuring multiple storage plugins for the same collection.
 
 `collections` is typed as `Partial<Record<UploadCollectionSlug, ...>>`. Payload's generated type augmentation narrows valid keys to upload collection slugs. Generate Payload types after changing collection configuration.
 

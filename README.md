@@ -99,7 +99,7 @@ Each entry in `collections` defines how an existing Payload upload collection us
 
 When `collections` is omitted, the plugin discovers upload collections that do not already have a storage adapter. An empty map selects none. Set an entry to `false` or `{ enabled: false }` to exclude it; `true`, `{}`, and options without `enabled: false` enable it.
 
-Explicit entries must name existing upload collections. An explicit collection that already has another adapter fails configuration. Automatic discovery skips collections with another adapter. Collection slugs use Payload's generated `UploadCollectionSlug` type when generated types are configured.
+Every explicit entry must name an existing collection, including disabled entries. Enabled entries must be upload collections. In `full` mode, selecting an enabled collection that already has another storage adapter fails instead of replacing it. Automatic discovery skips collections with another adapter. Collection slugs use Payload's generated `UploadCollectionSlug` type when generated types are configured.
 
 ## Consumers
 
@@ -254,6 +254,21 @@ return <SanityImage asset={image} loader={sanityImageLoader} sizes="100vw" />
 
 `SanityImage` requests responsive widths through `next/image`, using its configured loader. Other `next/image` instances retain Next.js's normal loader and optimization.
 
+## Public package entries
+
+Import from the entry that matches the runtime; Next.js is an optional peer dependency.
+
+| Entry                                                     | Public API                                                               |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `@klnap/payload-storage-sanity`                           | `sanityStorage()`, configuration types, and populate helpers.            |
+| `@klnap/payload-storage-sanity/consumers`                 | Framework-independent asset types, runtime guard, and image URL builder. |
+| `@klnap/payload-storage-sanity/consumers/next`            | `SanityImage`, component factory, and scoped image loaders.              |
+| `@klnap/payload-storage-sanity/consumers/next/loader`     | Default loader for Next.js `images.loaderFile`.                          |
+| `@klnap/payload-storage-sanity/client`                    | `createSanityClient()` and Sanity image metadata query.                  |
+| `@klnap/payload-storage-sanity/folders`                   | `assignSanityAssetFolder()` for externally uploaded assets.              |
+| `@klnap/payload-storage-sanity/admin`                     | Admin components used by the plugin's Payload integration.               |
+| `@klnap/payload-storage-sanity/styles/admin-tailwind.css` | Tailwind styles for the plugin's admin UI.                               |
+
 ## Media management
 
 The plugin adds a media workflow to the native Payload admin:
@@ -355,7 +370,7 @@ See [Installation](#installation) for the verified Payload, React, Next.js, Node
 
 ## Documentation
 
-- [Configuration and options](./docs/configuration.md)
+- [Configuration and public API](./docs/configuration.md)
 - [Frontend consumers and type behavior](./docs/consumers.md)
 - [Failure semantics and operational limits](./docs/FAILURE_SEMANTICS.md)
 - [Troubleshooting](./docs/TROUBLESHOOTING.md)
