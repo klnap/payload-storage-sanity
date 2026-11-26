@@ -65,6 +65,7 @@ jobs:
     if: needs.prepare.outputs.mode == 'publish'
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       contents: read
     services:
       postgres:
@@ -142,6 +143,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: npm
     permissions:
+      actions: read
       contents: write
       id-token: write
     steps:
