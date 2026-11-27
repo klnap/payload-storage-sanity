@@ -226,6 +226,8 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
       data: { alt: { en: 'Wide' }, focalX: 20, focalY: 80 },
       file: uploadFile(wideSample, 'wide.png'),
     } as never)
+    const originalAssetId = (photo as unknown as { sanity: { asset: { _id: string } } }).sanity
+      .asset._id
     const article = await p.create({
       collection: 'articles',
       data: { title: 'Crop', hero: photo.id },
@@ -273,6 +275,38 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
     ).sanity.asset.metadata.dimensions
     expect(stored).toMatchObject({ width: 2, height: 2 })
 
+    // Byte-level: the cropped asset is a new content-addressed asset whose pixels are the left half of the source.
+    const croppedAssetId = (cropped as unknown as { sanity: { asset: { _id: string } } }).sanity
+      .asset._id
+    expect(croppedAssetId).not.toBe(originalAssetId)
+    expect(croppedAssetId).toMatch(/^image-[a-f0-9]{40}-2x2-png$/)
+    const originalHash = /image-([a-f0-9]{40})-/.exec(originalAssetId)?.[1]
+    const croppedHash = /image-([a-f0-9]{40})-/.exec(croppedAssetId)?.[1]
+    const originalBytes = fixture.bytes.get(originalHash ?? '')
+    const croppedBytes = fixture.bytes.get(croppedHash ?? '')
+    expect(originalBytes).toBeDefined()
+    expect(croppedBytes).toBeDefined()
+    // The uncropped source stays in the fixture store (retention, not deletion).
+    expect(fixture.deleteAttempts).toHaveLength(0)
+
+    const source = await sharp(wideSample).raw().toBuffer({ resolveWithObject: true })
+    const result = await sharp(croppedBytes as Buffer)
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    expect(source.info).toMatchObject({ width: 4, height: 2, channels: result.info.channels })
+    expect(result.info).toMatchObject({ width: 2, height: 2 })
+    const channels = result.info.channels
+    const expectedLeftHalf = Buffer.alloc(2 * 2 * channels)
+    for (let row = 0; row < 2; row++) {
+      source.data.copy(
+        expectedLeftHalf,
+        row * 2 * channels,
+        row * 4 * channels,
+        row * 4 * channels + 2 * channels
+      )
+    }
+    expect(result.data.equals(expectedLeftHalf)).toBe(true)
+
     const populated = (await p.findByID({
       collection: 'articles',
       id: article.id,
@@ -293,7 +327,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
     }
     expect(populated.hero).toMatchObject({
       id: photo.id,
-      url: expect.stringContaining('cdn.sanity.io'),
+      url: expect.stringContaining(`/${croppedHash}-2x2.png`),
       width: 2,
       height: 2,
       aspectRatio: 1,
