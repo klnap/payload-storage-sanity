@@ -5,6 +5,7 @@ import { getSanityAssetPath, getSanityAssetUrl } from '@/sanity/assets'
 import {
   isSanityCompatibleHost,
   joinCdnOriginAndPath,
+  rewriteToCdnOrigin,
   type SanityCompatibleHostContext,
   trimTrailingSlash,
 } from '@/sanity/cdn'
@@ -21,19 +22,6 @@ export type ResolvePublicUrlContext = SanityCompatibleHostContext & {
 
 function isHttpUrl(value: string): boolean {
   return value.startsWith('http://') || value.startsWith('https://')
-}
-
-function rewriteOriginIfCompatible(url: string, ctx: ResolvePublicUrlContext): string {
-  const custom = ctx.cdnBaseUrl?.trim()
-  if (!custom || !isSanityCompatibleHost(url, ctx)) return url
-
-  try {
-    const parsed = new URL(url)
-    const origin = trimTrailingSlash(custom)
-    return joinCdnOriginAndPath(origin, parsed.pathname.replace(/^\//, '') + parsed.search)
-  } catch {
-    return url
-  }
 }
 
 /** Build public CDN URL for a media document (§1b). */
@@ -53,7 +41,7 @@ export function resolvePublicUrl(
   } else {
     const stored = getSanityAssetUrl(doc)
     if (stored && isHttpUrl(stored)) {
-      url = rewriteOriginIfCompatible(stored, ctx)
+      url = rewriteToCdnOrigin(stored, ctx)
     }
   }
 

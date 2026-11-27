@@ -3,6 +3,7 @@ import { createImageUrlBuilder } from '@sanity/image-url'
 import * as v from 'valibot'
 import type { SanityAssetReference } from '@/sanity/assets/asset'
 import { isSanityCompatibleHost } from '@/sanity/cdn/availability/isSanityCompatibleHost'
+import { rewriteToCdnOrigin } from '@/sanity/cdn/urls/rewriteToCdnOrigin'
 import type { MediaAsset } from './assets'
 import { applyImageParams, type ImageSize, isImagePath } from './imageParams'
 
@@ -74,8 +75,9 @@ export function buildSanityImageUrl(
       : !v.is(v.string(), value) && 'url' in value
         ? value.url?.trim()
         : undefined
-  if (storedUrl && isSanityCompatibleHost(storedUrl)) {
-    return isImagePath(storedUrl) ? applyImageParams(storedUrl, size) : storedUrl
+  if (storedUrl && isSanityCompatibleHost(storedUrl, { cdnBaseUrl })) {
+    const url = rewriteToCdnOrigin(storedUrl, { cdnBaseUrl })
+    return isImagePath(url) ? applyImageParams(url, size) : url
   }
 
   const ref = getAssetReference(value)
@@ -101,11 +103,7 @@ export function buildSanityImageUrl(
   const url = builder.url()
   if (!url) return null
 
-  if (cdnBaseUrl && cdnBaseUrl.trim().length > 0) {
-    return url.replace(/https:\/\/cdn\.sanity\.io/, cdnBaseUrl.replace(/\/$/, ''))
-  }
-
-  return url
+  return rewriteToCdnOrigin(url, { cdnBaseUrl })
 }
 
 export function resolveAssetDocumentUrl(value: SanityImageSource): string | null {

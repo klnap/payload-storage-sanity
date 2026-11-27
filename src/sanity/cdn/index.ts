@@ -8,3 +8,4 @@ export {
   isPersistedHttpUrl,
 } from './urls/deriveBaseCdnUrlFromThumbnail'
 export { joinCdnOriginAndPath, trimTrailingSlash } from './urls/joinCdnOriginAndPath'
+export { rewriteToCdnOrigin } from './urls/rewriteToCdnOrigin'

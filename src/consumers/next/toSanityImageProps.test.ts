@@ -135,4 +135,21 @@ describe('toSanityImageProps', () => {
       })
     ).toBeNull()
   })
+
+  test('uses the configured CDN origin as the rendered src', () => {
+    const props = toSanityImageProps(
+      {
+        id: 1,
+        url: 'https://cdn.sanity.io/images/demo/production/img.jpg',
+        alt: 'Hero',
+        focalX: 50,
+        focalY: 50,
+        width: 800,
+        height: 600,
+      },
+      { cdnBaseUrl: 'https://images.example.com' }
+    )
+
+    expect(props?.src).toBe('https://images.example.com/images/demo/production/img.jpg')
+  })
 })
