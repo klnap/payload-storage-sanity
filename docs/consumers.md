@@ -34,7 +34,7 @@ The component uses intrinsic dimensions when available, forwards alt text, appli
 with CSS, and uses LQIP when available. Missing dimensions use `fill`; missing, invalid, or non-image
 assets use the `fallback` prop. Pass `fallback={null}` to render nothing.
 
-For a custom compatible CDN host on one component, pass `cdnBaseUrl`:
+To serve Sanity assets from a custom origin, such as a proxy you operate, pass `cdnBaseUrl` to one component. Sanity URLs (on `cdn.sanity.io` or the configured origin) move to that origin; unrelated URLs stay unchanged:
 
 ```tsx
 import { SanityImage, type MediaAsset } from '@klnap/payload-storage-sanity/consumers/next'
@@ -114,6 +114,6 @@ It accepts a populated asset, a full media document, a URL, or a Sanity asset re
 image URLs need no client. A bare image asset reference without a URL requires a `SanityClient`, such as
 one created by `createSanityClient()` from `@klnap/payload-storage-sanity/client`.
 
-Supported Sanity image URLs receive the requested parameters and `auto=format` by default. File URLs
-pass through unchanged. The function returns `null` when it cannot resolve a URL; a bare image reference
+Supported Sanity image URLs receive the requested parameters and `auto=format` by default. File URLs get
+no image parameters. When `cdnBaseUrl` is set, Sanity URLs (stored or built) move to that origin. The function returns `null` when it cannot resolve a URL; a bare image reference
 without a client throws. It does not infer focal coordinates.

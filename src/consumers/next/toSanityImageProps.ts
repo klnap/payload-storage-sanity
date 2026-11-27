@@ -5,6 +5,7 @@ import {
 } from '@/consumers/image'
 import { focalObjectPosition } from '@/consumers/image/focalObjectPosition'
 import { resolveRenderableMediaAsset } from '@/consumers/image/resolveRenderableMediaAsset'
+import { rewriteToCdnOrigin } from '@/sanity/cdn'
 
 export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
   fill?: boolean
@@ -41,7 +42,7 @@ export function toSanityImageProps(value: unknown, opts: ToSanityImagePropsOptio
   const fill = opts.fill ?? (width == null || height == null)
 
   return {
-    src: asset.url,
+    src: rewriteToCdnOrigin(asset.url, { cdnBaseUrl: opts.cdnBaseUrl }),
     alt,
     ...(fill
       ? undefined

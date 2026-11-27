@@ -29,4 +29,23 @@ describe('sanityImageLoader', () => {
 
     expect(new URL(url).searchParams.get('w')).toBe('640')
   })
+
+  test('moves Sanity URLs to the configured origin before adding transformations', () => {
+    const loader = createSanityImageLoader({ cdnBaseUrl: 'https://images.example.com' })
+    const url = new URL(
+      loader({ src: 'https://cdn.sanity.io/images/project/dataset/hero.jpg', width: 640 })
+    )
+
+    expect(url.origin).toBe('https://images.example.com')
+    expect(url.pathname).toBe('/images/project/dataset/hero.jpg')
+    expect(url.searchParams.get('w')).toBe('640')
+  })
+
+  test('does not rewrite Sanity URLs when no cdnBaseUrl is configured', () => {
+    const url = sanityImageLoader({
+      src: 'https://images.example.com/images/project/dataset/hero.jpg',
+      width: 640,
+    })
+    expect(url).toBe('https://images.example.com/images/project/dataset/hero.jpg')
+  })
 })

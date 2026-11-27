@@ -68,17 +68,6 @@ export function shouldHideNativeUpload(mimeType: string | undefined): boolean {
   return mimeType?.startsWith('image/') ?? false
 }
 
-export function getPreviewAspectRatio(width: number | undefined, height: number | undefined) {
-  return width &&
-    height &&
-    Number.isFinite(width) &&
-    Number.isFinite(height) &&
-    width > 0 &&
-    height > 0
-    ? `${width} / ${height}`
-    : undefined
-}
-
 export function canReplaceAssetFile(
   canUpdate: boolean | undefined,
   hideRemoveFile: boolean | undefined
@@ -142,18 +131,12 @@ function AssetPreview({
   const [failed, setFailed] = useState(false)
   const [displayedSrc, setDisplayedSrc] = useState(src)
   const [loadedSrc, setLoadedSrc] = useState<string>()
-  const [naturalSize, setNaturalSize] = useState<{ src: string; width: number; height: number }>()
   const imageRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
     const image = imageRef.current
     if (displayedSrc && image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
       setLoadedSrc(displayedSrc)
-      setNaturalSize({
-        src: displayedSrc,
-        width: image.naturalWidth,
-        height: image.naturalHeight,
-      })
     }
   }, [displayedSrc])
 
@@ -179,78 +162,10 @@ function AssetPreview({
   const showBlur = !loadedSrc && lqip && shouldShowBlurPlaceholder(loading, failed)
 
   return (
-    <div className='group relative isolate my-4 flex h-[min(360px,45svh)] w-full min-w-0 items-center justify-center overflow-hidden bg-[var(--theme-elevation-50)] py-4 md:h-[min(600px,60svh)]'>
-      {displayedSrc && !failed ? (
-        <div
-          className='relative flex h-full max-w-full items-center justify-center overflow-hidden'
-          style={{
-            aspectRatio: getPreviewAspectRatio(
-              width ?? (naturalSize?.src === displayedSrc ? naturalSize.width : undefined),
-              height ?? (naturalSize?.src === displayedSrc ? naturalSize.height : undefined)
-            ),
-          }}
-        >
-          {showBlur ? (
-            <img
-              alt=''
-              aria-hidden='true'
-              className='absolute inset-0 size-full object-cover blur-xl'
-              src={lqip}
-            />
-          ) : null}
-          <img
-            alt={alt}
-            className={`relative z-10 block h-full w-auto max-w-full object-contain ${!loading && loadedSrc === displayedSrc ? 'opacity-100' : 'opacity-0'}`}
-            decoding='async'
-            height={height}
-            loading='eager'
-            onError={() => {
-              if (displayedSrc === src) setFailed(true)
-            }}
-            onLoad={() => {
-              const image = imageRef.current
-              if (image?.naturalWidth && image.naturalHeight) {
-                setNaturalSize({
-                  src: displayedSrc,
-                  width: image.naturalWidth,
-                  height: image.naturalHeight,
-                })
-              }
-              setLoadedSrc(displayedSrc)
-              setFailed(false)
-            }}
-            ref={imageRef}
-            src={displayedSrc}
-            width={width}
-          />
-        </div>
-      ) : failed ? (
-        <p className='m-0 px-3 py-4 text-sm text-[var(--theme-elevation-700)]'>
-          Image preview unavailable.
-        </p>
-      ) : null}
-      {loading && !showBlur ? (
-        <span
-          aria-label='Loading image'
-          className='absolute size-8 animate-spin rounded-full border-2 border-(--theme-elevation-500) border-t-transparent motion-reduce:animate-none'
-          role='status'
-        />
-      ) : null}
-      {displayedSrc && canEdit && (
-        <div className='absolute right-2 top-2 z-20'>
-          <Button
-            aria-label='Edit image'
-            buttonStyle='icon-label'
-            icon='edit'
-            iconStyle='none'
-            margin={false}
-            onClick={onEdit}
-            size='large'
-          />
-        </div>
-      )}
-      {displayedSrc && canReplace && (
-        <div className='absolute left-2 top-2 z-20'>
+    <div className='group relative isolate my-4 flex h-[min(360px,45svh)] w-full min-w-0 flex-col overflow-hidden bg-[var(--theme-elevation-50)] md:h-[min(600px,60svh)]'>
+      {/* Controls sit in their own row, so the image area below never reaches them. */}
+      <div className='flex h-12 shrink-0 items-center justify-between px-2'>
+        {displayedSrc && canReplace ? (
           <Button
             aria-label={isReplacing ? 'Revert replacement' : replaceFileLabel}
             buttonStyle='icon-label'
@@ -260,8 +175,64 @@ function AssetPreview({
             onClick={onReplace}
             size='large'
           />
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+        {displayedSrc && canEdit ? (
+          <Button
+            aria-label='Edit image'
+            buttonStyle='icon-label'
+            icon='edit'
+            iconStyle='none'
+            margin={false}
+            onClick={onEdit}
+            size='large'
+          />
+        ) : null}
+      </div>
+      <div className='relative flex min-h-0 flex-1 items-center justify-center p-4'>
+        {displayedSrc && !failed ? (
+          <div className='relative flex h-full max-h-full max-w-full items-center justify-center'>
+            {showBlur ? (
+              <img
+                alt=''
+                aria-hidden='true'
+                className='absolute inset-0 size-full object-cover blur-xl'
+                src={lqip}
+              />
+            ) : null}
+            {/* Height and width auto keep the intrinsic ratio inside the padded area; no aspect box can overflow it. */}
+            <img
+              alt={alt}
+              className={`relative z-10 block h-auto max-h-full w-auto max-w-full object-contain ${!loading && loadedSrc === displayedSrc ? 'opacity-100' : 'opacity-0'}`}
+              decoding='async'
+              height={height}
+              loading='eager'
+              onError={() => {
+                if (displayedSrc === src) setFailed(true)
+              }}
+              onLoad={() => {
+                setLoadedSrc(displayedSrc)
+                setFailed(false)
+              }}
+              ref={imageRef}
+              src={displayedSrc}
+              width={width}
+            />
+          </div>
+        ) : failed ? (
+          <p className='m-0 px-3 py-4 text-sm text-[var(--theme-elevation-700)]'>
+            Image preview unavailable.
+          </p>
+        ) : null}
+        {loading && !showBlur ? (
+          <span
+            aria-label='Loading image'
+            className='absolute size-8 animate-spin rounded-full border-2 border-(--theme-elevation-500) border-t-transparent motion-reduce:animate-none'
+            role='status'
+          />
+        ) : null}
+      </div>
     </div>
   )
 }
