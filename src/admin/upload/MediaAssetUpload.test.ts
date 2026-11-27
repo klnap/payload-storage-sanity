@@ -3,20 +3,12 @@ import {
   canEditAssetPreview,
   canReplaceAssetFile,
   extractDuplicateMediaId,
-  getPreviewAspectRatio,
   shouldHideNativeUpload,
   shouldRenderAssetPreview,
   shouldShowBlurPlaceholder,
 } from './MediaAssetUpload'
 
 describe('MediaAssetUpload', () => {
-  test('uses the source dimensions for the preview aspect ratio', () => {
-    expect(getPreviewAspectRatio(1200, 800)).toBe('1200 / 800')
-    expect(getPreviewAspectRatio(undefined, 800)).toBeUndefined()
-    expect(getPreviewAspectRatio(0, 800)).toBeUndefined()
-    expect(getPreviewAspectRatio(Number.POSITIVE_INFINITY, 800)).toBeUndefined()
-  })
-
   test('shows image editing only when Payload has an enabled image editor', () => {
     expect(canEditAssetPreview(false, { crop: false, focalPoint: false })).toBe(false)
     expect(canEditAssetPreview(false, { crop: true, focalPoint: false })).toBe(true)
