@@ -15,16 +15,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
+// Reads own properties only, so a key such as "constructor" never resolves to an inherited value.
+function ownValue(target: object, key: string): unknown {
+  return Object.hasOwn(target, key) ? (target as Record<string, unknown>)[key] : undefined
+}
+
 function deepMergeSelect(base: PopulateSelect, patch: PopulateSelect): PopulateSelect {
   const out: PopulateSelect = { ...base }
 
   for (const [key, value] of Object.entries(patch)) {
+    // "__proto__" as a key would set the prototype of the merged object instead of adding a field.
+    if (key === '__proto__') continue
     if (value === true) {
       out[key] = true
       continue
     }
-    if (isPlainObject(value) && isPlainObject(out[key])) {
-      out[key] = deepMergeSelect(out[key] as PopulateSelect, value as PopulateSelect)
+    const current = ownValue(out, key)
+    if (isPlainObject(value) && isPlainObject(current)) {
+      out[key] = deepMergeSelect(current as PopulateSelect, value as PopulateSelect)
       continue
     }
     out[key] = value
@@ -38,6 +46,9 @@ function deleteAtPath(target: Record<string, unknown>, path: string): void {
   let node: Record<string, unknown> = target
 
   for (const part of parts.slice(0, -1)) {
+    if (!Object.hasOwn(node, part)) {
+      return
+    }
     const next = node[part]
     if (!isPlainObject(next)) {
       return
@@ -45,7 +56,10 @@ function deleteAtPath(target: Record<string, unknown>, path: string): void {
     node = next
   }
 
-  delete node[parts.at(-1) ?? '']
+  const last = parts.at(-1) ?? ''
+  if (Object.hasOwn(node, last)) {
+    delete node[last]
+  }
 }
 
 function applyExcludes(select: PopulateSelect, exclude: string[]): PopulateSelect {
@@ -56,7 +70,7 @@ function applyExcludes(select: PopulateSelect, exclude: string[]): PopulateSelec
   const clone = structuredClone(select) as Record<string, unknown>
   for (const path of exclude) {
     if (!path.includes('.')) {
-      delete clone[path]
+      if (Object.hasOwn(clone, path)) delete clone[path]
     } else {
       deleteAtPath(clone, path)
     }
