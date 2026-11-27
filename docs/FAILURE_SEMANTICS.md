@@ -64,7 +64,7 @@ Reconcile checks batches of media rows and reports duplicate assets for operator
 - A Sanity upload error fails the upload; a later Payload persistence error can leave the Sanity asset behind.
 - A webhook authentication or body-size failure returns an error without applying the event.
 - A Sanity or Payload sync failure is recorded in media sync status or logs; reconcile can recheck unavailable rows.
-- The unavailable-asset recovery UI helps editors replace or unlink broken media. It does not recreate or delete Sanity assets.
+- Unavailable media is marked by sync status. Replace or remove the Payload row through the normal Payload admin; the plugin does not register a recovery UI, and it never recreates or deletes Sanity assets.
 - Logs use a fixed prefix and structured context. Do not include write tokens, webhook secrets, or raw request bodies in custom logs.
 
 ## Cache behavior

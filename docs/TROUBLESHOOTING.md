@@ -41,7 +41,7 @@ Disabling the guard permits dangling Payload references. It never deletes the Sa
 
 ## Image URL is empty
 
-Check the media document's `sync.status` and persisted `sanity.asset` data. `deleted`, `missing`, and `error` sync states clear hydrated `url` and `thumbnailURL` values. Webhooks or the reconcile endpoint can refresh status. The unavailable-asset recovery UI helps editors replace or unlink broken media.
+Check the media document's `sync.status` and persisted `sanity.asset` data. `deleted`, `missing`, and `error` sync states clear hydrated `url` and `thumbnailURL` values. Webhooks or the reconcile endpoint can refresh status. The plugin does not register a recovery UI. Replace or remove the broken media row through Payload's admin.
 
 ## Webhook returns 401
 
@@ -71,4 +71,4 @@ When Payload proxies file delivery, it fetches only compatible Sanity CDN hosts.
 
 ## Raw Node.js import fails
 
-The published ESM build expects a bundler to resolve extensionless imports. Raw Node.js ESM imports are not supported. See [compatibility](../README.md#compatibility).
+The root, `/consumers`, `/client`, and `/folders` entries import in plain Node.js ESM. `/consumers/next` needs Next.js installed, and `/admin` imports a stylesheet, so it needs Payload's bundler. See [module format](../README.md#module-format).

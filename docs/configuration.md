@@ -28,7 +28,7 @@ sanityStorage({
 | `dataset` | required | Sanity dataset for uploaded assets. |
 | `token` | required in `full` mode | Server-side Sanity write token. |
 | `apiVersion` | package default | Sanity API version for client requests. |
-| `cdnBaseUrl` | Sanity CDN | Compatible CDN or proxy base URL. |
+| `cdnBaseUrl` | Sanity CDN | Origin that serves Sanity assets in place of `cdn.sanity.io`, for example a proxy. Sanity URLs move to this origin; image transformations apply to image paths. |
 | `resolveFetch` | — | Custom Sanity client transport. |
 | `collections` | automatic discovery | Explicit upload collections to configure. |
 | `admin` | gallery enabled | Default admin options for configured collections. |
@@ -121,7 +121,7 @@ The webhook verifies an HMAC over the raw request body. Sanity may retry webhook
 - `@klnap/payload-storage-sanity/consumers/next/loader`: default loader required by Next.js `images.loaderFile`.
 - `@klnap/payload-storage-sanity/client`: `createSanityClient` for callers building URLs from bare Sanity asset references.
 - `@klnap/payload-storage-sanity/folders`: folder assignment for assets uploaded outside the Payload adapter.
-- `@klnap/payload-storage-sanity/admin`: admin stylesheet import-map entry.
+- `@klnap/payload-storage-sanity/admin`: admin components and styles referenced by Payload's import map. Consumed through Payload's bundler, not imported directly from Node.js.
 - `@klnap/payload-storage-sanity/styles/admin-tailwind.css`: admin styles.
 
 Internal lifecycle, metadata, folder-assignment, and synchronization functions are not public APIs.
