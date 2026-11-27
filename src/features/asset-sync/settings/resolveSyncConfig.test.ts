@@ -52,3 +52,23 @@ describe('resolveSanitySyncConfig', () => {
     expect(resolved.reconcile).not.toBeNull()
   })
 })
+
+describe('sync base path normalization', () => {
+  test('trims trailing slashes in linear time and keeps the route layout', () => {
+    const config = resolveSanitySyncConfig(
+      {
+        enabled: true,
+        basePath: `/custom/path${'/'.repeat(5000)}`,
+        webhook: { secret: 's' },
+      } as never,
+      'media'
+    )
+    expect(config.webhook?.path).toBe('/custom/path/webhook')
+    expect(
+      resolveSanitySyncConfig(
+        { enabled: true, basePath: '///', webhook: { secret: 's' } } as never,
+        'media'
+      ).webhook?.path
+    ).toBe('/sanity-storage/webhook')
+  })
+})

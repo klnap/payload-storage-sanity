@@ -10,7 +10,13 @@ export function parseSanityAssetFolderPath(path: unknown): string[] {
     throw new Error('Sanity media folder must be a non-empty path.')
   }
 
-  const normalized = path.trim().replace(/^\/+|\/+$/g, '')
+  // Linear trim of leading and trailing slashes (regex alternation with \/+$ backtracks quadratically).
+  const trimmed = path.trim()
+  let start = 0
+  let end = trimmed.length
+  while (start < end && trimmed.charCodeAt(start) === 47) start += 1
+  while (end > start && trimmed.charCodeAt(end - 1) === 47) end -= 1
+  const normalized = trimmed.slice(start, end)
   const segments = normalized.split('/').map((segment) => segment.trim())
   if (
     !normalized ||

@@ -7,7 +7,7 @@ describe('fetchSanityUpstreamAsset', () => {
     const originalFetch = globalThis.fetch
     globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
       const url = String(input)
-      if (init?.redirect === 'manual' && url.includes('cdn.sanity.io')) {
+      if (init?.redirect === 'manual' && new URL(url).hostname === 'cdn.sanity.io') {
         return new Response(null, {
           status: 302,
           headers: { Location: 'https://evil.example.com/asset' },
@@ -19,6 +19,28 @@ describe('fetchSanityUpstreamAsset', () => {
     try {
       const response = await fetchSanityUpstreamAsset('https://cdn.sanity.io/images/demo/x.jpg')
       expect(response.status).toBe(502)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test('does not treat a misleading host or path as the Sanity CDN', async () => {
+    const originalFetch = globalThis.fetch
+    const seen: string[] = []
+    globalThis.fetch = (async (input: RequestInfo) => {
+      seen.push(String(input))
+      return new Response(null, { status: 404 })
+    }) as typeof fetch
+    try {
+      const misleading = [
+        'https://cdn.sanity.io.evil.example.com/images/x.jpg',
+        'https://evil.example.com/cdn.sanity.io/images/x.jpg',
+      ]
+      for (const url of misleading) {
+        const response = await fetchSanityUpstreamAsset(url)
+        expect(response.status).toBe(404)
+      }
+      expect(seen).toEqual([])
     } finally {
       globalThis.fetch = originalFetch
     }
