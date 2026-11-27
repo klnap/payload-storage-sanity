@@ -1,6 +1,6 @@
 {
   "name": "@klnap/payload-storage-sanity",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "description": "Sanity-powered storage for Payload CMS with an enhanced media admin UI.",
   "license": "MIT",
   "author": "klnap",

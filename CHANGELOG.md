@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+### Major Changes
+
+- 7fc83a4: Rename `DefaultPopulateAsset` to `MediaAsset` without a compatibility alias. Remove the image-specific media type and public narrowing guards. Re-export the canonical type from the Next.js consumer entry, and let `SanityImage` accept it directly while validating runtime values.
+
 ## 0.2.2
 
 ### Patch Changes
