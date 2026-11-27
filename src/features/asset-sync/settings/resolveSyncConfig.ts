@@ -31,7 +31,9 @@ function normalizeSanityStorageSyncBasePath(basePath?: string): string {
     return DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH
   }
   const withLeading = raw.startsWith('/') ? raw : `/${raw}`
-  return withLeading.replace(/\/+$/, '') || DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH
+  let end = withLeading.length
+  while (end > 0 && withLeading.charCodeAt(end - 1) === 47) end -= 1
+  return withLeading.slice(0, end) || DEFAULT_SANITY_STORAGE_SYNC_BASE_PATH
 }
 
 function syncRoutePath(basePath: string, segment: 'webhook' | 'reconcile'): string {
