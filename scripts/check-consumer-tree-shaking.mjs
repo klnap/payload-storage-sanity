@@ -42,15 +42,6 @@ mkdirSync(generatedRoot, { recursive: true })
 const workDir = mkdtempSync(join(generatedRoot, 'pss-consumer-tree-shaking-'))
 try {
   writeFileSync(
-    join(workDir, 'guard.js'),
-    `import { isMediaAsset, isMediaImageAsset } from ${JSON.stringify(distEntry)};\nvoid isMediaAsset; void isMediaImageAsset;\n`
-  )
-  const guardBundle = await bundle('./guard.js', workDir, 'guard')
-  if (/cdn\.sanity\.io|createImageUrlBuilder|sanity-image-url/.test(guardBundle)) {
-    throw new Error('Framework-independent guard import retained the unused image URL builder.')
-  }
-
-  writeFileSync(
     join(workDir, 'image-url.js'),
     `import { buildSanityImageUrl } from ${JSON.stringify(distEntry)};\nvoid buildSanityImageUrl;\n`
   )
@@ -62,7 +53,7 @@ try {
   }
 
   console.log(
-    '[check:consumer-tree-shaking] Consumer imports tree-shake and exclude server/Next modules.'
+    '[check:consumer-tree-shaking] Framework-independent URL imports exclude server/Next modules.'
   )
 } finally {
   rmSync(workDir, { recursive: true, force: true })

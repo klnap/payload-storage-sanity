@@ -1,8 +1,8 @@
 import type Image from 'next/image'
 import type { ComponentProps, ReactNode } from 'react'
-import type { MediaImageAsset } from '@/consumers/assets'
-import { isMediaImageAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 import { resolveSanityImagePopulatedAsset, type SanityImageAssetMapping } from '@/consumers/image'
+import { resolveRenderableMediaAsset } from '@/consumers/image/resolveRenderableMediaAsset'
 import { type ToSanityImagePropsOptions, toSanityImageProps } from '../toSanityImageProps'
 import { resolveSanityImageFallback } from './resolveSanityImageFallback'
 import { SanityImageClient } from './SanityImageClient'
@@ -20,22 +20,18 @@ type AssetDerivedImageProp =
   | 'placeholder'
   | 'blurDataURL'
 
-/** Custom asset shapes need an explicit mapping; only narrowed image assets skip it. */
-type AssetMappingProps<TAsset extends object> = [TAsset] extends [MediaImageAsset]
-  ? { assetMapping?: SanityImageAssetMapping<TAsset> }
-  : { assetMapping: SanityImageAssetMapping<TAsset> }
-
-export type SanityImageProps<TAsset extends object = MediaImageAsset> = {
+export type SanityImageProps<TAsset extends object = MediaAsset> = {
   asset: TAsset | null | undefined
+  /** Maps an application-owned asset shape to the normalized media fields. */
+  assetMapping?: SanityImageAssetMapping<TAsset>
   /** Shown when asset/url is missing or when the image fails to load. `null` disables fallback. */
   fallback?: ReactNode | null
   /** Alias for Next.js `priority` */
   preload?: boolean
 } & ToSanityImagePropsOptions &
-  AssetMappingProps<TAsset> &
   Omit<NextImageProps, AssetDerivedImageProp | keyof ToSanityImagePropsOptions | 'fallback'>
 
-export function SanityImage<TAsset extends object = MediaImageAsset>({
+export function SanityImage<TAsset extends object = MediaAsset>({
   asset,
   assetMapping,
   fallback,
@@ -50,11 +46,8 @@ export function SanityImage<TAsset extends object = MediaImageAsset>({
   priority,
   ...imageProps
 }: SanityImageProps<TAsset>) {
-  const populatedAsset = resolveSanityImagePopulatedAsset(
-    asset,
-    assetMapping as SanityImageAssetMapping<object> | undefined
-  )
-  const imageAsset = isMediaImageAsset(populatedAsset) ? populatedAsset : null
+  const populatedAsset = resolveSanityImagePopulatedAsset(asset, assetMapping)
+  const imageAsset = resolveRenderableMediaAsset(populatedAsset, cdnBaseUrl)
 
   const derived = toSanityImageProps(imageAsset, {
     alt,
@@ -67,7 +60,7 @@ export function SanityImage<TAsset extends object = MediaImageAsset>({
   })
 
   if (!derived) {
-    return resolveSanityImageFallback('missing', { fallback, asset: populatedAsset }) ?? null
+    return resolveSanityImageFallback('missing', { fallback, asset: imageAsset }) ?? null
   }
 
   return (
@@ -75,6 +68,7 @@ export function SanityImage<TAsset extends object = MediaImageAsset>({
       derived={derived}
       asset={imageAsset}
       fallback={fallback}
+      cdnBaseUrl={cdnBaseUrl}
       preload={preload}
       priority={priority}
       {...imageProps}

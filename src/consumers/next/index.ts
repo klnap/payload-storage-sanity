@@ -1,4 +1,4 @@
-export type { MediaAsset, MediaImageAsset } from '@/consumers/assets'
+export type { MediaAsset } from '@/consumers/assets'
 export type {
   SanityImageAssetMapping,
   SanityImageAssetPath,

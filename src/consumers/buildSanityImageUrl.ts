@@ -68,13 +68,18 @@ export function buildSanityImageUrl(
 
   if (!v.is(v.string(), value) && 'sync' in value && isUnavailable(value)) return null
 
-  const storedUrl = !v.is(v.string(), value) && 'url' in value ? value.url?.trim() : undefined
+  const storedUrl =
+    v.is(v.string(), value) && value.startsWith('http')
+      ? value.trim()
+      : !v.is(v.string(), value) && 'url' in value
+        ? value.url?.trim()
+        : undefined
   if (storedUrl && isSanityCompatibleHost(storedUrl)) {
     return isImagePath(storedUrl) ? applyImageParams(storedUrl, size) : storedUrl
   }
 
   const ref = getAssetReference(value)
-  if (!ref) return storedUrl || null
+  if (!ref?.startsWith('image-')) return storedUrl || null
 
   if (!client) {
     throw new Error(

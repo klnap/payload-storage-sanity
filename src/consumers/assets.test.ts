@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
-import { isMediaAsset, isMediaImageAsset } from './assets'
+import { resolveRenderableMediaAsset } from './image/resolveRenderableMediaAsset'
 
-const asset = {
+const image = {
   id: 'media-1',
   url: 'https://cdn.sanity.io/images/project/dataset/image-1-1200x800.jpg',
   focalX: 50,
@@ -9,36 +9,32 @@ const asset = {
   alt: null,
 }
 
-describe('isMediaAsset', () => {
-  it('accepts the normalized default response with optional image metadata omitted', () => {
-    expect(isMediaAsset(asset)).toBe(true)
+describe('resolveRenderableMediaAsset', () => {
+  it('accepts normalized Sanity image assets', () => {
+    expect(resolveRenderableMediaAsset(image)).toEqual(image)
   })
 
-  it('accepts normalized file assets without treating them as images', () => {
-    const file = { ...asset, url: 'https://cdn.sanity.io/files/project/dataset/manual.pdf' }
-
-    expect(isMediaAsset(file)).toBe(true)
-    expect(isMediaImageAsset(file)).toBe(false)
+  it('rejects files, including image-looking filenames, and malformed media', () => {
+    expect(
+      resolveRenderableMediaAsset({
+        ...image,
+        url: 'https://cdn.sanity.io/files/project/dataset/photo.jpg',
+      })
+    ).toBeNull()
+    expect(resolveRenderableMediaAsset({ ...image, url: 'not a URL' })).toBeNull()
+    expect(resolveRenderableMediaAsset({ ...image, focalX: 101 })).toBeNull()
+    expect(resolveRenderableMediaAsset({ ...image, focalX: Number.NaN })).toBeNull()
+    expect(resolveRenderableMediaAsset({ ...image, width: 0 })).toBeNull()
+    expect(resolveRenderableMediaAsset({ ...image, width: Number.POSITIVE_INFINITY })).toBeNull()
+    expect(resolveRenderableMediaAsset(null)).toBeNull()
   })
 
-  it('rejects file assets even when their filename has an image extension', () => {
-    const file = { ...asset, url: 'https://cdn.sanity.io/files/project/dataset/photo.jpg' }
-
-    expect(isMediaAsset(file)).toBe(true)
-    expect(isMediaImageAsset(file)).toBe(false)
-  })
-
-  it('narrows image assets without changing their serialized shape', () => {
-    const before = JSON.stringify(asset)
-
-    expect(isMediaImageAsset(asset)).toBe(true)
-    expect(JSON.stringify(asset)).toBe(before)
-  })
-
-  it('rejects IDs, full documents, and unavailable assets', () => {
-    expect(isMediaAsset('media-1')).toBe(false)
-    expect(isMediaAsset({ ...asset, url: '' })).toBe(false)
-    expect(isMediaAsset({ ...asset, focalX: undefined })).toBe(false)
-    expect(isMediaAsset({ ...asset, width: Number.NaN })).toBe(false)
+  it('accepts SVG image assets without applying image transformations', () => {
+    expect(
+      resolveRenderableMediaAsset({
+        ...image,
+        url: 'https://cdn.sanity.io/images/project/dataset/brand.svg',
+      })
+    ).not.toBeNull()
   })
 })

@@ -1,4 +1,4 @@
-import { isMediaImageAsset, type MediaAsset, type MediaImageAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 import { createSanityImage, type SanityImageProps } from '@/consumers/next'
 
 type HeroAsset = {
@@ -44,14 +44,7 @@ const defaultAsset: MediaAsset = {
   alt: null,
 }
 
-// @ts-expect-error General MediaAsset values may be files.
-const _unsafeDefaultProps: SanityImageProps = { asset: defaultAsset }
-
-if (isMediaImageAsset(defaultAsset)) {
-  const imageAsset: MediaImageAsset = defaultAsset
-  const _defaultProps: SanityImageProps = { asset: imageAsset }
-  void _defaultProps
-}
+const _defaultProps: SanityImageProps = { asset: defaultAsset }
 
 // Factory with mapping + instance override keeps the factory generic asset type.
 const _overrideProps: SanityImageProps<HeroAsset> = {

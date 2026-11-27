@@ -55,11 +55,11 @@ By default, `sync.access` allows users from Payload's admin auth collection (`co
 
 The default preset normalizes eligible populated relationships only. Set `depth: 1` or higher and pass the requested locale. Direct media reads, authenticated requests, explicit populate selections, and depth-zero relationships keep full documents or IDs.
 
-Use `isMediaImageAsset()` to narrow a generated Payload relationship before passing it to `SanityImage`; `isMediaAsset()` also accepts files. Use `assetMapping` for a custom shape whose URL resolves to a Sanity image CDN path.
+`SanityImage` accepts `MediaAsset` directly and validates runtime values. Files and malformed values use its fallback. Use `assetMapping` for an application-owned shape whose URL resolves to a supported Sanity image CDN path.
 
 ## Next.js images are broken or unoptimized
 
-Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. For a global loader, configure `images.loader` and `loaderFile` as shown in the [README](../README.md#consumers). For mixed providers, use the scoped `sanityImageLoader` prop. A global loader affects every `next/image`; non-Sanity URLs pass through unchanged without Next.js's built-in optimization.
+Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. It uses a scoped Sanity loader by default. For a global loader, configure `images.loader` and `loaderFile` as shown in the [README](../README.md#frontend-integration). For mixed providers, use the scoped `sanityImageLoader` prop. A global loader affects every `next/image`; non-Sanity URLs pass through unchanged without Next.js's built-in optimization.
 
 ## `assetMapping` does not resolve an image
 

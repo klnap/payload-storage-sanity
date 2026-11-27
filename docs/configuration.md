@@ -115,7 +115,7 @@ The webhook verifies an HMAC over the raw request body. Sanity may retry webhook
 ## Public package entries
 
 - `@klnap/payload-storage-sanity`: Payload storage plugin, configuration types, and populate helpers.
-- `@klnap/payload-storage-sanity/consumers`: framework-independent asset contracts, guard, and image URL builder.
+- `@klnap/payload-storage-sanity/consumers`: framework-independent asset contracts and image URL builder.
 - `@klnap/payload-storage-sanity/consumers/next`: `SanityImage`, its props, component factory, and scoped image-loader helpers.
 - `@klnap/payload-storage-sanity/consumers/next/loader`: default loader required by Next.js `images.loaderFile`.
 - `@klnap/payload-storage-sanity/client`: `createSanityClient` for callers building URLs from bare Sanity asset references.

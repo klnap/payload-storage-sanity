@@ -43,8 +43,13 @@ try {
     if (response) throw new Error(`Built consumer returned HTTP ${response.status}`)
     await Bun.sleep(250)
   }
-  if (!html?.includes('next release consumer') || !html.includes('alt="Example"')) {
-    throw new Error('Built consumer did not render the installed Sanity image component')
+  if (
+    !html?.includes('next release consumer') ||
+    !html.includes('alt="Example"') ||
+    !html.includes('cdn.sanity.io/images/demo/production/example.jpg?w=') ||
+    !html.includes('auto=format')
+  ) {
+    throw new Error('Built consumer did not render Sanity images with CDN transformations')
   }
 } finally {
   server.kill()

@@ -16,6 +16,7 @@ describe('toSanityImageProps', () => {
 
     expect(props?.alt).toBe('Hero')
     expect(props?.src).toBe('https://cdn.sanity.io/images/demo/production/img.jpg')
+    expect(props?.style?.objectPosition).toBe('50% 50%')
   })
 
   test('explicit alt="" override marks the image decorative and beats the asset description', () => {
@@ -117,5 +118,21 @@ describe('toSanityImageProps', () => {
         })
       ).toBeNull()
     }
+  })
+
+  test('rejects malformed or non-image inputs without producing image props', () => {
+    expect(toSanityImageProps(null)).toBeNull()
+    expect(
+      toSanityImageProps({ id: 1, url: 'https://cdn.sanity.io/images/demo/photo.pdf' })
+    ).toBeNull()
+    expect(
+      toSanityImageProps({
+        id: 1,
+        url: 'https://cdn.sanity.io/images/demo/photo.jpg',
+        alt: null,
+        focalX: Number.NaN,
+        focalY: 50,
+      })
+    ).toBeNull()
   })
 })

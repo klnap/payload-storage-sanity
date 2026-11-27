@@ -3,8 +3,7 @@ export type {
   SanityImageAssetPath,
 } from '@/consumers/image/resolveMappedPopulateAsset'
 export type { SanityAssetReference } from '@/sanity/assets/asset'
-export type { MediaAsset, MediaImageAsset } from './assets'
-export { isMediaAsset, isMediaImageAsset } from './assets'
+export type { MediaAsset } from './assets'
 export {
   type BuildSanityImageUrlOptions,
   buildSanityImageUrl,

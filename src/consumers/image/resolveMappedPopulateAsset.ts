@@ -114,11 +114,12 @@ export function resolveMappedPopulateAsset<TAsset extends object>(
 /** Applies optional mapping, or passes through a default-populated asset unchanged. */
 export function resolveSanityImagePopulatedAsset<TAsset>(
   asset: TAsset | null | undefined,
-  assetMapping?: SanityImageAssetMapping<object> | undefined
-): MediaAsset | null | undefined {
+  assetMapping?: SanityImageAssetMapping<TAsset & object> | undefined
+): TAsset | MediaAsset | null | undefined {
   if (!assetMapping) {
-    return asset as MediaAsset | null | undefined
+    return asset
   }
 
-  return resolveMappedPopulateAsset(asset as object | null | undefined, assetMapping)
+  if (asset == null || typeof asset !== 'object') return null
+  return resolveMappedPopulateAsset(asset, assetMapping)
 }

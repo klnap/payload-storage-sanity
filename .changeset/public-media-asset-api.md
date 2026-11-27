@@ -2,4 +2,4 @@
 "@klnap/payload-storage-sanity": major
 ---
 
-Rename `DefaultPopulateAsset` to `MediaAsset` and `isDefaultPopulateAsset()` to `isMediaAsset()`, with no compatibility aliases. Require `isMediaImageAsset()` before `SanityImage`; Sanity file URLs now use its fallback instead of rendering.
+Rename `DefaultPopulateAsset` to `MediaAsset` without a compatibility alias. Remove the image-specific media type and public narrowing guards. Re-export the canonical type from the Next.js consumer entry, and let `SanityImage` accept it directly while validating runtime values.
