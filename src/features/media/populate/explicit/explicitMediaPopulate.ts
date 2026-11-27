@@ -6,7 +6,7 @@ function isPopulateFieldMap(value: unknown): boolean {
 
 /**
  * True when the client passed an explicit Payload `populate[collectionSlug]` object for this request.
- * Shallow `select: { image: true }` does not set this — morph to `DefaultPopulateAsset` still applies.
+ * Shallow `select: { image: true }` does not set this — morph to `MediaAsset` still applies.
  */
 export function hasExplicitMediaPopulateSelect(
   req: PayloadRequest | undefined,

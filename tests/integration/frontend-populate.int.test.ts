@@ -223,7 +223,7 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
 
     const photo = await p.create({
       collection: 'media',
-      data: { alt: { en: 'Wide' } },
+      data: { alt: { en: 'Wide' }, focalX: 20, focalY: 80 },
       file: uploadFile(wideSample, 'wide.png'),
     } as never)
     const article = await p.create({
@@ -279,8 +279,28 @@ describe.skipIf(!baseUrl)('frontend populate with PostgreSQL and Local API', () 
       locale: 'en',
       depth: 1,
       overrideAccess: true,
-    })) as unknown as { hero: { width: number; height: number; aspectRatio: number } }
-    expect(populated.hero).toMatchObject({ width: 2, height: 2, aspectRatio: 1 })
+    })) as unknown as {
+      hero: {
+        id: string | number
+        url: string
+        width: number
+        height: number
+        aspectRatio: number
+        focalX: number
+        focalY: number
+        alt: string | null
+      }
+    }
+    expect(populated.hero).toMatchObject({
+      id: photo.id,
+      url: expect.stringContaining('cdn.sanity.io'),
+      width: 2,
+      height: 2,
+      aspectRatio: 1,
+      focalX: 20,
+      focalY: 80,
+      alt: 'Wide',
+    })
   })
 
   it('populates a global relation with select at depth 1', async () => {

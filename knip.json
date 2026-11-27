@@ -15,6 +15,7 @@
     "tests/**/*.test.ts",
     "tests/**/*.int.test.ts",
     "tests/types/*.ts",
+    "tests/types/*.tsx",
     "tests/unit/consumers/next/*.ts",
     "scripts/**/*.mjs",
     "scripts/**/*.cjs",

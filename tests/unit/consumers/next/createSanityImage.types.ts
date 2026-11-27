@@ -1,5 +1,5 @@
+import type { MediaAsset } from '@/consumers/assets'
 import { createSanityImage, type SanityImageProps } from '@/consumers/next'
-import type { DefaultPopulateAsset } from '@/features/media/populate'
 
 type HeroAsset = {
   image: string
@@ -17,28 +17,34 @@ const _HeroSanityImage = createSanityImage<HeroAsset>({
 })
 
 const hero: HeroAsset = {
-  image: 'https://cdn.example/hero.jpg',
+  image: 'https://cdn.sanity.io/images/demo/production/hero.jpg',
   metadata: { width: 1200, height: 800 },
 }
 
-// Custom asset accepted without casting to DefaultPopulateAsset.
+// Custom asset accepted without casting to MediaAsset.
 const _heroProps: SanityImageProps<HeroAsset> = {
   asset: hero,
+  assetMapping: {
+    url: 'image',
+    width: 'metadata.width',
+    height: 'metadata.height',
+    alt: 'caption',
+  },
 }
 
 const _DefaultSanityImage = createSanityImage({
   fallback: null,
 })
 
-const defaultAsset: DefaultPopulateAsset = {
+const defaultAsset: MediaAsset = {
   id: 1,
-  url: 'https://cdn.example/default.jpg',
+  url: 'https://cdn.sanity.io/images/demo/production/default.jpg',
+  focalX: 50,
+  focalY: 50,
   alt: null,
 }
 
-const _defaultProps: SanityImageProps = {
-  asset: defaultAsset,
-}
+const _defaultProps: SanityImageProps = { asset: defaultAsset }
 
 // Factory with mapping + instance override keeps the factory generic asset type.
 const _overrideProps: SanityImageProps<HeroAsset> = {

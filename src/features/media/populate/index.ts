@@ -1,4 +1,4 @@
-export type { DefaultPopulateAsset } from './defaultPopulate'
+export type { MediaAsset } from './defaultPopulate'
 export { defaultPopulateMediaDoc } from './explicit/defaultPopulateMediaDoc'
 export { hasExplicitMediaPopulateSelect } from './explicit/explicitMediaPopulate'
 export {

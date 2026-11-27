@@ -1,1 +1,1 @@
-export type { DefaultPopulateAsset } from '@/consumers/assets'
+export type { MediaAsset } from '@/consumers/assets'

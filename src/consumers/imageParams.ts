@@ -30,10 +30,12 @@ export function applyImageParams(url: string, options: ImageSize): string {
   return parsed.toString()
 }
 const IMAGE_PATH = /\.(avif|gif|jpe?g|png|tiff?|webp)$/i
-/** True for URLs whose path ends in an image extension; file URLs must not receive image parameters. */
+/** True for transformable Sanity image assets, never file assets with image-like filenames. */
 export function isImagePath(url: string): boolean {
   try {
-    return IMAGE_PATH.test(new URL(url).pathname)
+    const pathname = new URL(url).pathname
+    const segments = pathname.split('/').filter(Boolean)
+    return segments.includes('images') && !segments.includes('files') && IMAGE_PATH.test(pathname)
   } catch {
     return false
   }

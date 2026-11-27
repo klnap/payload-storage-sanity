@@ -4,7 +4,8 @@ import Image from 'next/image'
 import type { ComponentProps } from 'react'
 import { useState } from 'react'
 
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
+import { createSanityImageLoader, sanityImageLoader } from '../sanityImageLoader'
 import type { ToSanityImagePropsResult } from '../toSanityImageProps'
 import {
   type ResolveSanityImageFallbackArgs,
@@ -15,9 +16,10 @@ type NextImageProps = ComponentProps<typeof Image>
 
 export type SanityImageClientProps = {
   derived: ToSanityImagePropsResult
-  asset?: DefaultPopulateAsset | null
+  asset?: MediaAsset | null
   fallback?: ResolveSanityImageFallbackArgs['fallback']
   renderFallback?: ResolveSanityImageFallbackArgs['renderFallback']
+  cdnBaseUrl?: string
   preload?: boolean
 } & Omit<
   NextImageProps,
@@ -33,12 +35,15 @@ function SanityImageClientForSource({
   asset,
   fallback,
   renderFallback,
+  cdnBaseUrl,
   preload,
   priority,
   onError,
   ...imageProps
 }: SanityImageClientProps) {
   const [loadFailed, setLoadFailed] = useState(false)
+  const loader =
+    imageProps.loader ?? (cdnBaseUrl ? createSanityImageLoader({ cdnBaseUrl }) : sanityImageLoader)
 
   if (loadFailed) {
     const node = resolveSanityImageFallback('error', { fallback, renderFallback, asset })
@@ -49,6 +54,7 @@ function SanityImageClientForSource({
     <Image
       {...imageProps}
       {...derived}
+      loader={loader}
       priority={priority ?? preload}
       onError={(event) => {
         setLoadFailed(true)

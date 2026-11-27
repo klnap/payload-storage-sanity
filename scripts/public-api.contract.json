@@ -37,10 +37,10 @@
   },
   "./consumers": {
     "default": false,
-    "runtime": ["buildSanityImageUrl", "isDefaultPopulateAsset"],
+    "runtime": ["buildSanityImageUrl"],
     "types": [
       "BuildSanityImageUrlOptions",
-      "DefaultPopulateAsset",
+      "MediaAsset",
       "SanityAssetReference",
       "SanityImageAssetMapping",
       "SanityImageAssetPath",
@@ -53,7 +53,7 @@
     "types": [
       "CreateSanityImageLoaderOptions",
       "CreateSanityImageOptions",
-      "DefaultPopulateAsset",
+      "MediaAsset",
       "SanityImageAssetMapping",
       "SanityImageAssetPath",
       "SanityImageProps"

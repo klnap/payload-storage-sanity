@@ -21,7 +21,7 @@ export type ShouldApplyDefaultPopulateArgs = {
 }
 
 /**
- * True when media `afterRead` should return the flat storefront DTO (`DefaultPopulateAsset`).
+ * True when media `afterRead` should return the flat storefront DTO (`MediaAsset`).
  * False for authenticated requests (admin), direct `/api/{media}/:id`, collection list routes, and when opted out on Local API.
  */
 export function shouldApplyDefaultPopulate({

@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '../assets'
+import type { MediaAsset } from '../assets'
 import { normalizeAltText } from './normalizeAltText'
 
 export type ResolveAssetAltOptions = {
@@ -12,7 +12,7 @@ export type ResolveAssetAltOptions = {
 }
 
 export function resolveAssetAlt(
-  asset: Pick<DefaultPopulateAsset, 'alt'> | null | undefined,
+  asset: Pick<MediaAsset, 'alt'> | null | undefined,
   opts: ResolveAssetAltOptions = {}
 ): string {
   const override = normalizeAltText(opts.alt)

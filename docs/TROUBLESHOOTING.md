@@ -53,17 +53,17 @@ By default, `sync.access` allows users from Payload's admin auth collection (`co
 
 ## Populate shape is unexpected
 
-The default preset normalizes eligible populated relationships only. Set `depth: 1` or higher and pass the requested locale. Direct media reads, authenticated requests, explicit populate selections, and depth-zero relationships keep full documents or IDs.
+The default preset normalizes eligible populated relationships only. Set `depth: 1` or higher and pass the requested locale. Direct media reads, authenticated requests, explicit populate selections, and depth-zero relationships keep full documents or IDs. See [Media Population](./media-population.md) for conditions and response fields.
 
-Use `isDefaultPopulateAsset()` to narrow a generated Payload relationship before passing it to `SanityImage`. Use `assetMapping` for a custom populated shape.
+`SanityImage` accepts `MediaAsset` directly and validates runtime values. Files and malformed values use its fallback. Use `assetMapping` for an application-owned shape whose URL resolves to a supported Sanity image CDN path.
 
 ## Next.js images are broken or unoptimized
 
-Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. For a global loader, configure `images.loader` and `loaderFile` as shown in the [README](../README.md#consumers). For mixed providers, use the scoped `sanityImageLoader` prop. A global loader affects every `next/image`; non-Sanity URLs pass through unchanged without Next.js's built-in optimization.
+Import `SanityImage` from `@klnap/payload-storage-sanity/consumers/next`. It uses a scoped Sanity loader by default. For a global loader, configure `images.loader` and `loaderFile` as shown in the [Consumers](../README.md#consumers) section. For mixed providers, keep the Sanity loader scoped to `SanityImage`; set its `cdnBaseUrl` prop when needed. A global loader affects every `next/image`; non-Sanity URLs pass through unchanged without Next.js's built-in optimization.
 
 ## `assetMapping` does not resolve an image
 
-Use dot-separated paths such as `asset.url` or `metadata.width`. The mapped URL must resolve to a non-empty string. See [custom media shapes](./consumers.md#custom-media-shapes).
+Use dot-separated paths such as `asset.url` or `metadata.width`. The mapped URL must resolve to a Sanity `images/` CDN path. See [custom response shapes](./consumers.md#custom-response-shapes).
 
 ## Payload proxy returns 404 or 502
 

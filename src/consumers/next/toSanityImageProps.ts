@@ -1,10 +1,10 @@
-import type { DefaultPopulateAsset } from '@/consumers/assets'
 import {
   type ResolveAssetAltOptions,
   resolveAssetAlt,
   resolvePlaceholderBlurDataUrl,
 } from '@/consumers/image'
 import { focalObjectPosition } from '@/consumers/image/focalObjectPosition'
+import { resolveRenderableMediaAsset } from '@/consumers/image/resolveRenderableMediaAsset'
 
 export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
   fill?: boolean
@@ -17,13 +17,9 @@ export type ToSanityImagePropsOptions = ResolveAssetAltOptions & {
 
 export type ToSanityImagePropsResult = NonNullable<ReturnType<typeof toSanityImageProps>>
 
-export function toSanityImageProps(
-  asset: DefaultPopulateAsset | null | undefined,
-  opts: ToSanityImagePropsOptions = {}
-) {
-  if (asset == null || !asset.url || typeof asset.url !== 'string') {
-    return null
-  }
+export function toSanityImageProps(value: unknown, opts: ToSanityImagePropsOptions = {}) {
+  const asset = resolveRenderableMediaAsset(value, opts.cdnBaseUrl)
+  if (!asset) return null
 
   const alt = resolveAssetAlt(asset, opts)
   const style: Record<string, string | number> = {}

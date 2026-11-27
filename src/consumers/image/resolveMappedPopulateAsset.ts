@@ -1,9 +1,9 @@
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 
 /** Dot-separated path on the consumer asset (e.g. `metadata.width`). */
 export type SanityImageAssetPath = string
 
-/** Maps fields on a custom-populated asset to {@link DefaultPopulateAsset}. */
+/** Maps fields on a custom-populated asset to {@link MediaAsset}. */
 export type SanityImageAssetMapping<_TAsset extends object = object> = {
   /** Required when using a mapping; must resolve to a non-empty image URL string. */
   url: SanityImageAssetPath
@@ -54,13 +54,13 @@ function pickId(value: unknown): string | number {
 }
 
 /**
- * Builds a {@link DefaultPopulateAsset} from `asset` using `mapping` without mutating `asset`.
+ * Builds a {@link MediaAsset} from `asset` using `mapping` without mutating `asset`.
  * Returns `null` when `asset` is missing or mapped `url` is absent/invalid (same contract as missing image data).
  */
 export function resolveMappedPopulateAsset<TAsset extends object>(
   asset: TAsset | null | undefined,
   mapping: SanityImageAssetMapping<TAsset>
-): DefaultPopulateAsset | null {
+): MediaAsset | null {
   if (asset == null) {
     return null
   }
@@ -70,7 +70,7 @@ export function resolveMappedPopulateAsset<TAsset extends object>(
     return null
   }
 
-  const mapped: DefaultPopulateAsset = {
+  const mapped: MediaAsset = {
     id: mapping.id != null ? pickId(readPathValue(asset, mapping.id)) : '',
     url,
     alt: mapping.alt != null ? pickAlt(readPathValue(asset, mapping.alt)) : null,
@@ -114,11 +114,12 @@ export function resolveMappedPopulateAsset<TAsset extends object>(
 /** Applies optional mapping, or passes through a default-populated asset unchanged. */
 export function resolveSanityImagePopulatedAsset<TAsset>(
   asset: TAsset | null | undefined,
-  assetMapping?: SanityImageAssetMapping<object> | undefined
-): DefaultPopulateAsset | null | undefined {
+  assetMapping?: SanityImageAssetMapping<TAsset & object> | undefined
+): TAsset | MediaAsset | null | undefined {
   if (!assetMapping) {
-    return asset as DefaultPopulateAsset | null | undefined
+    return asset
   }
 
-  return resolveMappedPopulateAsset(asset as object | null | undefined, assetMapping)
+  if (asset == null || typeof asset !== 'object') return null
+  return resolveMappedPopulateAsset(asset, assetMapping)
 }

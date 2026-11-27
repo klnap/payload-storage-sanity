@@ -1,4 +1,4 @@
-import type { DefaultPopulateAsset } from '../assets'
+import type { MediaAsset } from '../assets'
 
 /**
  * Tiny neutral JPEG (10×10 gray) for `next/image` blur when Sanity metadata LQIP is missing.
@@ -15,7 +15,7 @@ export type ResolvePlaceholderBlurDataUrlOptions = {
 
 /** @internal @advanced */
 export function resolvePlaceholderBlurDataUrl(
-  asset: Pick<DefaultPopulateAsset, 'lqip' | 'url'> | null | undefined,
+  asset: Pick<MediaAsset, 'lqip' | 'url'> | null | undefined,
   opts: ResolvePlaceholderBlurDataUrlOptions = {}
 ): string | undefined {
   const fallback = opts.fallback ?? true

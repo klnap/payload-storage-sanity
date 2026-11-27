@@ -20,7 +20,7 @@ const baseDoc: SanityMediaDocument = {
 }
 
 describe('defaultPopulateMediaDoc', () => {
-  test('returns DefaultPopulateAsset with url only (no path)', () => {
+  test('returns MediaAsset with url only (no path)', () => {
     const result = defaultPopulateMediaDoc(baseDoc)
     expect(result).toEqual({
       id: '550e8400-e29b-41d4-a716-446655440000',

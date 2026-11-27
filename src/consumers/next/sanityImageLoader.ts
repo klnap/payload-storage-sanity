@@ -1,4 +1,4 @@
-import { applyImageParams } from '@/consumers/imageParams'
+import { applyImageParams, isImagePath } from '@/consumers/imageParams'
 import { isSanityCompatibleHost } from '@/sanity/cdn'
 
 export type CreateSanityImageLoaderOptions = {
@@ -10,7 +10,8 @@ export type CreateSanityImageLoaderOptions = {
 export function createSanityImageLoader(opts: CreateSanityImageLoaderOptions = {}) {
   return ({ src, width, quality }: { src: string; width: number; quality?: number }): string => {
     if (!src || typeof src !== 'string') return src
-    if (!isSanityCompatibleHost(src, { cdnBaseUrl: opts.cdnBaseUrl })) return src
+    if (!isSanityCompatibleHost(src, { cdnBaseUrl: opts.cdnBaseUrl }) || !isImagePath(src))
+      return src
     return applyImageParams(src, { width, quality })
   }
 }

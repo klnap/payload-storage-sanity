@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { DefaultPopulateAsset } from '@/consumers/assets'
+import type { MediaAsset } from '@/consumers/assets'
 import { resolveSanityImagePopulatedAsset } from '@/consumers/image'
 import type { SanityImageAssetMapping } from '@/consumers/image/resolveMappedPopulateAsset'
 import { toSanityImageProps } from '@/consumers/next/toSanityImageProps'
@@ -26,10 +26,12 @@ function resolveWithFactoryDefaults<TAsset extends object>(
 }
 
 describe('createSanityImage assetMapping defaults', () => {
-  const target: DefaultPopulateAsset = {
+  const target: MediaAsset = {
     id: '1',
-    url: 'https://cdn.example/hero.jpg',
+    url: 'https://cdn.sanity.io/images/demo/production/hero.jpg',
     alt: 'Caption',
+    focalX: 50,
+    focalY: 50,
     width: 1200,
     height: 800,
   }
@@ -42,7 +44,7 @@ describe('createSanityImage assetMapping defaults', () => {
   }
 
   test('no factory mapping preserves pass-through behavior', () => {
-    const asset: DefaultPopulateAsset = { ...target }
+    const asset: MediaAsset = { ...target }
     const populated = resolveWithFactoryDefaults(asset)
     expect(populated).toBe(asset)
     expect(toSanityImageProps(populated)).toEqual(toSanityImageProps(target))
