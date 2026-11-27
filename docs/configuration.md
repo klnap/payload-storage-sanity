@@ -1,6 +1,7 @@
 # Configuration and public API
 
-`sanityStorage()` registers Sanity through Payload's native cloud-storage plugin. It expects existing Payload upload collections; it does not create media collections or replace their relationships.
+`sanityStorage()` registers Sanity through Payload's native cloud-storage plugin. It expects existing
+Payload upload collections; it does not create media collections or replace their relationships.
 
 ```ts
 sanityStorage({
@@ -84,9 +85,9 @@ For assets uploaded outside this Payload adapter, `@klnap/payload-storage-sanity
 
 ## Populate behavior
 
-The default preset normalizes eligible populated media relationships to `MediaAsset`. It does not transform direct media document reads, authenticated requests, explicit populate selections, or depth-zero IDs. Missing CDN URLs stay full media documents. Set `preset: 'full'` to always keep full media documents.
-
-For Local API reads, `localPopulate: false` disables normalization. Direct `/api/{collection}/:id` media reads keep the full document for the admin editor. The consumer guide documents runtime narrowing and typed consumption.
+The `default` preset normalizes only eligible populated media relationships. `full` keeps full media
+documents; `localPopulate` controls whether default normalization also applies to Local API reads.
+See [Media Population](./media-population.md) for response fields, eligibility, depth, and examples.
 
 ## Upload size limits
 
@@ -115,7 +116,7 @@ The webhook verifies an HMAC over the raw request body. Sanity may retry webhook
 ## Public package entries
 
 - `@klnap/payload-storage-sanity`: Payload storage plugin, configuration types, and populate helpers.
-- `@klnap/payload-storage-sanity/consumers`: framework-independent asset contracts and image URL builder.
+- `@klnap/payload-storage-sanity/consumers`: `MediaAsset` contract and framework-independent image URL builder.
 - `@klnap/payload-storage-sanity/consumers/next`: `SanityImage`, its props, component factory, and scoped image-loader helpers.
 - `@klnap/payload-storage-sanity/consumers/next/loader`: default loader required by Next.js `images.loaderFile`.
 - `@klnap/payload-storage-sanity/client`: `createSanityClient` for callers building URLs from bare Sanity asset references.

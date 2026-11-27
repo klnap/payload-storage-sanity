@@ -6,7 +6,7 @@ This plugin coordinates Payload writes with Sanity Asset API requests. They are 
 
 The plugin calls Sanity's Content Lake Asset API through `@sanity/client` (`client.assets.upload('image', ...)` for images and `client.assets.upload('file', ...)` for other files). Payload stores the asset reference and media document. The asset upload can succeed before Payload persistence fails, leaving an unreferenced Sanity asset.
 
-Replacing a file uploads the replacement. The old Sanity asset is retained. Deleting a Payload media row deletes only the Payload row; this plugin does not call the Sanity asset-delete API. Failed or replaced uploads can leave assets that no Payload media document references. Retain or clean them through an operator-managed process that accounts for shared assets and Sanity references.
+Replacing a file uploads the replacement. Cropping also uploads new cropped bytes and replaces the Payload row's `sanity.asset` reference; the row no longer points to the uncropped asset. The old Sanity asset is retained, but may become unreferenced from Payload. Deleting a Payload media row deletes only the Payload row; this plugin does not call the Sanity asset-delete API. Failed, replaced, or cropped uploads can leave assets that no Payload media document references. Retain or clean them through an operator-managed process that accounts for shared assets and Sanity references.
 
 Sanity asset IDs are content-addressed, not exclusive ownership claims. Upload deduplication is opt-in with `dedupeUploads: true` and applies to creates. It rejects a duplicate Payload media create by file SHA-1; it does not establish that the Sanity asset is unused elsewhere.
 
