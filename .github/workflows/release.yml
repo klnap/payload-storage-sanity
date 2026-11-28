@@ -67,6 +67,21 @@ jobs:
     permissions:
       actions: read
       contents: read
+    services:
+      postgres:
+        # Same digest as the local harness. The release-matrix PostgreSQL consumer connects to 127.0.0.1:5432.
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_DB: payload_storage_sanity
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d payload_storage_sanity"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     outputs:
       pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
       source-sha: ${{ github.sha }}
