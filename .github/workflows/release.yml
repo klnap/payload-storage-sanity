@@ -67,20 +67,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: payload_storage_sanity
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d payload_storage_sanity"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     outputs:
       pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
       source-sha: ${{ github.sha }}
