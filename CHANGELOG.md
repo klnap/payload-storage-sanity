@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4
+
+### Patch Changes
+
+- 25fbdc9: Release workflow only: remove an unused PostgreSQL service container. The integration check provisions the same pinned image as CI. No runtime change.
+
 ## 0.3.3
 
 ### Patch Changes
