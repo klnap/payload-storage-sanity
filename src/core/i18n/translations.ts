@@ -46,6 +46,7 @@ const strings = {
   mediaUsageDocuments: 'documents',
   uploadKindImage: 'Image',
   uploadKindVideo: 'Video',
+  uploadKindAudio: 'Audio',
   uploadKindFile: 'File',
   uploadMaxSizeExceeded: '{{kindLabel}} is {{actualSize}}; maximum allowed is {{limitSize}}.',
   uploadDuplicateCompact: '{{filename}}: already in library (ID {{existingId}})',

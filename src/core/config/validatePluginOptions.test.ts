@@ -29,6 +29,26 @@ describe('validateSanityStoragePluginOptions', () => {
     }
   })
 
+  test('validates global and category folder settings', () => {
+    const base = { projectId: 'p', dataset: 'd', token: 't' }
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        ...base,
+        folders: { image: 'Media/images', video: false },
+        collections: { media: { folder: { video: 'Media/video', audio: false } } },
+      })
+    ).not.toThrow()
+    expect(() =>
+      validateSanityStoragePluginOptions({ ...base, folders: { document: 'Media/docs' } as never })
+    ).toThrow(/folders/)
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        ...base,
+        collections: { media: { folder: { image: '' } } },
+      })
+    ).toThrow(/collections\.media\.folder/)
+  })
+
   test('requires projectId and dataset', () => {
     expect(() =>
       validateSanityStoragePluginOptions({

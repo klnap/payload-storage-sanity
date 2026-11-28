@@ -21,9 +21,12 @@ describe('parseSanityAssetFolderPath', () => {
       parseSanityAssetFolderPath(value)
       return performance.now() - started
     }
+    const medianTimeOf = (size: number) =>
+      Array.from({ length: 5 }, () => timeOf(size)).sort((left, right) => left - right)[2]!
+
     timeOf(200_000)
-    const small = timeOf(200_000)
-    const large = timeOf(400_000)
+    const small = medianTimeOf(200_000)
+    const large = medianTimeOf(400_000)
     expect(large / Math.max(small, 0.05)).toBeLessThan(3.5)
   })
 })

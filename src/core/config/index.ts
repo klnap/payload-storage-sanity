@@ -2,6 +2,15 @@ export {
   imageMimeFromExtension,
   isImageFileType,
 } from './imageMime'
+export { classifyMedia } from './mediaClassification'
+export type { MediaClassification, MediaRole, MediaType } from './mediaClassification'
+export {
+  resolveSanityMediaFolder,
+  validateSanityMediaFolderOption,
+  type SanityMediaFolderKey,
+  type SanityMediaFolderOption,
+  type SanityMediaFolders,
+} from './mediaFolders'
 export { isSanitySyncEnabled } from './isSanitySyncEnabled'
 export type {
   SanityStorageAdminOptions,

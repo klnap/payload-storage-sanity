@@ -150,7 +150,8 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
               ? createSanityAdapter({
                   client,
                   cdnBaseUrl,
-                  folder: collOptions === true ? 'Payload' : (collOptions.folder ?? 'Payload'),
+                  folder: collOptions === true ? undefined : collOptions.folder,
+                  folders: options.folders,
                   projectId,
                   dataset,
                   token,

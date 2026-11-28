@@ -9,6 +9,7 @@ export {
   isImageFileType,
   normalizeAssetMimeType,
   normalizeImageMimeType,
+  readUploadSignature,
   resolveSanityAssetType,
   resolveSanityUploadBody,
 } from './uploadBody'

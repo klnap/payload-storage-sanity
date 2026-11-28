@@ -10,12 +10,20 @@ sanityStorage({
   token: process.env.SANITY_API_TOKEN!,
   collections: {
     media: {
-      folder: 'website/images',
+      folder: {
+        image: 'website/images',
+        video: 'website/videos',
+        audio: 'website/audio',
+        file: 'website/files',
+      },
       alt: { required: true },
     },
-    documents: {
-      folder: 'website/documents',
-    },
+  },
+  folders: {
+    image: 'Payload/images',
+    video: 'Payload/videos',
+    audio: 'Payload/audio',
+    file: 'Payload/files',
   },
 })
 ```
@@ -37,6 +45,7 @@ sanityStorage({
 | `dedupeUploads` | `false` | Reject duplicate media creates by SHA-1. |
 | `preventDeleteWhenReferenced` | `true` | Protect referenced Payload media rows. |
 | `uploadMaxSize` | Payload default | Global maximum and optional media-type upload limits. |
+| `folders` | media-type defaults | Global logical folder paths; set `false` to disable assignment. |
 | `sync` | disabled | Sanity webhook and reconcile routes. |
 
 `mode: 'full'` uploads files to Sanity and registers the cloud-storage adapter. `fields-only` disables cloud storage and keeps Sanity fields and hooks. `off` disables cloud-storage registration; selected collections may still receive Sanity fields, hooks, and routes.
@@ -58,7 +67,7 @@ An explicitly enabled collection must have `upload` enabled. In `full` mode, an 
 | Option | Default | Purpose |
 | --- | --- | --- |
 | `enabled` | `true` | Disable this collection's Sanity storage, fields, hooks, and admin changes. |
-| `folder` | `'Payload'` | Logical `sanity-plugin-media` folder path for new assets. |
+| `folder` | media-type defaults | Exact path, `false`, or per-type folder overrides for new assets. |
 | `alt.enabled` | `true` | Add an alt field/group unless the collection already has `alt`. |
 | `alt.required` | `false` | Require non-empty text for each locale. |
 | `populate.preset` | `'default'` | Normalize eligible populated relations or return full media documents. |
@@ -77,7 +86,14 @@ Set `disablePayloadAccessControl: false` when generated file URLs must pass thro
 
 ## Folders
 
-`folder` accepts a non-empty path of folder names, such as `website/images`. The plugin creates missing `media.folder` documents and assigns new assets through `opt.media.folder`. It does not move existing assets when the option changes.
+`folders` accepts `false` or per-type paths for `image`, `video`, `audio`, and `file`. Defaults are
+`Payload/images`, `Payload/videos`, `Payload/audio`, and `Payload/files`. There is no documents folder.
+Collection `folder` accepts `false`, one exact path for every category, or a per-type map.
+`folders: false` disables assignment even when a collection sets a path. Otherwise collection overrides
+win over global overrides and defaults; category values can also be `false`.
+
+The plugin creates missing `media.folder` documents and assigns new assets through `opt.media.folder`.
+It does not move existing assets when options change or reassign a shared asset.
 
 These folders use the `sanity-plugin-media` model, not Sanity Media Library folders. Install `sanity-plugin-media >=6.1.0` only if users need to browse the hierarchy in Sanity Studio. Uploads and CDN delivery do not require Studio.
 
@@ -91,7 +107,15 @@ See [Media Population](./media-population.md) for response fields, eligibility, 
 
 ## Upload size limits
 
-Use Payload's native upload limits unless you need a plugin-level per-media-kind cap. `uploadMaxSize` has a `default` byte limit and optional `byType` overrides. Collection values override plugin values per key. The plugin raises Payload's global multipart cap to the largest configured limit, then validates each selected media collection separately.
+Use Payload's native upload limits unless you need a plugin-level per-media-kind cap. `uploadMaxSize` has a
+`default` byte limit and optional `byType` overrides for `image`, `video`, `audio`, and `file`. Collection
+values override plugin values per key. The plugin raises Payload's global multipart cap to the largest
+configured limit, then validates each selected media collection separately.
+
+Classification checks bounded file signatures when available, then recognized MIME types and a fixed
+extension map. It chooses storage handling and folder policy; it is not security validation. MIME types and
+extensions remain caller-controlled hints. Unknown files stay `file` when Payload permits the upload.
+Browser playback and Sanity image transformation support are separate classification facts.
 
 ## Synchronization
 
