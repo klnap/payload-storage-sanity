@@ -42,6 +42,7 @@ export const SANITY_STORAGE_I18N_KEYS = {
   mediaUsageDocuments: `${ns}:mediaUsageDocuments`,
   uploadKindImage: `${ns}:uploadKindImage`,
   uploadKindVideo: `${ns}:uploadKindVideo`,
+  uploadKindAudio: `${ns}:uploadKindAudio`,
   uploadKindFile: `${ns}:uploadKindFile`,
   uploadMaxSizeExceeded: `${ns}:uploadMaxSizeExceeded`,
   uploadDuplicateCompact: `${ns}:uploadDuplicateCompact`,

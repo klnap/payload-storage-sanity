@@ -272,7 +272,26 @@ describe('createSanityAdapter', () => {
     expect(upload).toHaveBeenCalled()
     expect(mutate).toHaveBeenCalledWith([
       { createIfNotExists: { _id: expect.any(String), _type: 'media.folder', name: 'Payload' } },
-      { patch: expect.objectContaining({ id: sampleUpload._id }) },
+      {
+        createIfNotExists: {
+          _id: expect.any(String),
+          _type: 'media.folder',
+          name: 'images',
+          parent: { _ref: expect.any(String), _type: 'reference', _weak: true },
+        },
+      },
+      {
+        patch: expect.objectContaining({
+          id: sampleUpload._id,
+          setIfMissing: expect.objectContaining({
+            'opt.media.folder': {
+              _ref: expect.any(String),
+              _type: 'reference',
+              _weak: true,
+            },
+          }),
+        }),
+      },
     ])
     expect(result.filename).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -368,7 +387,26 @@ describe('createSanityAdapter', () => {
     expect(upload).toHaveBeenCalled()
     expect(mutate).toHaveBeenCalledWith([
       { createIfNotExists: { _id: expect.any(String), _type: 'media.folder', name: 'Payload' } },
-      { patch: expect.objectContaining({ id: sampleFileAsset._id }) },
+      {
+        createIfNotExists: {
+          _id: expect.any(String),
+          _type: 'media.folder',
+          name: 'files',
+          parent: { _ref: expect.any(String), _type: 'reference', _weak: true },
+        },
+      },
+      {
+        patch: expect.objectContaining({
+          id: sampleFileAsset._id,
+          setIfMissing: expect.objectContaining({
+            'opt.media.folder': {
+              _ref: expect.any(String),
+              _type: 'reference',
+              _weak: true,
+            },
+          }),
+        }),
+      },
     ])
     expect(result).toMatchObject({
       sanity: {

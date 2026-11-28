@@ -18,6 +18,8 @@ function uploadKindLabel(t: SanityStorageTranslateFn, kind: SanityUploadMediaKin
       return sanityStorageTranslate(t, SANITY_STORAGE_I18N_KEYS.uploadKindImage)
     case 'video':
       return sanityStorageTranslate(t, SANITY_STORAGE_I18N_KEYS.uploadKindVideo)
+    case 'audio':
+      return sanityStorageTranslate(t, SANITY_STORAGE_I18N_KEYS.uploadKindAudio)
     default:
       return sanityStorageTranslate(t, SANITY_STORAGE_I18N_KEYS.uploadKindFile)
   }
@@ -86,7 +88,9 @@ export function createSanityMediaUploadMaxSizeBeforeChangeHook({
 
     const mimeType = req.file?.mimetype
     const filename = req.file?.name
-    const kind = classifyUploadMediaKind(mimeType, filename)
+    const fileData = req.file?.data
+    const signature = fileData instanceof Uint8Array ? fileData.subarray(0, 32) : undefined
+    const kind = classifyUploadMediaKind(mimeType, filename, signature)
     const limit = resolveUploadMaxSizeBytes(kind, merged)
 
     if (limit == null) {

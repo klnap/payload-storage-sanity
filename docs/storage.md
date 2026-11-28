@@ -15,10 +15,12 @@ sanityStorage({
   token: process.env.SANITY_API_TOKEN!,
   collections: {
     media: {
-      folder: 'website/images',
-    },
-    documents: {
-      folder: 'website/documents',
+      folder: {
+        image: 'website/images',
+        video: 'website/videos',
+        audio: 'website/audio',
+        file: 'website/files',
+      },
     },
   },
 })
@@ -37,8 +39,11 @@ For each selected collection, the plugin:
 
 ## Folders
 
-`collections.<slug>.folder` sets a path such as `website/images`. The plugin creates missing logical
-folder records and assigns new assets to them. Changing the path does not move existing assets.
+Global `folders` defaults to `Payload/images`, `Payload/videos`, `Payload/audio`, and `Payload/files`.
+`folders: false` disables assignment even when a collection sets a path. Otherwise
+`collections.<slug>.folder` overrides those paths with one exact path, per-type paths, or `false`.
+Category values can also be `false`. The plugin creates missing logical folder records and assigns new
+assets to them. Changing paths does not move existing assets or reassign shared assets.
 
 Folders use the `sanity-plugin-media` model, not Sanity Media Library folders. Install `sanity-plugin-media`
 only if editors also need to browse them in Sanity Studio.
@@ -85,7 +90,7 @@ Concurrency depends on the database adapter:
 ## Upload size limits
 
 `uploadMaxSize` limits upload size in bytes. A number sets the default for every media kind. An object
-sets a `default` and optional `byType` overrides for `image`, `video`, and `file`:
+sets a `default` and optional `byType` overrides for `image`, `video`, `audio`, and `file`:
 
 ```ts
 sanityStorage({
@@ -95,6 +100,7 @@ sanityStorage({
     byType: {
       image: 20 * 1024 * 1024,
       video: 500 * 1024 * 1024,
+      audio: 100 * 1024 * 1024,
       file: 50 * 1024 * 1024,
     },
   },
@@ -109,3 +115,8 @@ sanityStorage({
 Collection values override plugin values key by key. The plugin raises Payload's global multipart limit to
 the largest configured value, then validates each selected collection separately. Infrastructure in front
 of Payload, such as a reverse-proxy body limit, can still reject larger requests first.
+
+Media categories use bounded file signatures when available, then known MIME types and a fixed extension
+map. This is classification, not security validation. MIME and extension values are caller-controlled hints;
+unknown files remain `file` when Payload restrictions permit them. Browser playback and Sanity image
+transformation support are tracked separately.

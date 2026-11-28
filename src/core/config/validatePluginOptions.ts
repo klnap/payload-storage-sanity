@@ -1,7 +1,7 @@
 import type { SanityStoragePluginOptions } from '@/core/config'
 import { isSanitySyncEnabled } from './isSanitySyncEnabled'
 import { resolveSanityStorageMode } from './resolveSanityStorageMode'
-import { parseSanityAssetFolderPath } from './sanityFolderPath'
+import { validateSanityMediaFolderOption } from './mediaFolders'
 
 function assertValidWebhookMaxBodySizeBytes(value: unknown): void {
   if (value === undefined) return
@@ -65,7 +65,7 @@ export function validateSanityStoragePluginOptions(options: SanityStoragePluginO
       }
       if (collectionOptions.folder !== undefined) {
         try {
-          parseSanityAssetFolderPath(collectionOptions.folder)
+          validateSanityMediaFolderOption(collectionOptions.folder)
         } catch (error) {
           throw new Error(
             `[@klnap/payload-storage-sanity] \`collections.${slug}.folder\` is invalid: ${
@@ -74,6 +74,18 @@ export function validateSanityStoragePluginOptions(options: SanityStoragePluginO
           )
         }
       }
+    }
+  }
+
+  if (options.folders !== undefined) {
+    try {
+      validateSanityMediaFolderOption(options.folders)
+    } catch (error) {
+      throw new Error(
+        `[@klnap/payload-storage-sanity] \`folders\` is invalid: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      )
     }
   }
 

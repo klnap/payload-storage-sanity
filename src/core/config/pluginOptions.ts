@@ -3,6 +3,7 @@ import type { UploadCollectionSlug } from 'payload'
 import type { SanityStorageMode } from './storageMode'
 import type { SanitySyncAccessFn } from './syncAccess'
 import type { SanityStorageUploadMaxSizeInput } from './uploadMaxSizeTypes'
+import type { SanityMediaFolderOption, SanityMediaFolders } from './mediaFolders'
 
 export type SanityStorageSyncWebhookConfig = {
   secret: string
@@ -112,7 +113,7 @@ export type SanityStorageCollectionOptions = {
    * Logical folder path for `sanity-plugin-media` (not a Media Library directory).
    * @default 'Payload'
    */
-  folder?: string
+  folder?: SanityMediaFolderOption
 }
 
 export type SanityStoragePluginOptions = {
@@ -145,4 +146,6 @@ export type SanityStoragePluginOptions = {
    * Max upload size in bytes for configured media collections (`default` + optional `byType` overrides).
    */
   uploadMaxSize?: SanityStorageUploadMaxSizeInput
+  /** Logical Sanity folders by classified media type. Set `false` to disable folder assignment. */
+  folders?: false | SanityMediaFolders
 }

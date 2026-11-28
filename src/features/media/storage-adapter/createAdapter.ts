@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto'
 import type { Adapter, GeneratedAdapter } from '@payloadcms/plugin-cloud-storage/types'
 import type { SanityClient } from '@sanity/client'
 import type { Field, FileData, TypeWithID } from 'payload'
-import { assertSanityReadyForUpload } from '@/core/config'
+import type { SanityMediaFolderOption, SanityMediaFolders } from '@/core/config'
+import { assertSanityReadyForUpload, classifyMedia, resolveSanityMediaFolder } from '@/core/config'
 import type { JsonValue } from '@/core/contracts'
 import { isPayloadDocumentId } from '@/core/contracts'
 import {
@@ -24,8 +25,7 @@ import {
 import {
   findMediaBySanityAssetId,
   mapSanityUploadToMedia,
-  normalizeAssetMimeType,
-  resolveSanityAssetType,
+  readUploadSignature,
   resolveSanityUploadBody,
   slugifyFilename,
 } from '@/features/media/storage-adapter'
@@ -40,7 +40,8 @@ import { mapSanityUploadResult } from './metadata'
 export type CreateSanityAdapterArgs = {
   client: SanityClient
   cdnBaseUrl?: string
-  folder?: string
+  folder?: SanityMediaFolderOption
+  folders?: false | SanityMediaFolders
   prefix?: string
   projectId: string
   dataset: string
@@ -88,7 +89,8 @@ function assetNeedsHydration(asset: SanityAsset): boolean {
 export function createSanityAdapter({
   client,
   cdnBaseUrl,
-  folder = 'Payload',
+  folder,
+  folders,
   projectId,
   dataset,
   token,
@@ -133,8 +135,13 @@ export function createSanityAdapter({
         await lockSanityAssetHash(req, await hashUploadBytes(uploadFile))
 
         const body = resolveSanityUploadBody(uploadFile)
-        const assetType = resolveSanityAssetType(uploadFile.mimeType, uploadFile.filename)
-        const contentType = normalizeAssetMimeType(uploadFile.mimeType, uploadFile.filename)
+        const classification = classifyMedia({
+          mimeType: uploadFile.mimeType,
+          filename: uploadFile.filename,
+          signature: await readUploadSignature(uploadFile),
+        })
+        const assetType = classification.mediaType === 'image' ? 'image' : 'file'
+        const contentType = classification.mimeType
 
         const result =
           assetType === 'image'
@@ -204,7 +211,8 @@ export function createSanityAdapter({
           }
         }
 
-        await assignSanityAssetFolder(client, asset._id, folder)
+        const folderPath = resolveSanityMediaFolder(classification.mediaType, folder, folders)
+        if (folderPath !== false) await assignSanityAssetFolder(client, asset._id, folderPath)
 
         const patch = mapSanityUploadToMedia(
           asset,
