@@ -41,6 +41,14 @@
       "types": "./dist/upload-protocol.d.ts",
       "import": "./dist/upload-protocol.js"
     },
+    "./cloudflare-transport": {
+      "types": "./dist/cloudflare-transport.d.ts",
+      "import": "./dist/cloudflare-transport.js"
+    },
+    "./cloudflare": {
+      "types": "./dist/cloudflare.d.ts",
+      "import": "./dist/cloudflare.js"
+    },
     "./consumers": {
       "types": "./dist/consumers/index.d.ts",
       "import": "./dist/consumers/index.js"
@@ -54,6 +62,9 @@
       "import": "./dist/consumers/next/loader.js"
     },
     "./styles/admin-tailwind.css": "./dist/admin/tailwind/admin-tailwind.css"
+  },
+  "bin": {
+    "payload-storage-sanity": "./dist/cli/index.js"
   },
   "peerDependenciesMeta": {
     "next": {
@@ -83,7 +94,7 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "build": "bun run build:dist && bun run check:public-api",
     "build:dist": "bun scripts/build-dist.mjs",
-    "check": "bun run format && bun run lint && bun run typecheck && bun run knip && bun run check:boundaries && bun run test && bun run test:int && bun run build && bun run verify:package",
+    "check": "bun run format && bun run lint && bun run typecheck && bun run knip && bun run check:boundaries && bun run test && bun run test:int && bun run build && bun run test:cloudflare-worker && bun run verify:package",
     "check:dist-alias": "bun scripts/check-dist-alias.mjs",
     "check:dist-imports": "bun scripts/check-dist-relative-imports.mjs",
     "check:dist": "bun run build:dist && bun run check:dist-alias && bun run check:dist-imports",
@@ -109,6 +120,7 @@
     "changeset:version-check": "bun run changeset:version && bun run check",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test": "bun test src tests",
+    "test:cloudflare-worker": "node --test tests/cloudflare-worker-runtime.mjs",
     "test:int": "bun scripts/with-ephemeral-postgres.mjs ./scripts/ephemeral-postgres.config.mjs -- bun test tests/integration --max-concurrency 1 --timeout 30000",
     "lint": "biome lint .",
     "format": "biome format .",
@@ -162,7 +174,8 @@
     "tsc-alias": "^1.9.10",
     "typescript": "7.0.2",
     "webpack": "5.112.2",
-    "webpack-cli": "7.3.1"
+    "webpack-cli": "7.3.1",
+    "wrangler": "4.168.0"
   },
   "overrides": {
     "esbuild@<=0.24.2": "0.25.12",

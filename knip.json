@@ -2,6 +2,9 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/index.ts",
+    "src/cloudflare.ts",
+    "src/cli/index.ts",
+    "tests/fixtures/cloudflare-upload-worker.ts",
     "src/upload-protocol.ts",
     "src/consumers/index.ts",
     "src/consumers/next/index.ts",

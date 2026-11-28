@@ -7,6 +7,8 @@ export const ENTRY_SUBPATHS = [
   './client',
   './folders',
   './upload-protocol',
+  './cloudflare-transport',
+  './cloudflare',
   './consumers',
   './consumers/next',
   './consumers/next/loader',
@@ -20,7 +22,10 @@ export function distTypesPath(root, pkg, subpath) {
   return join(root, entry.types)
 }
 
-const NAMED_EXPORT_RE = /^export\s+(type\s+)?\{([\s\S]*?)\}\s+from\s+['"][^'"]+['"];?/gm
+const NAMED_EXPORT_RE = /^export\s+(type\s+)?\{([\s\S]*?)\}(?:\s+from\s+['"][^'"]+['"])?;?/gm
+const LOCAL_EXPORT_RE =
+  /^export\s+(?:declare\s+)?(type|interface|function|class|const|let|var|enum|namespace)\s+([\w$]+)/gm
+const DEFAULT_EXPORT_RE = /^export\s+default\b/gm
 
 export function collectExportsFromDts(dtsPath) {
   const content = readFileSync(dtsPath, 'utf8')
@@ -47,7 +52,16 @@ export function collectExportsFromDts(dtsPath) {
     }
   }
 
-  if (symbols.length === 0 && content.includes('export default')) {
+  for (const match of content.matchAll(LOCAL_EXPORT_RE)) {
+    const [, kind, name] = match
+    symbols.push({
+      name,
+      kind: kind === 'type' || kind === 'interface' ? 'type' : 'value',
+      declaration: name,
+    })
+  }
+
+  if (content.match(DEFAULT_EXPORT_RE)) {
     symbols.push({ name: 'default', kind: 'value', declaration: 'export default' })
   }
 

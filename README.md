@@ -30,6 +30,7 @@ See [asset ownership and delivery](./docs/asset-lifecycle.md) for the full model
 - Deletion protection for media still used by Payload content, with a References tab.
 - Optional duplicate-upload protection and upload size limits.
 - Optional signed webhooks and batch reconciliation for changes made in Sanity.
+- Optional Cloudflare Worker uploads that bypass the app server for browser bytes.
 - Next.js `SanityImage` and framework-independent image URLs for rendering.
 
 ## Installation
@@ -80,6 +81,7 @@ Guides:
 - [References](./docs/references.md): the deletion guard and the References tab.
 - [Consumers](./docs/consumers.md): Next.js, custom CDN origins, and image URLs outside Next.js.
 - [Media population](./docs/media-population.md): what populated relationships return.
+- [Cloudflare upload transport](./docs/cloudflare-upload-transport.md): initialize and safely deploy the optional Worker.
 
 ## Configuration
 
@@ -136,6 +138,7 @@ entries. Import `/consumers/next` in a Next.js app, and `/admin` through Payload
 - [Asset ownership, delivery, and lifecycle](./docs/asset-lifecycle.md)
 - [Consumers](./docs/consumers.md)
 - [Media population](./docs/media-population.md)
+- [Cloudflare upload transport](./docs/cloudflare-upload-transport.md)
 - [Failure semantics](./docs/FAILURE_SEMANTICS.md)
 - [Troubleshooting](./docs/TROUBLESHOOTING.md)
 - [Security policy](https://github.com/klnap/payload-storage-sanity/blob/main/SECURITY.md)
