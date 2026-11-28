@@ -3,6 +3,29 @@
 Status: implementation specification for the media-platform initiative. The
 implementation tracker records shipped, verified, blocked, and pending work.
 
+## Implementation order
+
+Implement backend and storage capabilities before enhanced admin UI. Preserve
+the existing admin interface and its functionality until the final UI phase.
+Minimal UI integration needed to validate an upload transport is in scope.
+
+1. Media classification and configurable Sanity folders.
+2. Transport-independent upload lifecycle architecture.
+3. Internal, Cloudflare, and custom upload transports.
+4. Cloudflare Worker implementation and CLI scaffolding.
+5. Video media model and metadata.
+6. Poster ownership, persistence, shared focal point, and safe cleanup.
+7. Drafts, versions, references, and lifecycle integration.
+8. Frontend consumers and public API.
+9. Backend security review and integration verification.
+10. Enhanced Media Management UI, including gallery, media details, video
+    previews and player, poster selection, and focal-point editing.
+11. Final browser verification, documentation, and release readiness.
+
+Do not let gallery layout, sidebar animation, preview spacing, media type icons,
+hover previews, or individual media views block storage architecture work.
+These UI items remain in scope for phase 10, not removed from the initiative.
+
 ## Goals
 
 - Make Sanity storage the primary product: Payload owns media records and
