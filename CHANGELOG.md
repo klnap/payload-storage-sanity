@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3
+
+### Patch Changes
+
+- 0827568: Test infrastructure only: integration tests fail when PostgreSQL is unavailable, refuse production-looking database hosts, and remove their test container on success, failure, and interruption. No runtime change.
+
 ## 0.3.2
 
 ### Patch Changes
