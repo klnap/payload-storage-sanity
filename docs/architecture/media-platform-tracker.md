@@ -1,0 +1,20 @@
+# Media platform implementation tracker
+
+Statuses: `pending`, `in progress`, `verified`, `limited`, `blocked`.
+Evidence must identify an executed command, assertion, artifact, or external
+record. The architecture specification is
+[media-platform.md](./media-platform.md).
+
+| Workstream | Dependencies | Status | Acceptance criteria | Verification evidence | Open risks / blocking decisions |
+| --- | --- | --- | --- | --- | --- |
+| Baseline and release path | None | verified | Record commit, clean tree, baseline checks, registry/release controls. | `36535cda`; clean `main`; `bun run check` exit 0; npm `0.3.4`/`latest`; no pending Changesets/open PRs; `verify` required by the main ruleset; Release workflow creates a Changesets version PR and publishes only in its publish mode. | No implementation branch or PR exists yet. |
+| `fix/admin-gallery-layout` | Baseline; real browser fixture | pending | Reproduce sidebar resize; no transient row oscillation/jump, overflow, or final geometry regression under rapid toggles and ordinary resize. | Not run. Existing unit tests are not browser evidence. | Browser fixture and comparable recordings are absent. Do not change layout before reproduction. |
+| `feat/media-classification-folders` | Baseline | pending | One classifier; four categories; full folder precedence/disabling matrix; race-safe, project-scoped folder assignment. | Not run. Existing folder helper currently defaults to `Payload` and supports one collection string. | Sanity folder schema/revisions and metadata preservation need upstream verification. |
+| `refactor/upload-lifecycle` | Classification/folders | pending | Transport-independent lifecycle; internal transport stays default; no duplicate Payload lifecycle or asset loss. | Not run. Existing cloud-storage adapter uploads inline in `handleUpload`. | Verify installed Payload client-upload integration and REST/Local API/version behavior. |
+| `feat/cloudflare-upload-transport` | Upload lifecycle | pending | Public transport contract; secure tickets/receipts; streamed bounded transfer; safe, non-destructive CLI scaffold; packed Worker build. | Not run. | Live Cloudflare/Sanity verification requires disposable credentials and explicit deployment authorization. |
+| `feat/video-media-posters` | Classification/folders; upload lifecycle | pending | Video document model; confirmed-frame poster; shared focal point; conservative poster ownership/cleanup. | Not run. | Cross-system reference/deletion fencing may be impossible; retain uncertain assets. |
+| `feat/video-admin-experience` | Video model | pending | Browser-tested video detail, poster editing, icon, hover preview, stable layout and accessible controls. | Not run. | No browser fixture currently exists. |
+| `feat/video-consumers` | Video model | pending | Canonical `MediaAsset`; valid image/video rendering; framework-safe exports and packed consumers. | Not run. | Verify every existing mapping and supported Next.js version against package contract. |
+| `docs/media-platform` | Implemented and independently verified behavior | pending | README and focused docs accurately expose supported storage, transports, folders, admin, video, consumers, security, and migrations. | Not run. | Do not publish screenshots or claims that lack browser evidence. |
+| Security review | All implementation workstreams | pending | Independent review of auth, tickets, replay, SSRF, paths/symlinks, cross-tenant isolation, cleanup, secrets, and current CodeQL findings. | Baseline CodeQL API: five historical alerts reported fixed; no current open alerts reported. | Recheck after implementation; CodeQL green alone is not an alert-threshold guarantee. |
+| Packed/release readiness | All implementation workstreams | pending | Same built tarball passes export, types, Payload, consumer, Worker, CLI, and release checks; remains `0.x`. | Baseline `bun run check` passed; no release artifact for this initiative exists. | Do not create a release, merge a release PR, or publish without explicit authorization. |
