@@ -55,7 +55,7 @@ With `sync.enabled: true`, the plugin registers webhook and reconcile endpoints 
 
 The webhook signature covers the raw request bytes. Parsing and reserializing JSON before verification changes the signed body. The configured body limit applies to the webhook handler; Payload multipart upload limits and reverse-proxy limits are separate.
 
-Webhook handlers are idempotent because Sanity may retry delivery. `onDeleted: 'mark'` (default) marks media unavailable and clears hydrated URLs. `onDeleted: 'delete'` removes matching Payload media rows, subject to the reference guard. Neither policy deletes Sanity assets.
+Webhook handlers are safe to repeat because Sanity may retry delivery. `onDeleted: 'mark'` (default) marks media unavailable, and the row stops returning its URLs. `onDeleted: 'delete'` removes matching Payload media rows, subject to the reference guard. Neither policy deletes Sanity assets.
 
 Reconcile checks batches of media rows and reports duplicate assets for operator action; it does not automatically delete duplicate Payload rows or remote assets. Reconcile is protected by `sync.access`, which defaults to the admin auth collection.
 
