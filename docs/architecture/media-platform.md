@@ -83,6 +83,38 @@ collection, filename, and expiry, but does not alone provide one-time replay
 prevention or bind the replacement document and operation. The package must
 add those checks and durable concurrency-safe finalization state.
 
+Use a hidden Payload upload-session collection as the replay and idempotency
+ledger. Payload signs the ticket with the authorized operation claims. Before
+transferring bytes, the Worker asks Payload to create an immutable claim record
+whose unique document ID is the session nonce. A duplicate claim returns a
+bounded `in-progress` or `already-finalized` result; it never starts a second
+transfer.
+
+Finalization creates a second immutable record in the same collection, with a
+different unique ID derived from the session nonce, and updates the media
+document in one Payload transaction. The unique finalization record elects one
+winner when requests race. A retry reads the committed record and returns its
+stored result. If the transaction fails, both the finalization record and media
+write roll back while the earlier claim remains; retry must reuse the same
+verified transfer receipt, not claim the ticket again. A Worker crash after
+Sanity accepts bytes but before a receipt is saved can leave an unfinalized
+asset; a new authorized ticket may retry, and uncertain assets are retained.
+Expired records can be removed lazily in bounded batches; no scheduler or queue
+is required.
+
+The finalization endpoint performs authorization explicitly because Payload
+Local API operations default to access override. It starts the database
+transaction and passes the same request to claim/finalization operations.
+Remote Sanity uploads happen before this transaction; Payload `afterChange`
+hooks must not repeat the transfer or introduce non-idempotent remote effects
+inside the commit path.
+
+Enable Cloudflare only when the configured Payload database proves unique
+claims and multi-operation transactions. PostgreSQL 3.94.1 is the verified
+target. Other adapters remain unsupported for this transport until their
+concurrency and transaction behavior passes the same tests. Internal uploads
+remain available without this constraint.
+
 ### Media model
 
 Use one category union: `image | video | audio | file`. Keep category separate
@@ -114,13 +146,34 @@ alone validates the authorized operation, Sanity target, asset result,
 metadata, folder, and Payload persistence.
 
 The internal transport remains the default and requires no extra configuration.
-Cloudflare is opt-in through `upload.transport`. Export `UploadTransport` from
+Cloudflare is opt-in through `upload.transport` and requires a transactional
+database. Export `UploadTransport` from
 the root server API, `cloudflareTransport()` from
 `@klnap/payload-storage-sanity/cloudflare-transport`, and the Worker handler
 from the dedicated `@klnap/payload-storage-sanity/cloudflare` entry. The Worker
 entry must not import Payload, React, Next.js, Sharp, or other Node-only
 runtime modules. All three paths and their declarations must pass
 packed-consumer tests before being treated as supported API.
+
+```ts
+import { cloudflareTransport } from '@klnap/payload-storage-sanity/cloudflare-transport'
+import { sanityStorage } from '@klnap/payload-storage-sanity'
+
+sanityStorage({
+  projectId,
+  dataset,
+  token,
+  upload: {
+    transport: cloudflareTransport({
+      workerUrl: process.env.SANITY_UPLOAD_WORKER_URL!,
+      secret: process.env.SANITY_UPLOAD_SECRET!,
+    }),
+  },
+})
+```
+
+The Worker template imports only
+`@klnap/payload-storage-sanity/cloudflare`; it does not inline the runtime.
 
 ### Upload and persistence lifecycle
 
@@ -200,6 +253,9 @@ sanityStorage({
   },
 })
 ```
+
+This is the target configuration. Add `poster` overrides with the video
+workstream, when poster uploads pass their role into folder resolution.
 
 `folders: false` disables folder assignment globally. A collection
 `folder: false` disables assignment for that collection. A category value of
@@ -317,6 +373,12 @@ Ordinary Sanity assets are never generic rollback targets.
   bytes or rewrite URLs.
 - Cloudflare is optional. Without it, existing internal upload behavior
   remains available.
+- Enabling Cloudflare adds a hidden Payload upload-session collection for
+  replay claims and finalization. It requires database transactions and unique
+  constraints; PostgreSQL is verified, while other adapters fail closed until
+  tested. Managed Payload migrations must include the new collection before
+  enabling the transport. Disabling the transport does not migrate or delete
+  session records.
 - No release, publication, or release-PR merge is part of this initiative
   without explicit authorization.
 
@@ -359,6 +421,6 @@ The tracker is authoritative for status and evidence. Completion requires:
 | Keep Sanity as byte storage and CDN; Cloudflare only transfers bytes. | Store in R2/Stream or serve through Worker. | Meets product boundary without a second mandatory storage/CDN; verify resulting asset ID and URL remain Sanity-owned. |
 | Use one category classifier and separate capabilities/roles. | Infer category independently in each UI and transport. | Prevents inconsistent file behavior; table-driven tests must cover supported, ambiguous, and unknown formats. |
 | Keep poster inside video media representation and retain uncertain assets. | Ordinary image document or eager cleanup after replacement. | Avoids selectable orphan posters and unsafe deletion; test drafts, versions, deduplication, shared references, and concurrent replacement. |
-| Reuse Payload's supported `clientUploads` hook for browser transfer, then explicitly finalize through shared package lifecycle. | Proxy large browser bodies through Payload/Vercel or assume `handleUpload` runs for client uploads. | The installed Payload 3.94.1 hook skips `handleUpload` for `clientUploadContext`; verify the built-in call path, Worker streaming, byte limits, and finalization receipts in source and runtime tests. |
+| Reuse Payload's supported `clientUploads` hook, a private Payload session/claim collection, and a shared finalization transaction. | Proxy large browser bodies through Payload/Vercel, assume `handleUpload` runs for client uploads, or use an in-memory replay cache. | The installed Payload 3.94.1 hook skips `handleUpload` for `clientUploadContext`; its DB API exposes transactions and unique fields. Verify atomic claims, rollback, idempotent retries, Worker streaming, and packed clients. |
 | Keep the package single and split only runtime entry points. | Separate packages or broad root exports. | Preserves product coherence and Worker/framework boundaries; verify package export map and packed runtime dependency graphs. |
 | Preserve existing assets and exact explicit string folders. | Backfill or move assets when defaults change. | Prevents silent data mutation; verify no existing asset patch occurs during configuration changes. |
