@@ -1,41 +1,30 @@
-import { randomUUID } from 'node:crypto'
-
 import type { Adapter, GeneratedAdapter } from '@payloadcms/plugin-cloud-storage/types'
 import type { SanityClient } from '@sanity/client'
-import type { Field, FileData, TypeWithID } from 'payload'
+import type { Field } from 'payload'
 import type { SanityMediaFolderOption, SanityMediaFolders } from '@/core/config'
-import { assertSanityReadyForUpload, classifyMedia, resolveSanityMediaFolder } from '@/core/config'
+import { assertSanityReadyForUpload, classifyMedia } from '@/core/config'
 import type { JsonValue } from '@/core/contracts'
-import { isPayloadDocumentId } from '@/core/contracts'
 import {
   isUnavailableSyncStatus,
   mediaSyncStatus,
   normalizeSyncStatus,
-  readMediaSync,
   type WithMediaSync,
 } from '@/features/asset-sync'
 import { resolvePublicUrl } from '@/features/media/cdn'
-import type { PayloadMediaDraft, SanityMediaDocument } from '@/features/media/document'
+import type { SanityMediaDocument } from '@/features/media/document'
 import { sanityMediaAdminFields } from '@/features/media/fields'
 import { hashUploadBytes, lockSanityAssetHash } from '@/features/media/lifecycle/asset-lock'
 import {
-  SANITY_STORAGE_DEDUPE_CONTEXT_KEY,
-  throwDuplicateUploadAPIError,
-} from '@/features/media/lifecycle/dedupe'
-import {
-  findMediaBySanityAssetId,
-  mapSanityUploadToMedia,
   readUploadSignature,
   resolveSanityUploadBody,
   slugifyFilename,
 } from '@/features/media/storage-adapter'
 import { throwSanityUploadAPIError } from '@/features/media/storage-adapter/rollback'
-import type { SanityAsset } from '@/sanity/assets'
-import { getSanityAssetId, getSanityAssetPath } from '@/sanity/assets'
+import { getSanityAssetPath } from '@/sanity/assets'
 import { fetchSanityUpstreamAsset, isSanityCompatibleHost } from '@/sanity/cdn'
-import { fetchSanityImageAsset, SANITY_IMAGE_METADATA_EXTRACT } from '@/sanity/client'
-import { assignSanityAssetFolder } from '@/sanity/folders'
+import { SANITY_IMAGE_METADATA_EXTRACT } from '@/sanity/client'
 import { mapSanityUploadResult } from './metadata'
+import { finalizeSanityUpload } from '../lifecycle/upload/finalizeSanityUpload'
 
 export type CreateSanityAdapterArgs = {
   client: SanityClient
@@ -79,13 +68,6 @@ function buildInjectedFields(): Field[] {
   return sanityMediaAdminFields()
 }
 
-function assetNeedsHydration(asset: SanityAsset): boolean {
-  if (asset._type === 'sanity.fileAsset') {
-    return asset._rev.length === 0
-  }
-  return asset._rev.length === 0 || asset.metadata == null
-}
-
 export function createSanityAdapter({
   client,
   cdnBaseUrl,
@@ -123,8 +105,6 @@ export function createSanityAdapter({
           req.t as import('@/core/i18n').SanityStorageTranslateFn
         )
 
-        const existingSync = readMediaSync((data ?? {}) as WithMediaSync)
-
         const slugifiedName = slugifyFilename(file.filename)
         const uploadFile = {
           ...file,
@@ -157,88 +137,23 @@ export function createSanityAdapter({
 
         const raw = (await result) as JsonValue
         const uploaded = mapSanityUploadResult(raw)
-        const asset = assetNeedsHydration(uploaded)
-          ? await fetchSanityImageAsset(client, uploaded._id).catch((error) => {
-              req.payload?.logger?.warn?.(
-                `[@klnap/payload-storage-sanity] Sanity asset hydration failed for ${uploaded._id}: ${
-                  error instanceof Error ? error.message : 'Unknown error'
-                }`
-              )
-              return uploaded
-            })
-          : uploaded
-
-        // Payload `filename` must be unique (storage key). Sanity asset `_id` lives on `sanity.asset`.
-        // Prefer the media document id (uuid collections) so many rows can share one Sanity asset.
-        const currentId =
-          data != null && typeof data === 'object' && 'id' in data && isPayloadDocumentId(data.id)
-            ? data.id
-            : null
-        const payloadFilename = currentId != null ? String(currentId) : randomUUID()
-
-        const collectionSlug =
-          collection != null && typeof collection === 'object' && 'slug' in collection
-            ? collection.slug
-            : null
-        if (typeof collectionSlug === 'string' && collectionSlug.length > 0) {
-          const existingRow = await findMediaBySanityAssetId(
-            req,
-            collectionSlug,
-            asset._id,
-            currentId
-          )
-          // An unreadable match (id null) is treated as no match: a conflict or duplicate error for it
-          // would reveal that the requester cannot see these bytes. Sharing the asset is allowed.
-          if (existingRow?.id != null) {
-            const priorAssetId = getSanityAssetId((data ?? {}) as SanityMediaDocument)
-            // Replace on an existing row with bytes already owned by another media doc.
-            if (priorAssetId != null && priorAssetId.length > 0 && priorAssetId !== asset._id) {
-              throwDuplicateUploadAPIError(req, existingRow.id)
-            }
-
-            if (dedupeUploads) {
-              if (!req.context) {
-                req.context = {}
-              }
-              req.context[SANITY_STORAGE_DEDUPE_CONTEXT_KEY] = {
-                existingId: existingRow.id,
-              }
-
-              // Create path: empty metadata → cloud-storage skips the conflicting `filename` update;
-              // afterOperation deletes the orphan row and throws 409 with the existing id.
-              return {}
-            }
-          }
-        }
-
-        const folderPath = resolveSanityMediaFolder(classification.mediaType, folder, folders)
-        if (folderPath !== false) await assignSanityAssetFolder(client, asset._id, folderPath)
-
-        const patch = mapSanityUploadToMedia(
-          asset,
-          uploadFile,
-          (data ?? {}) as PayloadMediaDraft,
-          typeof raw === 'object' && raw != null && !Array.isArray(raw)
-            ? (raw as import('@/core/contracts').JsonObject)
-            : undefined
-        )
-        const docForUrl = {
-          ...data,
-          ...patch,
-          filename: payloadFilename,
-        } as SanityMediaDocument
-        const publicUrl = resolvePublicUrl(docForUrl, { cdnBaseUrl })
-        return {
-          ...patch,
-          filename: payloadFilename,
-          ...(publicUrl ? { url: publicUrl } : undefined),
-          sync: {
-            ...existingSync,
-            status: 'available' as const,
-            checkedAt: new Date().toISOString(),
-            errorAt: null,
-          },
-        } as Partial<FileData & TypeWithID>
+        return await finalizeSanityUpload({
+          asset: uploaded,
+          cdnBaseUrl,
+          client,
+          collection,
+          data,
+          dedupeUploads,
+          file: uploadFile,
+          folder,
+          folders,
+          mediaType: classification.mediaType,
+          raw:
+            typeof raw === 'object' && raw != null && !Array.isArray(raw)
+              ? (raw as import('@/core/contracts').JsonObject)
+              : undefined,
+          req,
+        })
       } catch (error) {
         throwSanityUploadAPIError(error, req.t as import('@/core/i18n').SanityStorageTranslateFn)
       }
