@@ -4,7 +4,10 @@ import type { Config, Endpoint, Plugin } from 'payload'
 import type { SanityStorageCollectionOptions, SanityStoragePluginOptions } from '@/core/config'
 import {
   applyPayloadUploadFileSizeLimit,
+  classifyUploadMediaKind,
   computeMaxUploadByteLimit,
+  mergeUploadMaxSizeConfig,
+  resolveUploadMaxSizeBytes,
   resolveSanityStorageMode,
   validateSanityStoragePluginOptions,
   warnSanityStorageConfig,
@@ -16,6 +19,11 @@ import {
   resolveSanitySyncConfig,
 } from '@/features/asset-sync'
 import { getLocalizationLocales } from '@/features/media/fields'
+import { createSanityUploadTransportEndpoints } from '@/features/media/upload-transport'
+import {
+  SANITY_UPLOAD_SESSION_COLLECTION,
+  sanityUploadSessionCollection,
+} from '@/features/media/upload-transport'
 import {
   applyMediaRelationshipReferenceHooks,
   applyRichTextReferenceHooks,
@@ -117,6 +125,49 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
   return (incomingConfig: Config): Config => {
     const collections = resolveCollections(options, incomingConfig, cloudStorageEnabled)
     const configuredMediaSlugs = new Set(Object.keys(collections))
+    const uploadTransport = options.upload?.transport
+    if (uploadTransport && !cloudStorageEnabled) {
+      throw new Error('payload-storage-sanity: `upload.transport` requires storage mode "full".')
+    }
+    if (uploadTransport && configuredMediaSlugs.size === 0) {
+      throw new Error(
+        'payload-storage-sanity: `upload.transport` requires at least one configured media collection.'
+      )
+    }
+    if (uploadTransport) {
+      let serverURL: URL | undefined
+      try {
+        serverURL = incomingConfig.serverURL ? new URL(incomingConfig.serverURL) : undefined
+      } catch {
+        serverURL = undefined
+      }
+      const localHTTP =
+        serverURL?.protocol === 'http:' &&
+        ['localhost', '127.0.0.1', '[::1]'].includes(serverURL.hostname)
+      if (
+        !serverURL ||
+        (serverURL.protocol !== 'https:' && !localHTTP) ||
+        serverURL.pathname !== '/' ||
+        serverURL.username ||
+        serverURL.password ||
+        serverURL.search ||
+        serverURL.hash
+      ) {
+        throw new Error(
+          'payload-storage-sanity: `serverURL` must be an HTTPS origin (localhost HTTP is allowed outside production) when `upload.transport` is enabled.'
+        )
+      }
+    }
+    if (
+      uploadTransport &&
+      incomingConfig.collections?.some(
+        (collection) => collection.slug === SANITY_UPLOAD_SESSION_COLLECTION
+      )
+    ) {
+      throw new Error(
+        `payload-storage-sanity: collection slug "${SANITY_UPLOAD_SESSION_COLLECTION}" is reserved for upload sessions.`
+      )
+    }
     const firstCollectionSlug = configuredMediaSlugs.values().next().value
     const resolvedSync = resolveSanitySyncConfig(sync, firstCollectionSlug)
 
@@ -156,6 +207,7 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
                   dataset,
                   token,
                   dedupeUploads,
+                  transport: uploadTransport,
                 })
               : null,
           },
@@ -176,6 +228,27 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         : preventDeleteWhenReferenced
     })
     const endpoints: Endpoint[] = []
+
+    if (uploadTransport) {
+      endpoints.push(
+        ...createSanityUploadTransportEndpoints({
+          dataset,
+          projectId,
+          transport: uploadTransport,
+          maxSizeFor: (collection, mimeType, filename) => {
+            const collectionOptions = collections[collection]
+            if (!collectionOptions) return undefined
+            return resolveUploadMaxSizeBytes(
+              classifyUploadMediaKind(mimeType, filename),
+              mergeUploadMaxSizeConfig(
+                pluginUploadMaxSize,
+                collectionOptions === true ? undefined : collectionOptions.uploadMaxSize
+              )
+            )
+          },
+        })
+      )
+    }
 
     if (resolvedSync.webhook?.collectionSlug) {
       endpoints.push(
@@ -237,7 +310,13 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         )
       }
     }
-    const config = storagePlugin(incomingConfig)
+    const configForStorage = uploadTransport
+      ? {
+          ...incomingConfig,
+          collections: [...(incomingConfig.collections ?? []), sanityUploadSessionCollection],
+        }
+      : incomingConfig
+    const config = storagePlugin(configForStorage)
     const localizationLocales = getLocalizationLocales(config)
     const maxUploadBytes = computeMaxUploadByteLimit(pluginUploadMaxSize, collections)
     const resolvedOptions: SanityStoragePluginOptions = { ...options, collections }
@@ -246,6 +325,19 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
     let nextConfig: Config = {
       ...config,
       onInit: async (payload) => {
+        if (uploadTransport) {
+          const db = payload.db as typeof payload.db & { name?: string }
+          if (
+            db.name !== 'postgres' ||
+            typeof db.beginTransaction !== 'function' ||
+            typeof db.commitTransaction !== 'function' ||
+            typeof db.rollbackTransaction !== 'function'
+          ) {
+            throw new Error(
+              'payload-storage-sanity: external upload transport requires the verified PostgreSQL transaction adapter.'
+            )
+          }
+        }
         if (cloudStorageEnabled) {
           for (const slug of configuredMediaSlugs) {
             const collection = payload.config.collections.find((entry) => entry.slug === slug)
@@ -275,9 +367,23 @@ export function sanityStorage(options: SanityStorageOptions): Plugin {
         },
       },
       i18n: mergeSanityStorageTranslations(config.i18n),
+      ...(uploadTransport
+        ? {
+            custom: {
+              ...config.custom,
+              sanityStorageUpload: {
+                endpoint: uploadTransport.endpoint,
+                maxSizeBytes: uploadTransport.maxSizeBytes,
+                protocolVersion: uploadTransport.protocolVersion,
+                ticketPath: '/sanity-upload/tickets',
+              },
+            },
+          }
+        : undefined),
       endpoints: [...(config.endpoints ?? []), ...endpoints],
       collections: (config.collections ?? []).map((collection) =>
         applySanityStorageToMediaCollection(collection, {
+          client,
           options: resolvedOptions,
           collections,
           configuredMediaSlugs,

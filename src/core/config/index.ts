@@ -19,7 +19,9 @@ export type {
   SanityStoragePluginOptions,
   SanityStoragePopulateConfig,
   SanityStorageSyncConfig,
+  SanityStorageUploadConfig,
   SanityStorageUploadMaxSizeConfig,
+  UploadTransport,
 } from './pluginOptions'
 export { resolveCollectionAdmin } from './resolveCollectionAdmin'
 export { resolveSanityStorageMode } from './resolveSanityStorageMode'

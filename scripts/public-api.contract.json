@@ -35,6 +35,27 @@
     "runtime": ["assignSanityAssetFolder"],
     "types": []
   },
+  "./upload-protocol": {
+    "default": false,
+    "runtime": [
+      "SANITY_UPLOAD_CLAIM_PATH",
+      "SANITY_UPLOAD_PROTOCOL_VERSION",
+      "SANITY_UPLOAD_TICKET_PATH",
+      "signSanityUploadReceipt",
+      "signSanityUploadTicket",
+      "verifySanityClientUploadContext",
+      "verifySanityUploadReceipt",
+      "verifySanityUploadTicket"
+    ],
+    "types": [
+      "SanityClientUploadContext",
+      "SanityUploadOperation",
+      "SanityUploadReceipt",
+      "SanityUploadReceiptClaims",
+      "SanityUploadTicket",
+      "SanityUploadTicketClaims"
+    ]
+  },
   "./consumers": {
     "default": false,
     "runtime": ["buildSanityImageUrl"],

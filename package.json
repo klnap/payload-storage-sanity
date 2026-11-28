@@ -37,6 +37,10 @@
       "types": "./dist/sanity/folders/public.d.ts",
       "import": "./dist/sanity/folders/public.js"
     },
+    "./upload-protocol": {
+      "types": "./dist/upload-protocol.d.ts",
+      "import": "./dist/upload-protocol.js"
+    },
     "./consumers": {
       "types": "./dist/consumers/index.d.ts",
       "import": "./dist/consumers/index.js"

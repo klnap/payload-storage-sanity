@@ -1,6 +1,7 @@
 export type {
   SanityStorageCollectionOptions,
   SanityStorageMode,
+  UploadTransport,
   SanityStorageUploadMaxSizeInput,
 } from '@/core/config'
 export type {

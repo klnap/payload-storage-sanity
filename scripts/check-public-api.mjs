@@ -16,6 +16,7 @@ const SUBPATH_TO_DIST = {
   './admin': 'dist/admin/public.js',
   './client': 'dist/sanity/client/public.js',
   './folders': 'dist/sanity/folders/public.js',
+  './upload-protocol': 'dist/upload-protocol.js',
   './consumers': 'dist/consumers/index.js',
   './consumers/next': 'dist/consumers/next/index.js',
   './consumers/next/loader': 'dist/consumers/next/loader.js',

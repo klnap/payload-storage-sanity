@@ -1,7 +1,7 @@
 import type { Adapter, GeneratedAdapter } from '@payloadcms/plugin-cloud-storage/types'
 import type { SanityClient } from '@sanity/client'
 import type { Field } from 'payload'
-import type { SanityMediaFolderOption, SanityMediaFolders } from '@/core/config'
+import type { SanityMediaFolderOption, SanityMediaFolders, UploadTransport } from '@/core/config'
 import { assertSanityReadyForUpload, classifyMedia } from '@/core/config'
 import type { JsonValue } from '@/core/contracts'
 import {
@@ -25,6 +25,9 @@ import { fetchSanityUpstreamAsset, isSanityCompatibleHost } from '@/sanity/cdn'
 import { SANITY_IMAGE_METADATA_EXTRACT } from '@/sanity/client'
 import { mapSanityUploadResult } from './metadata'
 import { finalizeSanityUpload } from '../lifecycle/upload/finalizeSanityUpload'
+import { SANITY_UPLOAD_CONTEXT_KEY } from '@/features/media/upload-transport/finalizeExternalUpload'
+import { verifySanityClientUploadContext } from '@/features/media/upload-transport/protocol'
+import { SANITY_UPLOAD_SESSION_COLLECTION } from '@/features/media/upload-transport/sessionCollection'
 
 export type CreateSanityAdapterArgs = {
   client: SanityClient
@@ -36,6 +39,7 @@ export type CreateSanityAdapterArgs = {
   dataset: string
   token?: string
   dedupeUploads?: boolean
+  transport?: UploadTransport
 }
 
 /**
@@ -77,6 +81,7 @@ export function createSanityAdapter({
   dataset,
   token,
   dedupeUploads = false,
+  transport,
 }: CreateSanityAdapterArgs): Adapter {
   const credentials = { projectId, dataset, token }
   const injectedFields = buildInjectedFields()
@@ -163,10 +168,95 @@ export function createSanityAdapter({
       // Payload rows can be deleted; remote Sanity assets are retained.
     },
 
-    staticHandler: async (_req, { doc: argDoc }) => {
+    ...(transport ? { clientUploads: true as const } : undefined),
+
+    staticHandler: async (req, { doc: argDoc, params }) => {
       // Payload passes the access-checked media document as `doc`. Only its stored asset path is proxied,
       // joined to the configured CDN base; the request filename is never used as an upstream URL.
-      const doc = argDoc as SanityMediaDocument | undefined
+      let doc = argDoc as SanityMediaDocument | undefined
+      if (params.clientUploadContext !== undefined && transport) {
+        try {
+          const { receipt, ticket } = await verifySanityClientUploadContext(
+            params.clientUploadContext,
+            transport.secret,
+            { audience: transport.endpoint, maxSizeBytes: transport.maxSizeBytes }
+          )
+          const subject = req.user ? `${req.user.collection ?? ''}:${String(req.user.id)}` : ''
+          if (
+            !req.user ||
+            subject !== ticket.subject ||
+            params.collection !== ticket.collection ||
+            params.filename !== ticket.filename ||
+            ticket.projectId !== projectId ||
+            ticket.dataset !== dataset
+          ) {
+            return new Response('Not found', { status: 404 })
+          }
+          const claim = await req.payload
+            .findByID({
+              collection: SANITY_UPLOAD_SESSION_COLLECTION as never,
+              depth: 0,
+              id: ticket.nonce,
+              overrideAccess: true,
+              req,
+            })
+            .catch(() => null)
+          if (
+            claim?.kind !== 'claim' ||
+            claim.id !== ticket.nonce ||
+            claim.nonce !== ticket.nonce ||
+            claim.subject !== ticket.subject ||
+            claim.collection !== ticket.collection ||
+            claim.operation !== ticket.operation ||
+            claim.projectId !== projectId ||
+            claim.dataset !== dataset ||
+            claim.size !== ticket.size ||
+            claim.maxSize !== ticket.maxSize
+          ) {
+            return new Response('Not found', { status: 404 })
+          }
+          const asset = await client.getDocument<import('@/sanity/assets').SanityAsset>(
+            receipt.assetId
+          )
+          if (!asset || asset._id !== receipt.assetId || asset.size !== receipt.size) {
+            return new Response('Not found', { status: 404 })
+          }
+          doc = {
+            sanity: { asset },
+            sync: { status: 'available' },
+          } as unknown as SanityMediaDocument
+          req.context = {
+            ...req.context,
+            [SANITY_UPLOAD_CONTEXT_KEY]: params.clientUploadContext,
+          }
+          const assetUrl = resolvePublicUrl(doc, { cdnBaseUrl })
+          if (!assetUrl || !isSanityCompatibleHost(assetUrl, { cdnBaseUrl })) {
+            return new Response('Not found', { status: 404 })
+          }
+          const range = req.headers.get('Range')
+          const response = await fetchSanityUpstreamAsset(assetUrl, {
+            cdnBaseUrl,
+            ...(range ? { headers: { Range: range } } : undefined),
+          })
+          if (!response.ok || Number(response.headers.get('Content-Length')) > receipt.size) {
+            await response.body?.cancel()
+            return new Response('Upstream asset not found', { status: 404 })
+          }
+          const headers = new Headers({
+            'Content-Type': response.headers.get('Content-Type') || asset.mimeType,
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+          })
+          const contentRange = response.headers.get('Content-Range')
+          if (contentRange) headers.set('Content-Range', contentRange)
+          return new Response(capStreamBytes(response.body, receipt.size), {
+            headers,
+            status: response.status,
+          })
+        } catch {
+          return new Response('Invalid client upload receipt', { status: 404 })
+        }
+      }
       const status = normalizeSyncStatus(doc ? mediaSyncStatus(doc) : undefined)
 
       if (isUnavailableSyncStatus(status)) {

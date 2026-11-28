@@ -131,4 +131,45 @@ describe('validateSanityStoragePluginOptions', () => {
       })
     ).not.toThrow()
   })
+
+  test('validates the versioned HTTP upload transport config', () => {
+    const transport = {
+      endpoint: 'https://uploads.example.test/v1/upload',
+      maxSizeBytes: 50 * 1024 * 1024,
+      protocolVersion: 1 as const,
+      secret: 'a test secret with at least thirty-two bytes',
+    }
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        projectId: 'p',
+        dataset: 'd',
+        token: 't',
+        upload: { transport },
+      })
+    ).not.toThrow()
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        projectId: 'p',
+        dataset: 'd',
+        token: 't',
+        upload: { transport: { ...transport, endpoint: 'http://uploads.example.test' } },
+      })
+    ).toThrow(/endpoint/)
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        projectId: 'p',
+        dataset: 'd',
+        token: 't',
+        upload: { transport: { ...transport, protocolVersion: 2 } as never },
+      })
+    ).toThrow(/protocolVersion/)
+    expect(() =>
+      validateSanityStoragePluginOptions({
+        projectId: 'p',
+        dataset: 'd',
+        token: 't',
+        upload: { transport: { ...transport, secret: 'short' } },
+      })
+    ).toThrow(/secret/)
+  })
 })

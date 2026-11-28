@@ -1,6 +1,8 @@
 import { isSanityCompatibleHost, type SanityCompatibleHostContext } from './isSanityCompatibleHost'
 
-export type FetchSanityUpstreamContext = SanityCompatibleHostContext
+export type FetchSanityUpstreamContext = SanityCompatibleHostContext & {
+  headers?: HeadersInit
+}
 
 /**
  * Fetches a Sanity CDN asset without following cross-host redirects (SSRF hardening).
@@ -13,7 +15,8 @@ export async function fetchSanityUpstreamAsset(
     return new Response(null, { status: 404 })
   }
 
-  const response = await fetch(upstreamUrl, { redirect: 'manual' })
+  const init = { headers: ctx.headers, redirect: 'manual' as const }
+  const response = await fetch(upstreamUrl, init)
 
   if (response.status >= 300 && response.status < 400) {
     const location = response.headers.get('location')
@@ -23,7 +26,7 @@ export async function fetchSanityUpstreamAsset(
         if (!isSanityCompatibleHost(redirectUrl, ctx)) {
           return new Response(null, { status: 502 })
         }
-        const redirected = await fetch(redirectUrl, { redirect: 'manual' })
+        const redirected = await fetch(redirectUrl, init)
         if (redirected.status >= 300 && redirected.status < 400) {
           return new Response(null, { status: 502 })
         }
