@@ -189,6 +189,35 @@
       "declaration": "verifySanityUploadTicket"
     }
   ],
+  "./cloudflare-transport": [
+    {
+      "name": "cloudflareTransport",
+      "kind": "value",
+      "declaration": "cloudflareTransport"
+    },
+    {
+      "name": "CloudflareTransportOptions",
+      "kind": "type",
+      "declaration": "CloudflareTransportOptions"
+    }
+  ],
+  "./cloudflare": [
+    {
+      "name": "CloudflareUploadEnvironment",
+      "kind": "type",
+      "declaration": "CloudflareUploadEnvironment"
+    },
+    {
+      "name": "default",
+      "kind": "value",
+      "declaration": "export default"
+    },
+    {
+      "name": "handleCloudflareUpload",
+      "kind": "value",
+      "declaration": "handleCloudflareUpload"
+    }
+  ],
   "./consumers": [
     {
       "name": "buildSanityImageUrl",

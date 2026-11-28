@@ -56,6 +56,16 @@
       "SanityUploadTicketClaims"
     ]
   },
+  "./cloudflare-transport": {
+    "default": false,
+    "runtime": ["cloudflareTransport"],
+    "types": ["CloudflareTransportOptions"]
+  },
+  "./cloudflare": {
+    "default": true,
+    "runtime": ["handleCloudflareUpload"],
+    "types": ["CloudflareUploadEnvironment"]
+  },
   "./consumers": {
     "default": false,
     "runtime": ["buildSanityImageUrl"],
