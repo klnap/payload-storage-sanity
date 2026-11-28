@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+### Patch Changes
+
+- f1fc660: Shorten the README and move storage, media admin, reference, and asset lifecycle details into dedicated documentation with verified screenshots. Documentation only; no runtime change.
+
 ## 0.3.1
 
 ### Patch Changes
