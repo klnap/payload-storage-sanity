@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+### Minor Changes
+
+- bdebe74: Add media-type classification, per-type upload limits, and Sanity folder routing.
+- 66e6595: Add the versioned HTTP upload transport protocol with durable claims and core-owned finalization.
+
 ## 0.3.4
 
 ### Patch Changes
