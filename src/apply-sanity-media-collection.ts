@@ -1,10 +1,16 @@
-import type { CollectionConfig, Field, UploadConfig } from 'payload'
+import type { CollectionAfterChangeHook, CollectionConfig, Field, UploadConfig } from 'payload'
+import type { SanityClient } from '@sanity/client'
 import type {
   SanityStorageCollectionOptions,
   SanityStorageModeResolution,
   SanityStoragePluginOptions,
 } from '@/core/config'
-import { resolveCollectionAdmin } from '@/core/config'
+import {
+  classifyUploadMediaKind,
+  mergeUploadMaxSizeConfig,
+  resolveCollectionAdmin,
+  resolveUploadMaxSizeBytes,
+} from '@/core/config'
 import { SANITY_ADMIN_THUMBNAIL_WIDTH, sanityAdminThumbnail } from '@/features/media/cdn'
 import {
   createSanityMediaAfterReadHook,
@@ -50,6 +56,7 @@ import {
   sanityMediaForceSelect,
 } from '@/features/media/populate'
 import { createMediaUsageEndpoint } from '@/features/media/usage'
+import { createSanityExternalUploadAfterChangeHook } from '@/features/media/upload-transport/finalizeExternalUpload'
 
 function mergeAfterReadHooks(
   collection: CollectionConfig,
@@ -65,6 +72,7 @@ function replaceCloudStorageAfterChangeWithUploadChain(
   collection: CollectionConfig,
   args: {
     cdnBaseUrl?: string
+    externalUploadHook?: CollectionAfterChangeHook
   }
 ): CollectionConfig {
   const afterChange = collection.hooks?.afterChange ?? []
@@ -80,6 +88,7 @@ function replaceCloudStorageAfterChangeWithUploadChain(
   const userHooks = afterChange.slice(0, -1)
   const chained = createSanityUploadAfterChangeChain({
     cloudHook,
+    externalUploadHook: args.externalUploadHook,
     hydrateHook: createSanityMediaHydrateResponseAfterChangeHook({ cdnBaseUrl: args.cdnBaseUrl }),
   })
 
@@ -118,6 +127,7 @@ function collectionUploadConfig(collection: CollectionConfig): UploadConfig {
 }
 
 export type ApplySanityMediaCollectionContext = {
+  client?: SanityClient
   options: SanityStoragePluginOptions
   /** Enabled collections only; `false` entries are removed before this step. */
   collections: Record<string, true | SanityStorageCollectionOptions>
@@ -318,6 +328,9 @@ export function applySanityStorageToMediaCollection(
 
   if (configuredMediaSlugs.has(slug) && collection.upload) {
     const collConfig = collections[slug]
+    if (!collConfig) {
+      throw new Error(`Missing storage options for configured media collection "${slug}".`)
+    }
     const shouldGuardReferenceIntegrity =
       typeof collConfig === 'object' && collConfig.preventDeleteWhenReferenced !== undefined
         ? collConfig.preventDeleteWhenReferenced
@@ -343,6 +356,28 @@ export function applySanityStorageToMediaCollection(
       if (storageMode.mode === 'full') {
         nextCollection = replaceCloudStorageAfterChangeWithUploadChain(nextCollection, {
           cdnBaseUrl,
+          ...(options.upload?.transport && ctx.client
+            ? {
+                externalUploadHook: createSanityExternalUploadAfterChangeHook({
+                  cdnBaseUrl,
+                  client: ctx.client,
+                  dataset: options.dataset,
+                  dedupeUploads,
+                  folder: collConfig === true ? undefined : collConfig.folder,
+                  folders: options.folders,
+                  maxSizeFor: (mimeType, filename) =>
+                    resolveUploadMaxSizeBytes(
+                      classifyUploadMediaKind(mimeType, filename),
+                      mergeUploadMaxSizeConfig(
+                        pluginUploadMaxSize,
+                        collConfig === true ? undefined : collConfig.uploadMaxSize
+                      )
+                    ),
+                  projectId: options.projectId,
+                  transport: options.upload.transport,
+                }),
+              }
+            : undefined),
         })
       }
     }

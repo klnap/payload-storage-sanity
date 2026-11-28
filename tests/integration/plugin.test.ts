@@ -64,6 +64,87 @@ function applyPluginOptions(
 }
 
 describe('sanityStorage', () => {
+  test('registers the versioned external upload protocol without exposing its secret', () => {
+    const secret = 'a test secret with at least thirty-two bytes'
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+      upload: {
+        transport: {
+          endpoint: 'https://uploads.example.test/v1/upload',
+          maxSizeBytes: 50 * 1024 * 1024,
+          protocolVersion: 1,
+          secret,
+        },
+      },
+    })
+    const config = plugin({
+      secret: 'test',
+      serverURL: 'https://payload.example.test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+    const sessionCollection = config.collections?.find(
+      (collection) => collection.slug === 'sanity-upload-sessions'
+    )
+    expect(sessionCollection?.admin?.hidden).toBe(true)
+    expect(sessionCollection?.fields.some((field) => 'name' in field && field.name === 'id')).toBe(
+      true
+    )
+    expect(config.endpoints?.map(({ path }) => path)).toContain('/sanity-upload/tickets')
+    expect(config.endpoints?.map(({ path }) => path)).toContain('/sanity-upload/claims')
+    expect(config.custom?.sanityStorageUpload).toEqual({
+      endpoint: 'https://uploads.example.test/v1/upload',
+      maxSizeBytes: 50 * 1024 * 1024,
+      protocolVersion: 1,
+      ticketPath: '/sanity-upload/tickets',
+    })
+    expect(JSON.stringify(config.custom)).not.toContain(secret)
+  })
+
+  test('rejects external upload without a trusted public serverURL or the transaction store', async () => {
+    const options = {
+      upload: {
+        transport: {
+          endpoint: 'https://uploads.example.test/v1/upload',
+          maxSizeBytes: 50 * 1024 * 1024,
+          protocolVersion: 1 as const,
+          secret: 'a test secret with at least thirty-two bytes',
+        },
+      },
+    }
+    expect(() =>
+      sanityStorage({
+        projectId: 'demo',
+        dataset: 'production',
+        token: 'token',
+        ...options,
+      })({
+        secret: 'test',
+        db: {} as Config['db'],
+        collections: [{ slug: 'media', upload: true, fields: [] }],
+      } as Config)
+    ).toThrow(/serverURL/)
+    const plugin = sanityStorage({
+      projectId: 'demo',
+      dataset: 'production',
+      token: 'token',
+      collections: { media: true },
+      ...options,
+    })
+    const config = plugin({
+      secret: 'test',
+      serverURL: 'https://payload.example.test',
+      db: {} as Config['db'],
+      collections: [{ slug: 'media', upload: true, fields: [] }],
+    } as Config)
+    await expect(config.onInit?.({ db: { name: 'sqlite' } } as never)).rejects.toThrow(
+      /PostgreSQL transaction adapter/
+    )
+  })
+
   test('loads admin styles through a provider and preserves host providers', () => {
     const plugin = sanityStorage({
       projectId: 'demo',

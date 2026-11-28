@@ -6,6 +6,7 @@ export const ENTRY_SUBPATHS = [
   './admin',
   './client',
   './folders',
+  './upload-protocol',
   './consumers',
   './consumers/next',
   './consumers/next/loader',

@@ -2,6 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/index.ts",
+    "src/upload-protocol.ts",
     "src/consumers/index.ts",
     "src/consumers/next/index.ts",
     "src/consumers/next/loader.ts",

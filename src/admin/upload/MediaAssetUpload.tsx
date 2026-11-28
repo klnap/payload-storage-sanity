@@ -15,6 +15,7 @@ import {
   useLocale,
   useModal,
   useTranslation,
+  useUploadHandlers,
   useUploadEdits,
 } from '@payloadcms/ui'
 import type { ClientCollectionConfig, SanitizedCollectionConfig, UploadEdits } from 'payload'
@@ -446,7 +447,15 @@ export function MediaAssetUpload({
   titleInput?: boolean
 } = {}) {
   const { collectionSlug, data, docPermissions, id, initialState, docConfig } = useDocumentInfo()
-  const { getEntityConfig } = useConfig()
+  const {
+    config: {
+      custom,
+      routes: { api: apiRoute },
+      serverURL,
+    },
+    getEntityConfig,
+  } = useConfig()
+  const { setUploadHandler } = useUploadHandlers()
   const { code } = useLocale()
   const { t } = useTranslation()
   const { uploadEdits, resetUploadEdits, updateUploadEdits } = useUploadEdits()
@@ -465,6 +474,77 @@ export function MediaAssetUpload({
   const nativeRemoveClick = useRef(false)
   const [metaHost, setMetaHost] = useState<Element | null>(null)
   const [thumbHost, setThumbHost] = useState<Element | null>(null)
+  const clientUploadConfig = custom?.sanityStorageUpload as
+    | {
+        endpoint: string
+        protocolVersion: number
+        ticketPath: string
+      }
+    | undefined
+  useEffect(() => {
+    if (!clientUploadConfig || !collectionSlug || !serverURL) return
+    setUploadHandler({
+      collectionSlug,
+      handler: async ({ file }) => {
+        const mimeType = file.type || 'application/octet-stream'
+        const ticketResponse = await fetch(
+          `${serverURL.replace(/\/+$/, '')}${apiRoute}${clientUploadConfig.ticketPath}`,
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            redirect: 'error',
+            body: JSON.stringify({
+              collection: collectionSlug,
+              ...(id == null ? {} : { documentId: id }),
+              filename: file.name,
+              mimeType,
+              operation: id == null ? 'create' : 'update',
+              size: file.size,
+            }),
+          }
+        )
+        if (!ticketResponse.ok) {
+          throw new Error(`Upload ticket request failed (${ticketResponse.status}).`)
+        }
+        const ticketResult = (await ticketResponse.json()) as {
+          endpoint?: unknown
+          protocolVersion?: unknown
+          ticket?: unknown
+        }
+        if (
+          ticketResult.endpoint !== clientUploadConfig.endpoint ||
+          ticketResult.protocolVersion !== clientUploadConfig.protocolVersion ||
+          typeof ticketResult.ticket !== 'string'
+        ) {
+          throw new Error('Upload ticket response does not match the configured transport.')
+        }
+        const uploadResponse = await fetch(clientUploadConfig.endpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${ticketResult.ticket}`,
+            'Content-Type': mimeType,
+          },
+          body: file,
+          redirect: 'error',
+        })
+        if (!uploadResponse.ok) {
+          throw new Error(`External upload failed (${uploadResponse.status}).`)
+        }
+        const uploadResult = (await uploadResponse.json()) as { receipt?: unknown }
+        if (typeof uploadResult.receipt !== 'string') {
+          throw new Error('External upload response has no signed receipt.')
+        }
+        return {
+          sanityUpload: {
+            protocolVersion: clientUploadConfig.protocolVersion,
+            receipt: uploadResult.receipt,
+            ticket: ticketResult.ticket,
+          },
+        }
+      },
+    })
+  }, [apiRoute, clientUploadConfig, collectionSlug, id, serverURL, setUploadHandler])
   useEffect(() => {
     const root = uploadRoot.current
     if (!root) return

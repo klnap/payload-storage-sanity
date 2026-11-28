@@ -45,12 +45,53 @@ sanityStorage({
 | `dedupeUploads` | `false` | Reject duplicate media creates by SHA-1. |
 | `preventDeleteWhenReferenced` | `true` | Protect referenced Payload media rows. |
 | `uploadMaxSize` | Payload default | Global maximum and optional media-type upload limits. |
+| `upload.transport` | internal Sanity upload | Optional direct-to-HTTP-transport upload using the versioned ticket protocol. |
 | `folders` | media-type defaults | Global logical folder paths; set `false` to disable assignment. |
 | `sync` | disabled | Sanity webhook and reconcile routes. |
 
 `mode: 'full'` uploads files to Sanity and registers the cloud-storage adapter. `fields-only` disables cloud storage and keeps Sanity fields and hooks. `off` disables cloud-storage registration; selected collections may still receive Sanity fields, hooks, and routes.
 
 `token` is optional in the TypeScript contract for modes that do not upload. In the default `full` mode, startup validation requires a non-empty token. Keep it server-only.
+
+## HTTP upload transport
+
+The internal Sanity transport remains the default. Set `upload.transport` to opt supported admin uploads into direct HTTP transfer:
+
+```ts
+sanityStorage({
+  projectId: process.env.SANITY_PROJECT_ID!,
+  dataset: process.env.SANITY_DATASET!,
+  token: process.env.SANITY_API_TOKEN!,
+  upload: {
+    transport: {
+      endpoint: process.env.SANITY_UPLOAD_TRANSPORT_URL!,
+      maxSizeBytes: 50 * 1024 * 1024,
+      protocolVersion: 1,
+      secret: process.env.SANITY_UPLOAD_TRANSPORT_SECRET!,
+    },
+  },
+})
+```
+
+The transport URL must use HTTPS in production; localhost HTTP is allowed only outside production. The shared signing secret must contain at least 32 UTF-8 bytes and must remain server-side in Payload and the trusted transport. Configure `serverURL` as an HTTPS origin reachable by the transport. External transports require the verified PostgreSQL adapter and its transaction support; other database adapters fail during Payload initialization.
+
+The transport endpoint must allow browser `POST` requests from the Payload admin origin, including the `Authorization` and `Content-Type` headers. Handle the corresponding CORS preflight; never allow arbitrary origins with credentials.
+
+Protocol version 1 works as follows:
+
+1. The admin asks Payload for a ticket with the collection, operation, replacement document ID when applicable, filename, MIME hint, and declared byte count. Payload authenticates the user, checks create/update access, applies size policy, and signs a five-minute ticket bound to the operation and configured Sanity project/dataset.
+2. The browser sends `POST` to the configured transport endpoint with `Authorization: Bearer <ticket>`, the file's `Content-Type`, and the raw file body.
+3. Before transferring bytes, the transport sends `POST` to the ticket's `claimEndpoint` with the same bearer ticket. It may transfer only after Payload returns `201` and `{ "status": "claimed", "protocolVersion": 1 }`. A `409` response means the ticket was already claimed or finalized; the transport must not transfer bytes.
+4. The transport streams no more than the signed `maxSize`, verifies the actual byte count against the ticket, uploads only to its fixed Sanity target, and returns JSON `{ "receipt": "<signed-token>" }`. The receipt binds the Sanity asset ID and upload metadata to the ticket.
+5. Payload verifies the ticket and receipt, checks the durable claim, rechecks user and document authorization, fetches the asset from the configured Sanity project, and runs the shared metadata, folder, and Payload finalization lifecycle in the same database transaction.
+
+Ticket claims include the version, audience, claim endpoint, nonce, authenticated subject, collection, operation and optional document ID, project, dataset, filename, MIME hint, declared size, maximum size, issue time, and expiry. Receipt claims include the version, audience, nonce, project, dataset, Sanity asset `_id`, filename, MIME hint, actual size, and issue time. Use `verifySanityUploadTicket`, `signSanityUploadReceipt`, and the matching receipt/context verification helpers from the protocol subpath; do not implement alternate token parsing or signing.
+
+The claim endpoint returns `401` for missing, invalid, or expired tickets, `201` for the first durable claim, `409` for an existing claim or finalization, and `500` when the claim cannot be persisted. Ticket creation returns `403` when the user lacks access and `413` when the declared size exceeds policy. The protocol does not define a success fallback: failed external uploads must surface as errors.
+
+Custom HTTP transports implement this protocol; they do not provide Payload browser/server modules or import-map entries. The public `@klnap/payload-storage-sanity/upload-protocol` entry exports framework-independent Web Crypto helpers and protocol types. Cloudflare is a transport implementation of the same contract, not a privileged path.
+
+The transport's `maxSizeBytes` is a hard transfer ceiling. Payload also applies configured media-type limits when issuing tickets and rechecks Sanity's actual asset size before finalization. Transport failures never fall back silently to the internal upload. No release or publication is implied by enabling this option.
 
 ## Collection selection
 

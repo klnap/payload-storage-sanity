@@ -1,5 +1,10 @@
-import type { SanityStorageCollectionOptions, SanityStorageOptions } from '../../src'
+import type {
+  SanityStorageCollectionOptions,
+  SanityStorageOptions,
+  UploadTransport,
+} from '../../src'
 import { sanityStorage } from '../../src'
+import type { SanityUploadTicketClaims } from '../../src/upload-protocol'
 import type { MediaAsset } from '../../src/consumers'
 import { type MediaAsset as NextMediaAsset, SanityImage } from '../../src/consumers/next'
 
@@ -21,8 +26,20 @@ sanityStorage({
 
 const collectionOptions: SanityStorageCollectionOptions = { folder: 'website/media' }
 const pluginOptions: SanityStorageOptions = { ...credentials }
+const transport: UploadTransport = {
+  endpoint: 'https://uploads.example.test/v1/upload',
+  maxSizeBytes: 50 * 1024 * 1024,
+  protocolVersion: 1,
+  secret: 'a test secret with at least thirty-two bytes',
+}
+const uploadTicket: Pick<SanityUploadTicketClaims, 'operation' | 'version'> = {
+  operation: 'create',
+  version: 1,
+}
+sanityStorage({ ...credentials, upload: { transport } })
 void collectionOptions
 void pluginOptions
+void uploadTicket
 type GeneratedMedia = {
   heroImage: MediaAsset
 }

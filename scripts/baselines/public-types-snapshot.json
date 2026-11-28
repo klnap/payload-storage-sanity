@@ -49,6 +49,11 @@
       "name": "SanityStorageUploadMaxSizeInput",
       "kind": "type",
       "declaration": "SanityStorageUploadMaxSizeInput"
+    },
+    {
+      "name": "UploadTransport",
+      "kind": "type",
+      "declaration": "UploadTransport"
     }
   ],
   "./admin": [
@@ -110,6 +115,78 @@
       "name": "assignSanityAssetFolder",
       "kind": "value",
       "declaration": "assignSanityAssetFolder"
+    }
+  ],
+  "./upload-protocol": [
+    {
+      "name": "SANITY_UPLOAD_CLAIM_PATH",
+      "kind": "value",
+      "declaration": "SANITY_UPLOAD_CLAIM_PATH"
+    },
+    {
+      "name": "SANITY_UPLOAD_PROTOCOL_VERSION",
+      "kind": "value",
+      "declaration": "SANITY_UPLOAD_PROTOCOL_VERSION"
+    },
+    {
+      "name": "SANITY_UPLOAD_TICKET_PATH",
+      "kind": "value",
+      "declaration": "SANITY_UPLOAD_TICKET_PATH"
+    },
+    {
+      "name": "SanityClientUploadContext",
+      "kind": "type",
+      "declaration": "SanityClientUploadContext"
+    },
+    {
+      "name": "SanityUploadOperation",
+      "kind": "type",
+      "declaration": "SanityUploadOperation"
+    },
+    {
+      "name": "SanityUploadReceipt",
+      "kind": "type",
+      "declaration": "SanityUploadReceipt"
+    },
+    {
+      "name": "SanityUploadReceiptClaims",
+      "kind": "type",
+      "declaration": "SanityUploadReceiptClaims"
+    },
+    {
+      "name": "SanityUploadTicket",
+      "kind": "type",
+      "declaration": "SanityUploadTicket"
+    },
+    {
+      "name": "SanityUploadTicketClaims",
+      "kind": "type",
+      "declaration": "SanityUploadTicketClaims"
+    },
+    {
+      "name": "signSanityUploadReceipt",
+      "kind": "value",
+      "declaration": "signSanityUploadReceipt"
+    },
+    {
+      "name": "signSanityUploadTicket",
+      "kind": "value",
+      "declaration": "signSanityUploadTicket"
+    },
+    {
+      "name": "verifySanityClientUploadContext",
+      "kind": "value",
+      "declaration": "verifySanityClientUploadContext"
+    },
+    {
+      "name": "verifySanityUploadReceipt",
+      "kind": "value",
+      "declaration": "verifySanityUploadReceipt"
+    },
+    {
+      "name": "verifySanityUploadTicket",
+      "kind": "value",
+      "declaration": "verifySanityUploadTicket"
     }
   ],
   "./consumers": [

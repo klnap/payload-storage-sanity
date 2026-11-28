@@ -116,6 +116,23 @@ export type SanityStorageCollectionOptions = {
   folder?: SanityMediaFolderOption
 }
 
+/**
+ * HTTP upload transport following the versioned Sanity upload ticket protocol.
+ * The endpoint receives a signed ticket and raw file bytes. Keep `secret`
+ * private to Payload and the trusted transport implementation.
+ */
+export type UploadTransport = {
+  endpoint: string
+  maxSizeBytes: number
+  protocolVersion: 1
+  secret: string
+}
+
+export type SanityStorageUploadConfig = {
+  /** Optional direct-to-transport upload. Internal Sanity upload remains the default. */
+  transport?: UploadTransport
+}
+
 export type SanityStoragePluginOptions = {
   /** Default admin UX for all configured upload collections (overridable per collection). */
   admin?: SanityStorageAdminOptions
@@ -148,4 +165,5 @@ export type SanityStoragePluginOptions = {
   uploadMaxSize?: SanityStorageUploadMaxSizeInput
   /** Logical Sanity folders by classified media type. Set `false` to disable folder assignment. */
   folders?: false | SanityMediaFolders
+  upload?: SanityStorageUploadConfig
 }

@@ -108,5 +108,62 @@ export function validateSanityStoragePluginOptions(options: SanityStoragePluginO
     )
   }
 
+  const upload = options.upload
+  if (
+    upload !== undefined &&
+    (upload == null || typeof upload !== 'object' || Array.isArray(upload))
+  ) {
+    throw new Error('[@klnap/payload-storage-sanity] `upload` must be an object.')
+  }
+  const transport = upload?.transport
+  if (transport !== undefined) {
+    if (transport == null || typeof transport !== 'object' || Array.isArray(transport)) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport` must be an HTTP transport configuration.'
+      )
+    }
+    if (transport.protocolVersion !== 1) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport.protocolVersion` must be 1.'
+      )
+    }
+    if (!Number.isSafeInteger(transport.maxSizeBytes) || transport.maxSizeBytes <= 0) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport.maxSizeBytes` must be a positive safe integer.'
+      )
+    }
+    let endpoint: URL
+    try {
+      endpoint = new URL(transport.endpoint)
+    } catch {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport.endpoint` must be an absolute HTTPS URL.'
+      )
+    }
+    const allowLocalHTTP =
+      process.env.NODE_ENV !== 'production' &&
+      endpoint.protocol === 'http:' &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)
+    if (
+      (endpoint.protocol !== 'https:' && !allowLocalHTTP) ||
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash
+    ) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport.endpoint` must use HTTPS without credentials, query parameters, or a fragment.'
+      )
+    }
+    if (
+      typeof transport.secret !== 'string' ||
+      new TextEncoder().encode(transport.secret).length < 32
+    ) {
+      throw new Error(
+        '[@klnap/payload-storage-sanity] `upload.transport.secret` must be at least 32 UTF-8 bytes.'
+      )
+    }
+  }
+
   assertValidWebhookMaxBodySizeBytes(sync?.webhook?.maxBodySizeBytes)
 }

@@ -32,7 +32,10 @@ mock.module('@payloadcms/ui', () => ({
   EditUpload: Empty,
   TextInput: MockTextInput,
   Upload: Empty,
-  useConfig: () => ({ getEntityConfig: () => null }),
+  useConfig: () => ({
+    config: { custom: undefined, routes: { api: '/api' }, serverURL: '' },
+    getEntityConfig: () => null,
+  }),
   useDocumentInfo: () => documentInfo,
   useField: ({ path }: { path: string }) => {
     const [value, setValue] = useState(path === 'title' ? 'Original title' : undefined)
@@ -49,6 +52,7 @@ mock.module('@payloadcms/ui', () => ({
   useLocale: () => ({ code: 'en' }),
   useModal: () => ({ openModal: () => {}, closeModal: () => {} }),
   useTranslation: () => ({ t: (key: string) => key }),
+  useUploadHandlers: () => ({ setUploadHandler: () => {} }),
   useUploadEdits: () => ({
     uploadEdits: edits,
     resetUploadEdits: () => {},
