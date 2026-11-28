@@ -1,5 +1,5 @@
 import type { Config } from 'payload'
-import { isImageFileType } from './imageMime'
+import { classifyMedia } from './mediaClassification'
 import type {
   SanityStorageUploadMaxSizeByType,
   SanityStorageUploadMaxSizeConfig,
@@ -27,29 +27,13 @@ export function normalizeUploadMaxSizeConfig(
   return input
 }
 
-const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', 'mpeg', 'mpg', 'wmv'])
-
 /** Classifies an incoming upload for max-size policy. */
 export function classifyUploadMediaKind(
   mimeType?: string,
-  filename?: string
+  filename?: string,
+  signature?: Uint8Array
 ): SanityUploadMediaKind {
-  if (isImageFileType(mimeType, filename)) {
-    return 'image'
-  }
-
-  if (mimeType?.startsWith('video/')) {
-    return 'video'
-  }
-
-  if (filename) {
-    const ext = filename.split('.').pop()?.toLowerCase()
-    if (ext && VIDEO_EXTENSIONS.has(ext)) {
-      return 'video'
-    }
-  }
-
-  return 'file'
+  return classifyMedia({ mimeType, filename, signature }).mediaType
 }
 
 /** Deep-merge `byType`: collection keys override plugin keys; other plugin keys stay. */
@@ -96,7 +80,9 @@ export function resolveUploadMaxSizeBytes(
       ? merged.byType?.image
       : kind === 'video'
         ? merged.byType?.video
-        : merged.byType?.file
+        : kind === 'audio'
+          ? merged.byType?.audio
+          : merged.byType?.file
 
   const limit = specific ?? merged.default
   if (limit == null || limit <= 0) {
@@ -117,6 +103,7 @@ export function uploadMaxSizeConfigHasLimits(merged: SanityStorageUploadMaxSizeC
   return (
     (byType.image != null && byType.image > 0) ||
     (byType.video != null && byType.video > 0) ||
+    (byType.audio != null && byType.audio > 0) ||
     (byType.file != null && byType.file > 0)
   )
 }
@@ -132,7 +119,7 @@ function collectLimitBytesFromConfig(
   const byType = config.byType
   if (!byType) return
 
-  for (const value of [byType.image, byType.video, byType.file]) {
+  for (const value of [byType.image, byType.video, byType.audio, byType.file]) {
     if (value != null && value > 0) {
       into.push(value)
     }

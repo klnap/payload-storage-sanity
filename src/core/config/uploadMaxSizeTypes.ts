@@ -1,8 +1,9 @@
-export type SanityUploadMediaKind = 'image' | 'video' | 'file'
+export type SanityUploadMediaKind = 'image' | 'video' | 'audio' | 'file'
 
 export type SanityStorageUploadMaxSizeByType = {
   image?: number
   video?: number
+  audio?: number
   file?: number
 }
 

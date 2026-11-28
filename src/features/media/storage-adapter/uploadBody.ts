@@ -1,5 +1,7 @@
 import { createReadStream } from 'node:fs'
+import { open } from 'node:fs/promises'
 import type { Readable } from 'node:stream'
+import { classifyMedia } from '@/core/config'
 
 export type UploadFilePayload = {
   buffer?: Buffer
@@ -33,71 +35,32 @@ export function resolveSanityUploadBody(file: UploadFilePayload): Buffer | Reada
   return Buffer.alloc(0)
 }
 
-import { imageMimeFromExtension, isImageFileType } from '@/core/config'
-
-const FILE_EXTENSIONS = {
-  pdf: 'application/pdf',
-  doc: 'application/msword',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  xls: 'application/vnd.ms-excel',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  csv: 'text/csv',
-  zip: 'application/zip',
-  tar: 'application/x-tar',
-  gz: 'application/gzip',
-  rar: 'application/vnd.rar',
-  '7z': 'application/x-7z-compressed',
-  mp3: 'audio/mpeg',
-  wav: 'audio/wav',
-  ogg: 'audio/ogg',
-  flac: 'audio/flac',
-  m4a: 'audio/mp4',
-  mp4: 'video/mp4',
-  mov: 'video/quicktime',
-  webm: 'video/webm',
-  avi: 'video/x-msvideo',
-  mkv: 'video/x-matroska',
-  txt: 'text/plain',
-  json: 'application/json',
-  xml: 'application/xml',
-} as const
-
-type FileExtension = keyof typeof FILE_EXTENSIONS
-
-function isFileExtension(ext: string): ext is FileExtension {
-  return Object.hasOwn(FILE_EXTENSIONS, ext)
-}
-
 export { isImageFileType } from '@/core/config'
 
 /** Resolves the target Sanity asset category ('image' for image pipeline, 'file' for general files). */
 export function resolveSanityAssetType(mimeType?: string, filename?: string): 'image' | 'file' {
-  return isImageFileType(mimeType, filename) ? 'image' : 'file'
+  return classifyMedia({ mimeType, filename }).mediaType === 'image' ? 'image' : 'file'
 }
 
-/** Resolves normalized MIME type for both image and general file uploads. */
-export function normalizeAssetMimeType(
-  mimeType: string | undefined,
-  filename: string | undefined
-): string {
-  if (mimeType && mimeType !== 'application/octet-stream' && mimeType !== '') {
-    return mimeType
+export async function readUploadSignature(
+  file: UploadFilePayload
+): Promise<Uint8Array | undefined> {
+  const bytes = file.buffer?.length ? file.buffer : file.data
+  if (bytes instanceof Uint8Array && bytes.length > 0) return bytes.subarray(0, 32)
+  if (Array.isArray(bytes) && bytes.length > 0) return Uint8Array.from(bytes.slice(0, 32))
+  if (!file.tempFilePath) return undefined
+  const handle = await open(file.tempFilePath, 'r')
+  try {
+    const signature = new Uint8Array(32)
+    const { bytesRead } = await handle.read(signature, 0, signature.length, 0)
+    return signature.subarray(0, bytesRead)
+  } finally {
+    await handle.close()
   }
+}
 
-  if (filename) {
-    const ext = filename.split('.').pop()?.toLowerCase()
-    if (ext) {
-      const imageMime = imageMimeFromExtension(ext)
-      if (imageMime) return imageMime
-      if (isFileExtension(ext)) return FILE_EXTENSIONS[ext]
-    }
-  }
-
-  if (mimeType === 'application/octet-stream') {
-    return 'application/octet-stream'
-  }
-
-  return isImageFileType(mimeType, filename) ? 'image/jpeg' : 'application/octet-stream'
+export function normalizeAssetMimeType(mimeType: string | undefined, filename: string | undefined) {
+  return classifyMedia({ mimeType, filename }).mimeType
 }
 
 export function normalizeImageMimeType(

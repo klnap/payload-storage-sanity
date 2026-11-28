@@ -17,7 +17,14 @@ describe('uploadMaxSize utils', () => {
   test('classifyUploadMediaKind', () => {
     expect(classifyUploadMediaKind('image/jpeg', 'photo.jpg')).toBe('image')
     expect(classifyUploadMediaKind('video/mp4', 'clip.mp4')).toBe('video')
-    expect(classifyUploadMediaKind('audio/mpeg', 'track.mp3')).toBe('file')
+    expect(classifyUploadMediaKind('audio/mpeg', 'track.mp3')).toBe('audio')
+    expect(
+      classifyUploadMediaKind(
+        'image/png',
+        'photo.png',
+        Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d])
+      )
+    ).toBe('file')
     expect(classifyUploadMediaKind('application/pdf', 'doc.pdf')).toBe('file')
   })
 
